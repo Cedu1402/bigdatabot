@@ -4,10 +4,11 @@ import os
 
 import base58
 from dotenv import load_dotenv
-from solana.rpc.api import Client
+from solana.rpc.async_api import AsyncClient
 from solders.keypair import Keypair
 from telethon import TelegramClient, events
 
+from constants import SESSION
 from solana_api.simple_sniper import new_call_incoming
 from telegram.chat import get_cached_chat_id
 from telegram.sign_in import sign_in_to_telegram
@@ -20,13 +21,13 @@ load_dotenv()
 # Telegram API credentials
 API_ID = os.getenv('TELEGRAM_API_ID')
 API_HASH = os.getenv('TELEGRAM_API_HASH')
-SESSION = "mysession"
-CHAT_ID = "chat_id"
-TOPIC_ID = "topic_id"
+
+TOPIC_NAME = "Trade Chat"
+CHAT_NAME = "Travelfrog Official Chat"
 
 SOL_RPC = os.getenv('SOL_RPC')
 # Replace with your own RPC endpoint+
-sol_client = Client(SOL_RPC)
+sol_client = AsyncClient(SOL_RPC)
 PRIVATE_KEY = os.getenv('PRIVATE_KEY')
 
 # Load your wallet using the private key (for testing only)
@@ -39,15 +40,22 @@ async def main():
         if not await client.is_user_authorized():
             await sign_in_to_telegram(client)
 
-        chat_name = "meme.bot"
-        chat_id = await get_cached_chat_id(client, chat_name)
-        topic_name = "SOL BOT [60-300K]"
-        topic_id= await get_cached_topic_id(client, chat_id, topic_name)
+
+        chat_id = await get_cached_chat_id(client, CHAT_NAME)
+
+        topic_id= await get_cached_topic_id(client, chat_id, TOPIC_NAME)
 
         # Start listening to new messages in the specified topic
-        @client.on(events.NewMessage(chats=chat_id, func=lambda e: e.peer_id.channel_id == topic_id))
+        @client.on(events.NewMessage(chats=chat_id))
         async def message_listener(event):
-            await new_call_incoming(event)
+            if event.message.reply_to:
+                # Get the topic ID from reply_to.reply_to_top_id
+                message_topic_id = event.message.reply_to.reply_to_top_id
+                if message_topic_id == topic_id:
+                    print("Message is in the target topic")
+                    await new_call_incoming(event, client, wallet)
+
+        await client.run_until_disconnected()
 
 
 if __name__ == "__main__":

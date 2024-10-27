@@ -1,9 +1,11 @@
 from solana.rpc.api import Client
+from solana.rpc.async_api import AsyncClient
 from solders.keypair import Keypair
 
 
-def get_wallet_balance(client: Client, wallet: Keypair):
+async def get_wallet_balance(client: AsyncClient, wallet: Keypair):
     """Fetches the wallet balance in lamports (1 SOL = 1e9 lamports)."""
-    balance = client.get_balance(wallet.pubkey())['result']['value']
+    balance_result = await client.get_balance(wallet.pubkey())
+    balance = balance_result['result']['value']
     return balance
 

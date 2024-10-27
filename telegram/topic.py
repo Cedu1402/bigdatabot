@@ -1,9 +1,9 @@
-from dotenv.main import logger
 from telethon import TelegramClient
 from telethon.tl.functions.channels import GetForumTopicsRequest
 
 from cache_helper import get_cache_data, cache_exists, write_data_to_cache
-from main import TOPIC_ID
+from constants import TOPIC_ID
+from log import logger
 
 
 async def get_last_message_in_topic(client, chat_id, topic_id):
@@ -33,7 +33,7 @@ async def get_topic_id(client, chat_id, topic_name):
         ))
 
         for topic in result.topics:
-            if topic.title == topic_name:
+            if topic_name in topic.title:
                 return topic.id
     return None
 
