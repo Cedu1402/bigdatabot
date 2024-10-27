@@ -1,5 +1,5 @@
 import asyncio
-import logging
+
 import os
 
 import base58
@@ -8,15 +8,11 @@ from solana.rpc.api import Client
 from solders.keypair import Keypair
 from telethon import TelegramClient, events
 
-from cache_helper import cache_exists, get_cache_data, write_data_to_cache
 from solana_api.simple_sniper import new_call_incoming
-from telegram.chat import get_chat, get_cached_chat_id
+from telegram.chat import get_cached_chat_id
 from telegram.sign_in import sign_in_to_telegram
 from telegram.topic import get_cached_topic_id
 
-# Set up logging
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
@@ -30,7 +26,7 @@ TOPIC_ID = "topic_id"
 
 SOL_RPC = os.getenv('SOL_RPC')
 # Replace with your own RPC endpoint+
-client = Client(SOL_RPC)
+sol_client = Client(SOL_RPC)
 PRIVATE_KEY = os.getenv('PRIVATE_KEY')
 
 # Load your wallet using the private key (for testing only)

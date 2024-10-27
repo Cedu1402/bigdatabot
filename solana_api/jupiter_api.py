@@ -1,8 +1,9 @@
 from base64 import b64decode
 
 import requests
-from anchorpy import Wallet
 from solana.rpc.api import Client
+from solana.rpc.types import TxOpts
+from solders.keypair import Keypair
 from solders.message import to_bytes_versioned
 from solders.transaction import VersionedTransaction
 
@@ -10,12 +11,12 @@ from solders.transaction import VersionedTransaction
 SOL_MINT = 'So11111111111111111111111111111111111111112'
 
 
-def buy_token(client: Client, wallet: Wallet,token: str, amount: int):
+def buy_token(client: Client, wallet: Keypair,token: str, amount: int):
     """Swaps SOL for the specified token."""
     return swap_tokens(client, wallet, token, amount, buy=True)
 
 
-def sell_token(client: Client, wallet: Wallet,token: str, amount: int):
+def sell_token(client: Client, wallet: Keypair,token: str, amount: int):
     """Swaps the specified token for SOL."""
     return swap_tokens(client, wallet, token, amount, buy=False)
 
@@ -25,7 +26,7 @@ def get_quote(token: str, amount: int, buy: bool):
     params = {
         'inputMint': SOL_MINT if buy else token,
         'outputMint': token if buy else SOL_MINT,
-        'amount': 1000000,  # Amount in lamports (0.1 SOL)
+        'amount': amount,  # Amount in lamports (0.1 SOL)
         'slippageBps': 100,  # Slippage in basis points (0.5%)
     }
 
@@ -33,7 +34,7 @@ def get_quote(token: str, amount: int, buy: bool):
     return response.json()
 
 
-def swap_tokens(client: Client, wallet: Wallet, token: str, amount: int, buy: bool) -> object:
+def swap_tokens(client: Client, wallet: Keypair, token: str, amount: int, buy: bool) -> object:
     quote_response = get_quote(token, amount, buy)
 
     # Create swap transaction
@@ -60,6 +61,7 @@ def swap_tokens(client: Client, wallet: Wallet, token: str, amount: int, buy: bo
     # Step 5: Send the transaction
     txid = client.send_transaction(signed_tx, opts=TxOpts(skip_preflight=True))
     print(f'Transaction sent: {txid}')
+    return True
 
 
 if __name__ == "__main__":
