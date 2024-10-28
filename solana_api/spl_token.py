@@ -15,12 +15,13 @@ from log import logger
 
 async def get_token_balance(client: AsyncClient, wallet: Keypair, token_ca: str, retries: int = 5,
                             delay: int = 1) -> int:
-    token_mint_pubkey = Pubkey.from_string(token_ca)
-    token_account = get_associated_token_address(wallet.pubkey(), token_mint_pubkey)
 
     for attempt in range(retries):
         balance = 0
         try:
+            token_mint_pubkey = Pubkey.from_string(token_ca)
+            token_account = get_associated_token_address(wallet.pubkey(), token_mint_pubkey)
+
             response = await client.get_token_account_balance(token_account, commitment=Confirmed)
             if hasattr(response, "value"):
                 balance = int(response.value.amount)
