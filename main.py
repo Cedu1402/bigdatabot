@@ -1,5 +1,4 @@
 import asyncio
-
 import os
 
 import base58
@@ -9,11 +8,11 @@ from solders.keypair import Keypair
 from telethon import TelegramClient, events
 
 from constants import SESSION
+from log import logger
 from solana_api.simple_sniper import new_call_incoming
 from telegram.chat import get_cached_chat_id
 from telegram.sign_in import sign_in_to_telegram
 from telegram.topic import get_cached_topic_id
-
 
 # Load environment variables
 load_dotenv()
@@ -22,8 +21,8 @@ load_dotenv()
 API_ID = os.getenv('TELEGRAM_API_ID')
 API_HASH = os.getenv('TELEGRAM_API_HASH')
 
-TOPIC_NAME = "Trade Chat"
-CHAT_NAME = "Travelfrog Official Chat"
+TOPIC_NAME = "SOL BOT [60-300K]"
+CHAT_NAME = "meme.bot"
 
 SOL_RPC = os.getenv('SOL_RPC')
 # Replace with your own RPC endpoint+
@@ -36,27 +35,29 @@ wallet = Keypair.from_bytes(private_key)
 
 
 async def main():
-    async with TelegramClient(SESSION, API_ID, API_HASH) as client:
-        if not await client.is_user_authorized():
-            await sign_in_to_telegram(client)
+    while True:
+        try:
+            async with TelegramClient(SESSION, API_ID, API_HASH) as client:
+                if not await client.is_user_authorized():
+                    await sign_in_to_telegram(client)
 
+                chat_id = await get_cached_chat_id(client, CHAT_NAME)
+                topic_id = await get_cached_topic_id(client, chat_id, TOPIC_NAME)
 
-        chat_id = await get_cached_chat_id(client, CHAT_NAME)
+                # Start listening to new messages in the specified topic
+                @client.on(events.NewMessage(chats=chat_id))
+                async def message_listener(event):
+                    if event.message.reply_to:
+                        # Get the topic ID from reply_to.reply_to_top_id
+                        message_topic_id = event.message.reply_to.reply_to_msg_id
+                        if message_topic_id == topic_id:
+                            print("Message is in the target topic")
+                            await new_call_incoming(event.message.text, sol_client, wallet)
 
-        topic_id= await get_cached_topic_id(client, chat_id, TOPIC_NAME)
-
-        # Start listening to new messages in the specified topic
-        @client.on(events.NewMessage(chats=chat_id))
-        async def message_listener(event):
-            if event.message.reply_to:
-                # Get the topic ID from reply_to.reply_to_top_id
-                message_topic_id = event.message.reply_to.reply_to_top_id
-                if message_topic_id == topic_id:
-                    print("Message is in the target topic")
-                    await new_call_incoming(event, client, wallet)
-
-        await client.run_until_disconnected()
-
+                await client.run_until_disconnected()
+        except Exception as e:
+            logger.error(e, "Watch ran into an error! Restarting now....")
+            await asyncio.sleep(30)
 
 if __name__ == "__main__":
     asyncio.run(main())

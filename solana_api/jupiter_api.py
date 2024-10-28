@@ -35,7 +35,7 @@ async def get_quote(token: str, amount: int, buy: bool) -> Optional[Any]:
         'inputMint': SOL_MINT if buy else token,
         'outputMint': token if buy else SOL_MINT,
         'amount': amount,
-        'slippageBps': 100,
+        'slippageBps': 2000,
     }
     return await make_http_request_with_retry(RETRY_HTTP, RETRY_DELAY, "GET", url, params=params)
 

@@ -29,8 +29,9 @@ async def new_call_incoming(message, client: AsyncClient, wallet: Keypair):
     logger.info(f"Wallet SOL balance retrieved: {sol_balance / 1e9} SOL")
 
     # Calculate 10% of SOL balance to use for buying
-    sol_amount_to_use = int(sol_balance * 0.1)  # in lamports
-    if sol_amount_to_use <= 50000000:
+    sol_amount_to_use = int(sol_balance * 0.4)  # in lamports
+    logger.info("Sol to use %s", sol_amount_to_use)
+    if sol_amount_to_use <= 5000000:
         logger.info("Insufficient SOL balance to buy token. Minimum required is 0.05 SOL.")
         return
 
@@ -54,12 +55,12 @@ async def trade_runner(client: AsyncClient, wallet: Keypair, token_ca: str, amou
         await asyncio.sleep(2)
 
         # Step 2: Get bought token balance
-        amount_bought = await get_token_balance(client, wallet, token_ca)
+        amount_bought = await get_token_balance(client, wallet, token_ca, 60, 10)
         if amount_bought == 0:
             logger.error("No tokens bought for %s.", token_ca)
             return
-        logger.info("%s Tokens bought for %s", amount_bought, token_ca)
 
+        logger.info("%s Tokens bought for %s", amount_bought, token_ca)
         bought_time = datetime.datetime.now()
 
         while True:
@@ -70,7 +71,6 @@ async def trade_runner(client: AsyncClient, wallet: Keypair, token_ca: str, amou
             sell_quote = await get_quote(token_ca, amount_bought, False)
             if sell_quote is None or len(sell_quote.get('outAmount', [])) == 0:
                 logger.error("Failed to get sell quote for token %s.", token_ca)
-                return
 
             sell_amount = int(sell_quote['outAmount'])  # Amount received after selling tokens
 
