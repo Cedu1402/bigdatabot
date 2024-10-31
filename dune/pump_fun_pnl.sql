@@ -17,8 +17,8 @@ WITH filtered_trades AS (SELECT trader_id,
                             ft.trader_id,
                             ft.token_sold_amount,
                             ft.token_bought_amount
-                     FROM filtered_calls AS fc
-                              JOIN filtered_trades AS ft ON ft.token_bought_mint_address = fc.account_mint AND fc.account_user != ft.trader_id
+                     FROM filtered_trades AS ft
+                         JOIN filtered_calls AS fc ON ft.token_bought_mint_address = fc.account_mint AND fc.account_user != ft.trader_id
                          AND ft.block_time <= fc.call_block_time + INTERVAL '4' hour),
      interesting_traders AS (SELECT trader_id
                              FROM joined_data
@@ -34,8 +34,8 @@ WITH filtered_trades AS (SELECT trader_id,
                         fst.trader_id,
                         fst.token_sold_amount,
                         fst.token_bought_amount
-                 FROM interesting_traders AS it
-                          JOIN filtered_sell_trades AS fst on it.trader_id = fst.trader_id
+                 FROM filtered_sell_trades AS fst
+                          JOIN interesting_traders AS it on it.trader_id = fst.trader_id
                           JOIN filtered_calls as fc on fc.account_mint = fst.token_sold_mint_address),
      buy_summary as (SELECT account_mint,
                             trader_id,
@@ -57,8 +57,8 @@ filtered_last_price_transactions as (
            ft.token_bought_amount,
            ft.token_sold_amount,
            ROW_NUMBER() OVER (PARTITION BY ft.token_sold_mint_address ORDER BY ft.block_time ASC) AS rn
-    FROM filtered_calls AS fc
-    JOIN dex_solana.trades AS ft  ON ft.token_sold_mint_address = fc.account_mint
+    FROM dex_solana.trades AS ft
+    JOIN filtered_calls AS fc ON ft.token_sold_mint_address = fc.account_mint
     WHERE ft.block_time > fc.call_block_time + INTERVAL '4' hour
       AND ft.block_time < fc.call_block_time + INTERVAL '8' hour
 ),
