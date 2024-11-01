@@ -1,6 +1,7 @@
-aiohttp
-base58
-python-dotenv
-solana
-solders
-Telethon
+aiohttp~=3.10.10
+base58~=2.1.1
+python-dotenv~=1.0.1
+solana~=0.35.0
+solders~=0.21.0
+Telethon~=1.37.0
+pandas~=2.2.3

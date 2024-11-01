@@ -40,14 +40,16 @@ WITH filtered_trades AS (SELECT trader_id,
      buy_summary as (SELECT account_mint,
                             trader_id,
                             SUM(token_sold_amount)   AS sol_spent,
-                            SUM(token_bought_amount) as token_received
+                            SUM(token_bought_amount) as token_received,
+                            COUNT(*) as trades
                      FROM joined_data
                      GROUP BY account_mint,
                               trader_id),
      sell_summary as (SELECT account_mint,
                              trader_id,
                              SUM(token_sold_amount)   AS token_spent,
-                             SUM(token_bought_amount) as sol_received
+                             SUM(token_bought_amount) as sol_received,
+                             COUNT(*) as trades
                       FROM sell_tx
                       GROUP BY account_mint,
                                trader_id
@@ -73,6 +75,7 @@ SELECT
     bs.account_mint,
     bs.trader_id,
     bs.sol_spent AS total_sol_spent,
+    bs.trades + ss.trades as total_trades,
     COALESCE(ss.sol_received, 0) AS total_sol_received,
     COALESCE(ss.token_spent, 0) AS total_token_sold,
     GREATEST(COALESCE(bs.token_received, 0) - COALESCE(ss.token_spent, 0), 0) AS unsold_tokens,

@@ -1,17 +1,18 @@
 import unittest
 from unittest.mock import patch
 
-from birdeye_api.api_key import get_api_key
+from constants import DUNE_API_KEY
+from env_data.get_env_value import get_env_value
 
 
 class TestRunner(unittest.TestCase):
 
-    @patch.dict("os.environ", {"BIRDEYE_KEY": "fake_key"})
+    @patch.dict("os.environ", {DUNE_API_KEY: "fake_key"})
     def test_get_api_key_env_loaded(self):
         # Arrange
         expected = "fake_key"
         # Act
-        actual = get_api_key()
+        actual = get_env_value(DUNE_API_KEY)
         # Assert
         self.assertEqual(expected, actual)
 
@@ -20,6 +21,6 @@ class TestRunner(unittest.TestCase):
         # Arrange
         expected = None
         # Act
-        actual = get_api_key()
+        actual = get_env_value(DUNE_API_KEY)
         # Assert
         self.assertEqual(expected, actual)
