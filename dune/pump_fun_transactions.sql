@@ -2,8 +2,8 @@ WITH filtered_calls AS (SELECT account_mint,
                                call_block_time,
                                account_user
                         FROM pumpdotfun_solana.pump_call_create
-                        WHERE call_block_time >= NOW() - INTERVAL '1' month
-                          AND call_block_time <= NOW() - INTERVAL '4' hour),
+                        WHERE call_block_time BETWEEN cast('{{time_from}}' as timestamp) AND cast('{{time_to}}' as timestamp)
+                          AND call_block_time <= NOW() - INTERVAL '{{min_token_age_h}}' hour),
      buy_trades AS (SELECT t.trader_id,
                            token_sold_amount,
                            token_bought_amount,
@@ -18,8 +18,8 @@ WITH filtered_calls AS (SELECT account_mint,
                     WHERE token_sold_mint_address = 'So11111111111111111111111111111111111111112'
                       AND token_sold_amount >= 1
                       AND t.block_time >= fc.call_block_time
-                      AND t.block_time <= fc.call_block_time + INTERVAL '4' hour
-                      AND t.block_time >= NOW() - INTERVAL '1' month),
+                      AND t.block_time <= fc.call_block_time + INTERVAL '{{min_token_age_h}}' hour
+                      AND t.block_time BETWEEN cast('{{time_from}}' as timestamp) AND cast('{{time_to}}' as timestamp)),
      sell_trades AS (SELECT t.trader_id,
                             token_sold_amount,
                             token_bought_amount,
@@ -33,8 +33,8 @@ WITH filtered_calls AS (SELECT account_mint,
                               JOIN dune.testnet32.result_top_pump_dot_fun_trader as tt on tt.trader_id = t.trader_id
                      WHERE token_bought_mint_address = 'So11111111111111111111111111111111111111112'
                        AND t.block_time >= fc.call_block_time
-                       AND t.block_time <= fc.call_block_time + INTERVAL '4' hour
-                       AND t.block_time >= NOW() - INTERVAL '1' month)
+                       AND t.block_time <= fc.call_block_time + INTERVAL '{{min_token_age_h}}' hour
+                       AND t.block_time BETWEEN cast('{{time_from}}' as timestamp) AND cast('{{time_to}}' as timestamp))
 
 SELECT *
 FROM buy_trades
