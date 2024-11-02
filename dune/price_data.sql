@@ -1,4 +1,8 @@
-WITH
+  WITH tokens  as (
+      SELECT q4.account_mint, pcc.call_block_time
+        FROM pumpdotfun_solana.pump_call_create as pcc
+          JOIN query_4229122 as q4 on q4.account_mint = pcc.account_mint
+  ),
   buy_volume AS (
     SELECT
       DATE_TRUNC('minute', block_time) AS trading_minute,
@@ -7,11 +11,8 @@ WITH
       token_bought_mint_address AS token
     FROM
       dex_solana.trades AS t
-    WHERE
-      t.token_bought_mint_address IN (
-    SELECT token
-    FROM unnest(split('{{tokens}}', ',')) AS c(token)
-)
+    JOIN tokens as tk on t.token_bought_mint_address = tk.account_mint
+    WHERE t.block_time BETWEEN tk.call_block_time AND tk.call_block_time + INTERVAL '{{min_token_age_h}}' hour
     GROUP BY
       token_bought_mint_address,
       DATE_TRUNC('minute', block_time)
@@ -24,11 +25,8 @@ WITH
       token_sold_mint_address AS token
     FROM
       dex_solana.trades AS t
-    WHERE
-      t.token_sold_mint_address IN (
-    SELECT token
-    FROM unnest(split('{{tokens}}', ',')) AS c(token)
-)
+    JOIN tokens as tk on t.token_sold_mint_address = tk.account_mint
+    WHERE t.block_time BETWEEN tk.call_block_time AND tk.call_block_time + INTERVAL '{{min_token_age_h}}' hour
     GROUP BY
       token_sold_mint_address,
       DATE_TRUNC('minute', block_time)
@@ -49,11 +47,8 @@ WITH
       DATE_TRUNC('minute', block_time) as trading_minute
     FROM
       dex_solana.trades AS t
-    WHERE
-      t.token_bought_mint_address IN (
-    SELECT token
-    FROM unnest(split('{{tokens}}', ',')) AS c(token)
-)
+    JOIN tokens as tk on t.token_bought_mint_address = tk.account_mint
+    WHERE t.block_time BETWEEN tk.call_block_time AND tk.call_block_time + INTERVAL '{{min_token_age_h}}' hour
   ),
   last_sell_price AS (
     SELECT
@@ -71,11 +66,8 @@ WITH
       DATE_TRUNC('minute', block_time) as trading_minute
     FROM
       dex_solana.trades AS t
-    WHERE
-      t.token_sold_mint_address IN (
-    SELECT token
-    FROM unnest(split('{{tokens}}', ',')) AS c(token)
-)
+    JOIN tokens as tk on t.token_sold_mint_address = tk.account_mint
+    WHERE t.block_time BETWEEN tk.call_block_time AND tk.call_block_time + INTERVAL '{{min_token_age_h}}' hour
   )
 SELECT
   bv.trading_minute,
@@ -88,8 +80,7 @@ SELECT
       AND lbp.block_slot >= lsp.block_slot
     ) THEN lbp.price
     ELSE lsp.price
-  END AS latest_price,
-  1 as test
+  END AS latest_price
 FROM
   buy_volume AS bv
   JOIN sell_volume AS sv ON sv.token = bv.token

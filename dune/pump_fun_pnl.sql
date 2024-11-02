@@ -2,7 +2,7 @@ WITH filtered_traders AS (SELECT trader_id
                           FROM dex_solana.trades
                           WHERE token_sold_mint_address = 'So11111111111111111111111111111111111111112'
                             AND token_sold_amount >= 1
-                            AND block_time BETWEEN {{time_from}} AND {{time_to}}
+                            AND block_time BETWEEN cast('{{time_from}}' as timestamp) AND cast('{{time_to}}' as timestamp)
                           GROUP BY trader_id),
      filtered_trades AS (SELECT t.trader_id,
                                 token_sold_amount,
@@ -12,12 +12,12 @@ WITH filtered_traders AS (SELECT trader_id
                          FROM dex_solana.trades as t
                                   JOIN filtered_traders as ft on ft.trader_id = t.trader_id
                          WHERE token_sold_mint_address = 'So11111111111111111111111111111111111111112'
-                           AND block_time BETWEEN {{time_from}} AND {{time_to}}),
+                           AND block_time BETWEEN cast('{{time_from}}' as timestamp) AND cast('{{time_to}}' as timestamp)),
      filtered_calls AS (SELECT account_mint,
                                call_block_time,
                                account_user
                         FROM pumpdotfun_solana.pump_call_create
-                        WHERE call_block_time BETWEEN {{time_from}} AND {{time_to}}
+                        WHERE call_block_time BETWEEN cast('{{time_from}}' as timestamp) AND cast('{{time_to}}' as timestamp)
                           AND call_block_time <= NOW() - INTERVAL '{{min_token_age_h}}' hour),
      joined_data AS (SELECT fc.account_mint,
                             ft.trader_id,
@@ -34,7 +34,7 @@ GROUP BY trader_id),
 SELECT trader_id, token_sold_amount, token_bought_amount, token_sold_mint_address
 FROM dex_solana.trades
 WHERE token_bought_mint_address = 'So11111111111111111111111111111111111111112'
-  AND block_time BETWEEN {{time_from}} AND {{time_to}})
+  AND block_time BETWEEN cast('{{time_from}}' as timestamp) AND cast('{{time_to}}' as timestamp))
     , sell_tx AS (
 SELECT fc.account_mint, fst.trader_id, fst.token_sold_amount, fst.token_bought_amount
 FROM filtered_sell_trades AS fst
@@ -58,9 +58,9 @@ FROM dex_solana.trades AS ft
     JOIN filtered_calls AS fc
 ON ft.token_sold_mint_address = fc.account_mint
 WHERE ft.block_time
-    > fc.call_block_time + INTERVAL '4' hour
+    > fc.call_block_time + INTERVAL '{{min_token_age_h}}' hour
   AND ft.block_time
-    < fc.call_block_time + INTERVAL '8' hour
+    < fc.call_block_time + INTERVAL '{{min_token_age_h}}' hour + INTERVAL '{{min_token_age_h}}' hour
     )
     , closest_transactions AS (
 SELECT account_mint, COALESCE (token_bought_amount / NULLIF (token_sold_amount, 0), 0) AS price
