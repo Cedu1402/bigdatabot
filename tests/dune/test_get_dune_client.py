@@ -5,7 +5,6 @@ from dune_client.client import DuneClient
 
 from constants import DUNE_API_KEY
 from dune.dune_client import get_dune_client
-from env_data.get_env_value import get_env_value
 
 
 class TestRunner(unittest.TestCase):
