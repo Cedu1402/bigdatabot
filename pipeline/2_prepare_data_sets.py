@@ -3,6 +3,7 @@ from typing import Tuple
 import pandas as pd
 from dotenv import load_dotenv
 
+from data.close_volume_data import add_missing_minutes
 from data.solana_trader import get_trader_from_trades
 from dune.data_collection import collect_all_data
 
@@ -14,8 +15,10 @@ def prepare_data_set(use_cache: bool):
      traders = get_trader_from_trades(top_trader_trades)
 
      # Finish volume data if tokens had no tx in some minutes
-    
+     volume_close_1m = add_missing_minutes(volume_close_1m)
+
      # Add trader info to volume data
+            
 
      # Split volume data into sliding window chunks of 10min
 
