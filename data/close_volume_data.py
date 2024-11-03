@@ -21,8 +21,7 @@ def add_missing_minutes(data: pd.DataFrame) -> pd.DataFrame:
 
         # Define the 4-hour range for this token
         min_time = token_df.index.min()
-        max_time = min_time + pd.Timedelta(hours=4)
-        # Use 'min' instead of 'T' for the frequency
+        max_time = min_time + pd.Timedelta(hours=4) - pd.Timedelta(minutes=1)
         full_range = pd.date_range(start=min_time, end=max_time, freq='min')
 
         # Reindex with the 4-hour minute range and forward fill

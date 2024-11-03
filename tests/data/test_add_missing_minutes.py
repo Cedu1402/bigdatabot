@@ -18,3 +18,7 @@ class TestRunner(unittest.TestCase):
         actual = add_missing_minutes(data.copy())
         # Assert
         self.assertGreater(len(actual), len(data))
+        # Assert: Check that each token has exactly 240 minutes of data
+        for token in actual['token'].unique():
+            token_data = actual[actual['token'] == token]
+            self.assertEqual(len(token_data), 240, f"Token {token} does not have 4 hours (240 minutes) of data.")
