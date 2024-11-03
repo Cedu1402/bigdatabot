@@ -7,6 +7,5 @@ trades as (
     FROM query_4208224 as t
     JOIN profitable_traders as pt  on pt.trader_id = t.trader_id
 )
-
 SELECT * from trades
 GROUP BY account_mint

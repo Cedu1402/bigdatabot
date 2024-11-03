@@ -7,10 +7,8 @@ from dune.query_request import get_query_result
 def get_list_of_traders(use_cache: bool) -> pd.DataFrame:
     return get_query_result(TOP_TRADERS_QUERY, use_cache)
 
-
 def get_list_of_trades(use_cache: bool) -> pd.DataFrame:
     return get_query_result(TRADE_LIST_QUERY, use_cache)
-
 
 def get_list_of_traded_tokens(use_cache: bool) -> pd.DataFrame:
     return get_query_result(TRADED_TOKENS_QUERY, use_cache)

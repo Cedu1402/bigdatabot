@@ -1,14 +1,16 @@
+from typing import Tuple
+
+import pandas as pd
 from dotenv import load_dotenv
 
 from dune.data_collection import collect_all_data
 
 
-def main(use_cache: bool):
-    load_dotenv()
-    data = collect_all_data(use_cache)
+def load_data(use_cache: bool) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    return collect_all_data(use_cache)
 
 
 if __name__ == '__main__':
+    load_dotenv()
     use_cached_data = True
-    collect_all_data(use_cached_data)
-    main(use_cached_data)
+    load_data(use_cached_data)
