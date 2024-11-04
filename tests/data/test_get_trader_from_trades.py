@@ -1,10 +1,10 @@
 import os
 import unittest
 
-from constants import TEST_DATA_FOLDER
 from data.pickle_files import load_from_pickle
 from data.solana_trader import get_trader_from_trades
 from dune.data_transform import transform_dune_result_to_pandas
+from test_constants import TEST_DATA_FOLDER
 
 
 class TestRunner(unittest.TestCase):

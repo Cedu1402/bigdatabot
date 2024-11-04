@@ -13,15 +13,14 @@ class TestRunner(unittest.TestCase):
 
     def test_add_trader_info_to_price_data(self):
         # Arrange
-        raw_data = load_from_pickle(os.path.join(TEST_DATA_FOLDER, "4233197.pkl"))
-        volume_data = transform_dune_result_to_pandas(raw_data)
-        volume_data = add_missing_minutes(volume_data)
+        volume_data = load_from_pickle(os.path.join(TEST_DATA_FOLDER, "complete_close_volume.pkl"))
         raw_data = load_from_pickle(os.path.join(TEST_DATA_FOLDER, "4229277.pkl"))
         trades_data = transform_dune_result_to_pandas(raw_data)
         trader = get_trader_from_trades(trades_data)
+
         # Act
         actual = add_trader_info_to_price_data(volume_data, trader, trades_data)
-        save_to_pickle(actual, '../test_data/combined.pkl')
         # Assert
         self.assertEqual(len(volume_data.columns) + 100, len(actual.columns))
         self.assertEqual(len(volume_data), len(actual))
+        save_to_pickle(actual, os.path.join(TEST_DATA_FOLDER, "combined.pkl"))

@@ -2,7 +2,7 @@ import os
 import unittest
 
 
-from data.pickle_files import load_from_pickle
+from data.pickle_files import load_from_pickle, save_to_pickle
 from data.sliding_window import create_sliding_windows
 from test_constants import TEST_DATA_FOLDER
 
@@ -17,3 +17,4 @@ class TestRunner(unittest.TestCase):
         sliding_window_data = create_sliding_windows(data)
         # Assert
         self.assertEqual(amount_tokens * 231, len(sliding_window_data))
+        save_to_pickle(sliding_window_data, os.path.join(TEST_DATA_FOLDER, "sliding_window.pkl"))
