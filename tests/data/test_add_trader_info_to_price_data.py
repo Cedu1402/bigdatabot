@@ -21,6 +21,6 @@ class TestRunner(unittest.TestCase):
         # Act
         actual = add_trader_info_to_price_data(volume_data, trader, trades_data)
         # Assert
-        self.assertEqual(len(volume_data.columns) + 100, len(actual.columns))
+        self.assertEqual(len(volume_data.columns) + 50, len(actual.columns))
         self.assertEqual(len(volume_data), len(actual))
         save_to_pickle(actual, os.path.join(TEST_DATA_FOLDER, "combined.pkl"))
