@@ -10,5 +10,9 @@ TOP_TRADERS_QUERY = 4217799
 TRADED_TOKENS_QUERY = 4229122
 TOKEN_CLOSE_VOLUME_1M_QUERY = 4233197
 
+PRICE_COLUMN = "latest_price"
+TOKEN_COlUMN = "token"
+TRADING_MINUTE_COLUMN = "trading_minute"
+
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 CACHE_FOLDER = os.path.join(ROOT_DIR, "cache")
