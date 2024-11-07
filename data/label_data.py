@@ -3,6 +3,7 @@ from typing import List
 import pandas as pd
 
 from constants import PRICE_COLUMN, TRADING_MINUTE_COLUMN, LABEL_COLUMN, TOKEN_COlUMN
+from log import logger
 
 
 def label_window(full_token_data: pd.DataFrame, window_data: pd.DataFrame,
@@ -40,5 +41,10 @@ def label_data(split_data: List[pd.DataFrame], full_data: pd.DataFrame,
         full_token_data = full_data[full_data[TOKEN_COlUMN] == token]
         label = label_window(full_token_data, item, win_percentage, draw_down_percentage)
         item[LABEL_COLUMN] = label
+
+    amount_of_true = len([1 for item in split_data if item[LABEL_COLUMN].iloc[0]])
+    amount_of_false = len([1 for item in split_data if not item[LABEL_COLUMN].iloc[0]])
+
+    logger.info("Amount of true windows: %s, Amount of false windows: %s", amount_of_true, amount_of_false)
 
     return split_data

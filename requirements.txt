@@ -5,3 +5,4 @@ solana~=0.35.0
 solders~=0.21.0
 Telethon~=1.37.0
 pandas~=2.2.3
+scikit-learn~=1.5.2
