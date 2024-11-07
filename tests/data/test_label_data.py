@@ -11,9 +11,10 @@ class TestRunner(unittest.TestCase):
     def test_label_data(self):
         # Arrange
         volume_data = load_from_pickle(os.path.join(TEST_DATA_FOLDER, "complete_close_volume.pkl"))
-        sliding_window_data = load_from_pickle(os.path.join(TEST_DATA_FOLDER, "sliding_windows.pkl"))
-
+        sliding_window_data = load_from_pickle(os.path.join(TEST_DATA_FOLDER, "sliding_window.pkl"))
+        expected = sliding_window_data.copy(deep=True)
         # Act
-        actual = label_data(sliding_window_data, volume_data)
+        actual = label_data(sliding_window_data, volume_data, 100, 50)
 
         # Assert
+        self.assertEqual(len(actual[0].columns), len(expected[0].columns) + 1)

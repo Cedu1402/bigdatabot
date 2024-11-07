@@ -1,6 +1,6 @@
 import math
 from dataclasses import dataclass
-from typing import Tuple, Union, NoReturn
+from typing import Tuple
 
 import pandas as pd
 
@@ -31,8 +31,6 @@ class InvalidPositionError(TraderStateError):
 
 def prepare_timestamps(price_data: pd.DataFrame, trades: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Prepare and standardize timestamp formats."""
-    price_data = price_data.copy()
-    trades = trades.copy()
 
     price_data['trading_minute'] = pd.to_datetime(price_data['trading_minute'])
     trades['block_time'] = pd.to_datetime(trades['block_time'])

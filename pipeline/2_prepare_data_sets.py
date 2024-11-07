@@ -1,7 +1,9 @@
 from dotenv import load_dotenv
 
+from constants import DRAW_DOWN_PERCENTAGE, WIN_PERCENTAGE
 from data.close_volume_data import add_missing_minutes
 from data.combine_price_trades import add_trader_info_to_price_data
+from data.label_data import label_data
 from data.sliding_window import create_sliding_windows
 from data.solana_trader import get_trader_from_trades
 from dune.data_collection import collect_all_data
@@ -23,6 +25,7 @@ def prepare_data_set(use_cache: bool):
     split_data = create_sliding_windows(full_data)
 
     # Add labels for trading info (good buy or not)
+    labeled_data = label_data(split_data, volume_close_1m, WIN_PERCENTAGE, DRAW_DOWN_PERCENTAGE)
 
     # Split into train/validation/test set
 

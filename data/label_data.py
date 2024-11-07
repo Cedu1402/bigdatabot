@@ -2,13 +2,11 @@ from typing import List
 
 import pandas as pd
 
-from constants import PRICE_COLUMN, TRADING_MINUTE_COLUMN
+from constants import PRICE_COLUMN, TRADING_MINUTE_COLUMN, LABEL_COLUMN, TOKEN_COlUMN
 
 
 def label_window(full_token_data: pd.DataFrame, window_data: pd.DataFrame,
                  win_percentage: int, draw_down_percentage: int) -> bool:
-
-
     last_price = window_data.iloc[-1][PRICE_COLUMN]
     last_minute = window_data.iloc[-1][TRADING_MINUTE_COLUMN]
 
@@ -32,15 +30,15 @@ def label_window(full_token_data: pd.DataFrame, window_data: pd.DataFrame,
     elif pd.notna(draw_down_index) and (pd.isna(win_index) or draw_down_index < win_index):
         return False  # Drawdown condition met
 
+
 def label_data(split_data: List[pd.DataFrame], full_data: pd.DataFrame,
                win_percentage: int, draw_down_percentage: int) -> List[pd.DataFrame]:
-
     #  for each item check if when buy at close price we can make a *x
     #  with a max draw down of x %
     for item in split_data:
-        token = item["token"][0]
-        full_token_data = full_data[full_data["token"] == token]
-        label_window(full_token_data, item, win_percentage, draw_down_percentage)
+        token = item.iloc[0][TOKEN_COlUMN]
+        full_token_data = full_data[full_data[TOKEN_COlUMN] == token]
+        label = label_window(full_token_data, item, win_percentage, draw_down_percentage)
+        item[LABEL_COLUMN] = label
 
-
-    raise Exception("Not implemented yet")
+    return split_data
