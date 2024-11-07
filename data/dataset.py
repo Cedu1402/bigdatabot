@@ -1,0 +1,47 @@
+import os
+
+from constants import WIN_PERCENTAGE, DRAW_DOWN_PERCENTAGE, CACHE_FOLDER, TRAIN_VAL_TEST_FILE
+from data.close_volume_data import add_missing_minutes
+from data.combine_price_trades import add_trader_info_to_price_data
+from data.data_split import balance_data, split_data
+from data.feature_engineering import add_features
+from data.label_data import label_data
+from data.pickle_files import save_to_pickle, load_from_pickle
+from data.sliding_window import create_sliding_windows
+from data.solana_trader import get_trader_from_trades
+from dune.data_collection import collect_all_data
+
+
+def prepare_dataset(use_cache: bool):
+    if use_cache and os.path.exists(os.path.join(CACHE_FOLDER, TRAIN_VAL_TEST_FILE + ".pkl")):
+        return load_from_pickle(os.path.join(CACHE_FOLDER, TRAIN_VAL_TEST_FILE + ".pkl"))
+
+    volume_close_1m, top_trader_trades = collect_all_data(use_cache)
+
+    # Get traders
+    traders = get_trader_from_trades(top_trader_trades)
+
+    # Finish volume data if tokens had no tx in some minutes
+    volume_close_1m = add_missing_minutes(volume_close_1m)
+
+    # Add trader info to volume data
+    full_data = add_trader_info_to_price_data(volume_close_1m, traders, top_trader_trades)
+
+    # Add features
+    full_data = add_features(full_data)
+
+    # Split volume data into sliding window chunks of 10min
+    full_data_windows = create_sliding_windows(full_data)
+
+    # Add labels for trading info (good buy or not)
+    labeled_data = label_data(full_data_windows, volume_close_1m, WIN_PERCENTAGE, DRAW_DOWN_PERCENTAGE)
+
+    # Balance data into 50% true / 50% false samples
+    balanced_data = balance_data(labeled_data)
+
+    # Split into train/validation/test set
+    train, val, test = split_data(balanced_data)
+
+    save_to_pickle((train, val, test), os.path.join(CACHE_FOLDER, TRAIN_VAL_TEST_FILE + ".pkl"))
+
+    return train, val, test

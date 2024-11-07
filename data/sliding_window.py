@@ -5,6 +5,19 @@ import pandas as pd
 from constants import TOKEN_COlUMN, TRADING_MINUTE_COLUMN
 
 
+def unroll_data(data: List[pd.DataFrame]) -> pd.DataFrame:
+    """
+    Concatenates a list of DataFrames into a single DataFrame.
+
+    Parameters:
+    - data (List[pd.DataFrame]): List of DataFrames to concatenate.
+
+    Returns:
+    - pd.DataFrame: A single DataFrame containing all rows from the input DataFrames.
+    """
+    return pd.concat(data, ignore_index=True)
+
+
 def contains_non_zero_trade_state(df: pd.DataFrame) -> bool:
     """
     Check if any of the columns with names matching 'trade_(wallet_address)_state'

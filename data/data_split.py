@@ -1,7 +1,22 @@
+import random
 from typing import Tuple, List
 
 import pandas as pd
 from sklearn.model_selection import train_test_split
+
+from constants import LABEL_COLUMN
+
+
+def balance_data(data: List[pd.DataFrame]) -> List[pd.DataFrame]:
+    true_data = [item for item in data if item[LABEL_COLUMN].iloc[0]]
+    false_data = [item for item in data if not item[LABEL_COLUMN].iloc[0]]
+
+    fair_amount = len(true_data) if len(true_data) < len(false_data) else len(false_data)
+
+    result = random.sample(false_data, fair_amount)
+    result.extend(random.sample(true_data, fair_amount))
+
+    return result
 
 
 def split_data(data: List[pd.DataFrame], train_ratio: float = 0.7, val_ratio: float = 0.15, test_ratio: float = 0.15) -> \

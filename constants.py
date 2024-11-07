@@ -4,6 +4,7 @@ SESSION = "mysession"
 CHAT_ID = "chat_id"
 TOPIC_ID = "topic_id"
 DUNE_API_KEY = "DUNE_API_KEY"
+TRAIN_VAL_TEST_FILE = "train_val_test"
 
 WIN_PERCENTAGE = 100
 DRAW_DOWN_PERCENTAGE = 50
@@ -30,3 +31,5 @@ PERCENTAGE_OF_1_MILLION_MARKET_CAP = 'percentage_of_1_million_market_cap'
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 CACHE_FOLDER = os.path.join(ROOT_DIR, "cache")
+
+BIN_AMOUNT_KEY = "bin_amount"

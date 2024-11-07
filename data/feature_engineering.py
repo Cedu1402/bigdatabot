@@ -1,9 +1,46 @@
+﻿from typing import List, Dict
+
 import pandas as pd
 
 from constants import TOKEN_COlUMN, TRADING_MINUTE_COLUMN, PRICE_COLUMN, PRICE_PCT_CHANGE, \
     SOL_PRICE, MARKET_CAP_USD, PERCENTAGE_OF_1_MILLION_MARKET_CAP, BUY_VOLUME_COLUMN, \
     SELL_VOLUME_COLUMN, TOTAL_VOLUME_COLUMN, BUY_VOLUME_PCT_CHANGE, SELL_VOLUME_PCT_CHANGE, TOTAL_VOLUME_PCT_CHANGE
 
+
+def bin_data(data: List[pd.DataFrame], columns: List[str], bin_edges: Dict[str, List[float]]) -> List[pd.DataFrame]:
+    binned_temp_col = "binned"
+    for df in data:
+        for column in columns:
+            if column in df.columns and column in bin_edges:
+                # Use pd.cut with custom bin edges
+                df[binned_temp_col] = pd.cut(
+                    df[column],
+                    bins=bin_edges[column],
+                    labels=False,
+                    include_lowest=True
+                )
+
+                # Fill NaNs for out-of-range values
+                df[binned_temp_col] = df[binned_temp_col].fillna(
+                    0  # Assigns to lowest bin for out-of-range low values
+                ).astype(int)
+
+                # Clip out-of-range high values to the maximum bin index
+                df[binned_temp_col] = df[binned_temp_col].where(df[column] >= bin_edges[column][-1], len(bin_edges[column]) - 1)
+
+                df[column] = df[binned_temp_col].astype(int)
+
+    return data
+
+
+def compute_bin_edges(combined_data: pd.DataFrame, columns: List[str], n_bins: int) -> Dict:
+    bin_edges = dict()
+    """Compute bin edges based on full dataset"""
+    for column in columns:
+        if column in combined_data.columns:
+            # Calculate bin edges for each specified column
+            bin_edges[column] = pd.qcut(combined_data[column], n_bins, retbins=True, duplicates='drop')[1]
+    return bin_edges
 
 def get_token_price_in_usd(tokens_per_sol, sol_price_usd):
     """
@@ -66,11 +103,15 @@ def add_features(data: pd.DataFrame) -> pd.DataFrame:
 
     for token in data[TOKEN_COlUMN].unique():
         token_mask = (data[TOKEN_COlUMN] == token)
-        data.loc[token_mask, PRICE_PCT_CHANGE] = data.loc[token_mask, PRICE_COLUMN].pct_change(fill_method=None).fillna(0)
+        data.loc[token_mask, PRICE_PCT_CHANGE] = data.loc[token_mask, PRICE_COLUMN].pct_change(fill_method=None).fillna(
+            0)
 
-        data.loc[token_mask, BUY_VOLUME_PCT_CHANGE] = data.loc[token_mask, BUY_VOLUME_COLUMN].pct_change(fill_method=None).fillna(0)
-        data.loc[token_mask, SELL_VOLUME_PCT_CHANGE] = data.loc[token_mask, SELL_VOLUME_COLUMN].pct_change(fill_method=None).fillna(0)
-        data.loc[token_mask, TOTAL_VOLUME_PCT_CHANGE] = data.loc[token_mask, TOTAL_VOLUME_COLUMN].pct_change(fill_method=None).fillna(0)
+        data.loc[token_mask, BUY_VOLUME_PCT_CHANGE] = data.loc[token_mask, BUY_VOLUME_COLUMN].pct_change(
+            fill_method=None).fillna(0)
+        data.loc[token_mask, SELL_VOLUME_PCT_CHANGE] = data.loc[token_mask, SELL_VOLUME_COLUMN].pct_change(
+            fill_method=None).fillna(0)
+        data.loc[token_mask, TOTAL_VOLUME_PCT_CHANGE] = data.loc[token_mask, TOTAL_VOLUME_COLUMN].pct_change(
+            fill_method=None).fillna(0)
 
         data.loc[token_mask, PERCENTAGE_OF_1_MILLION_MARKET_CAP] = data[MARKET_CAP_USD] / 1_000_000
 
