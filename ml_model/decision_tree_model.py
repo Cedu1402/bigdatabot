@@ -5,7 +5,7 @@ from sklearn.metrics import accuracy_score, f1_score
 from sklearn.tree import DecisionTreeClassifier
 
 from constants import BIN_AMOUNT_KEY, PRICE_PCT_CHANGE, BUY_VOLUME_PCT_CHANGE, SELL_VOLUME_PCT_CHANGE, \
-    TOTAL_VOLUME_PCT_CHANGE, PERCENTAGE_OF_1_MILLION_MARKET_CAP, RANDOM_STATE
+    TOTAL_VOLUME_PCT_CHANGE, PERCENTAGE_OF_1_MILLION_MARKET_CAP, RANDOM_SEED
 from data.data_split import get_x_y_data, flatten_dataframe_list
 from data.feature_engineering import compute_bin_edges, bin_data
 from data.model_data import remove_columns
@@ -26,7 +26,7 @@ class DecisionTreeModel(BaseModel):
         self.model = None
 
     def build_model(self):
-        self.model = DecisionTreeClassifier(random_state=RANDOM_STATE)
+        self.model = DecisionTreeClassifier(random_state=RANDOM_SEED)
 
     def prepare_data(self, train: List[pd.DataFrame], val: List[pd.DataFrame], test: List[pd.DataFrame]) -> (
             Tuple)[List[pd.DataFrame], List, List[pd.DataFrame], List, List[pd.DataFrame], List]:
