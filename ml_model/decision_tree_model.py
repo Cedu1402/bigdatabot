@@ -1,17 +1,19 @@
+import os.path
 from typing import List, Dict, Tuple
 
 import pandas as pd
-from sklearn.metrics import accuracy_score, f1_score
 from sklearn.tree import DecisionTreeClassifier
 
 from constants import BIN_AMOUNT_KEY, PRICE_PCT_CHANGE, BUY_VOLUME_PCT_CHANGE, SELL_VOLUME_PCT_CHANGE, \
-    TOTAL_VOLUME_PCT_CHANGE, PERCENTAGE_OF_1_MILLION_MARKET_CAP, RANDOM_SEED
+    TOTAL_VOLUME_PCT_CHANGE, PERCENTAGE_OF_1_MILLION_MARKET_CAP, RANDOM_SEED, MODEL_FOLDER
 from data.data_split import get_x_y_data, flatten_dataframe_list
 from data.feature_engineering import compute_bin_edges, bin_data
 from data.model_data import remove_columns
+from data.pickle_files import save_to_pickle
 from data.sliding_window import unroll_data
-from log import logger
 from ml_model.base_model import BaseModel
+from ml_model.load_model import load_model
+from ml_model.model_evaluation import print_evaluation
 
 
 class DecisionTreeModel(BaseModel):
@@ -55,9 +57,14 @@ class DecisionTreeModel(BaseModel):
         # evaluate
         val_x = flatten_dataframe_list(val_x)
         val_predictions = self.model.predict(val_x)
-        accuracy = accuracy_score(val_y, val_predictions)
-        f1 = f1_score(val_y, val_predictions, average='weighted')
+        print_evaluation(val_y, val_predictions)
 
-        logger.info(
-            f"Validation Results - Accuracy: {accuracy:.4f}, F1 Score (Weighted): {f1:.4f}"
-        )
+    def save(self):
+        save_to_pickle(self.model, os.path.join(MODEL_FOLDER, "simple_tree.pkl"))
+
+    def load_model(self, name):
+        self.model = load_model(name)
+
+    def predict(self, data):
+        data = flatten_dataframe_list(data)
+        return self.model.predict(data)

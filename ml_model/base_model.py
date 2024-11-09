@@ -27,3 +27,9 @@ class BaseModel:
 
     def train(self, train_x: List[pd.DataFrame], train_y: List, val_x: List[pd.DataFrame], val_y: List):
         return
+
+    def save(self):
+        return
+
+    def load_model(self, name):
+        return

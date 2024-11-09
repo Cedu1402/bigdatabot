@@ -1,6 +1,9 @@
 import os
+from typing import List
 
-from constants import WIN_PERCENTAGE, DRAW_DOWN_PERCENTAGE, CACHE_FOLDER, TRAIN_VAL_TEST_FILE
+import pandas as pd
+
+from constants import WIN_PERCENTAGE, DRAW_DOWN_PERCENTAGE, CACHE_FOLDER, TRAIN_VAL_TEST_FILE, VALIDATION_FILE
 from data.close_volume_data import add_missing_minutes
 from data.combine_price_trades import add_trader_info_to_price_data
 from data.data_split import balance_data, split_data
@@ -9,15 +12,10 @@ from data.label_data import label_data
 from data.pickle_files import save_to_pickle, load_from_pickle
 from data.sliding_window import create_sliding_windows
 from data.solana_trader import get_trader_from_trades
-from dune.data_collection import collect_all_data
+from dune.data_collection import collect_all_data, collect_validation_data
 
 
-def prepare_dataset(use_cache: bool):
-    if use_cache and os.path.exists(os.path.join(CACHE_FOLDER, TRAIN_VAL_TEST_FILE + ".pkl")):
-        return load_from_pickle(os.path.join(CACHE_FOLDER, TRAIN_VAL_TEST_FILE + ".pkl"))
-
-    volume_close_1m, top_trader_trades = collect_all_data(use_cache)
-    print(volume_close_1m.describe())
+def prepare_steps(top_trader_trades: pd.DataFrame, volume_close_1m: pd.DataFrame) -> List[pd.DataFrame]:
     # Get traders
     traders = get_trader_from_trades(top_trader_trades)
 
@@ -35,6 +33,26 @@ def prepare_dataset(use_cache: bool):
 
     # Add labels for trading info (good buy or not)
     labeled_data = label_data(full_data_windows, volume_close_1m, WIN_PERCENTAGE, DRAW_DOWN_PERCENTAGE)
+
+    return labeled_data
+
+
+def prepare_validation_data(use_cache: bool):
+    if use_cache and os.path.exists(os.path.join(CACHE_FOLDER, VALIDATION_FILE + ".pkl")):
+        return load_from_pickle(os.path.join(CACHE_FOLDER, VALIDATION_FILE + ".pkl"))
+
+    volume_close_1m, top_trader_trades = collect_validation_data(use_cache)
+    labeled_data = prepare_steps(volume_close_1m, top_trader_trades)
+    save_to_pickle(labeled_data, os.path.join(CACHE_FOLDER, VALIDATION_FILE + ".pkl"))
+    return labeled_data
+
+
+def prepare_dataset(use_cache: bool):
+    if use_cache and os.path.exists(os.path.join(CACHE_FOLDER, TRAIN_VAL_TEST_FILE + ".pkl")):
+        return load_from_pickle(os.path.join(CACHE_FOLDER, TRAIN_VAL_TEST_FILE + ".pkl"))
+
+    volume_close_1m, top_trader_trades = collect_all_data(use_cache)
+    labeled_data = prepare_steps(volume_close_1m, top_trader_trades)
 
     # Split into train/validation/test set
     train, val, test = split_data(labeled_data)
