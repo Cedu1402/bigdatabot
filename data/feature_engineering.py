@@ -1,10 +1,12 @@
 ﻿from typing import List, Dict
 
+import numpy as np
 import pandas as pd
 
 from constants import TOKEN_COlUMN, TRADING_MINUTE_COLUMN, PRICE_COLUMN, PRICE_PCT_CHANGE, \
     SOL_PRICE, MARKET_CAP_USD, PERCENTAGE_OF_1_MILLION_MARKET_CAP, BUY_VOLUME_COLUMN, \
     SELL_VOLUME_COLUMN, TOTAL_VOLUME_COLUMN, BUY_VOLUME_PCT_CHANGE, SELL_VOLUME_PCT_CHANGE, TOTAL_VOLUME_PCT_CHANGE
+from log import logger
 
 
 def bin_data(data: List[pd.DataFrame], columns: List[str], bin_edges: Dict[str, List[float]]) -> List[pd.DataFrame]:
@@ -26,7 +28,8 @@ def bin_data(data: List[pd.DataFrame], columns: List[str], bin_edges: Dict[str, 
                 ).astype(int)
 
                 # Clip out-of-range high values to the maximum bin index
-                df[binned_temp_col] = df[binned_temp_col].where(df[column] >= bin_edges[column][-1], len(bin_edges[column]) - 1)
+                df[binned_temp_col] = df[binned_temp_col].where(df[column] >= bin_edges[column][-1],
+                                                                len(bin_edges[column]) - 1)
 
                 df[column] = df[binned_temp_col].astype(int)
 
@@ -39,8 +42,17 @@ def compute_bin_edges(combined_data: pd.DataFrame, columns: List[str], n_bins: i
     for column in columns:
         if column in combined_data.columns:
             # Calculate bin edges for each specified column
-            bin_edges[column] = pd.qcut(combined_data[column], n_bins, retbins=True, duplicates='drop')[1]
+            try:
+                # Attempt to use qcut
+                bin_edges[column] = pd.qcut(combined_data[column], n_bins, retbins=True, duplicates='drop')[1]
+            except ValueError as e:
+                logger.error(f"Warning: Falling back to pd.cut for column '{column}' due to error: {e}")
+
+                # Fallback to pd.cut if qcut fails
+                bin_edges[column] = pd.cut(combined_data[column], bins=n_bins, retbins=True, duplicates='drop')[1]
+
     return bin_edges
+
 
 def get_token_price_in_usd(tokens_per_sol, sol_price_usd):
     """
@@ -88,6 +100,12 @@ def get_market_cap_from_tokens_per_sol_and_sol_price(tokens_per_sol, sol_price_u
     return market_cap_usd
 
 
+def calculate_pct_change(data, column, token_mask):
+    """Calculate percentage change for a column, handle infinities, and fill NaNs."""
+    pct_change = data.loc[token_mask, column].pct_change(fill_method=None)
+    return pct_change.replace([np.inf, -np.inf], np.nan).fillna(0)
+
+
 def add_features(data: pd.DataFrame) -> pd.DataFrame:
     data = data.sort_values(by=[TOKEN_COlUMN, TRADING_MINUTE_COLUMN])  # Sort by token and then by time
 
@@ -103,15 +121,10 @@ def add_features(data: pd.DataFrame) -> pd.DataFrame:
 
     for token in data[TOKEN_COlUMN].unique():
         token_mask = (data[TOKEN_COlUMN] == token)
-        data.loc[token_mask, PRICE_PCT_CHANGE] = data.loc[token_mask, PRICE_COLUMN].pct_change(fill_method=None).fillna(
-            0)
-
-        data.loc[token_mask, BUY_VOLUME_PCT_CHANGE] = data.loc[token_mask, BUY_VOLUME_COLUMN].pct_change(
-            fill_method=None).fillna(0)
-        data.loc[token_mask, SELL_VOLUME_PCT_CHANGE] = data.loc[token_mask, SELL_VOLUME_COLUMN].pct_change(
-            fill_method=None).fillna(0)
-        data.loc[token_mask, TOTAL_VOLUME_PCT_CHANGE] = data.loc[token_mask, TOTAL_VOLUME_COLUMN].pct_change(
-            fill_method=None).fillna(0)
+        data.loc[token_mask, PRICE_PCT_CHANGE] = calculate_pct_change(data, PRICE_COLUMN, token_mask)
+        data.loc[token_mask, BUY_VOLUME_PCT_CHANGE] = calculate_pct_change(data, BUY_VOLUME_COLUMN, token_mask)
+        data.loc[token_mask, SELL_VOLUME_PCT_CHANGE] = calculate_pct_change(data, SELL_VOLUME_COLUMN, token_mask)
+        data.loc[token_mask, TOTAL_VOLUME_PCT_CHANGE] = calculate_pct_change(data, TOTAL_VOLUME_COLUMN, token_mask)
 
         data.loc[token_mask, PERCENTAGE_OF_1_MILLION_MARKET_CAP] = data[MARKET_CAP_USD] / 1_000_000
 

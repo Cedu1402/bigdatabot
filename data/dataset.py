@@ -17,7 +17,7 @@ def prepare_dataset(use_cache: bool):
         return load_from_pickle(os.path.join(CACHE_FOLDER, TRAIN_VAL_TEST_FILE + ".pkl"))
 
     volume_close_1m, top_trader_trades = collect_all_data(use_cache)
-
+    print(volume_close_1m.describe())
     # Get traders
     traders = get_trader_from_trades(top_trader_trades)
 
@@ -36,11 +36,11 @@ def prepare_dataset(use_cache: bool):
     # Add labels for trading info (good buy or not)
     labeled_data = label_data(full_data_windows, volume_close_1m, WIN_PERCENTAGE, DRAW_DOWN_PERCENTAGE)
 
-    # Balance data into 50% true / 50% false samples
-    balanced_data = balance_data(labeled_data)
-
     # Split into train/validation/test set
-    train, val, test = split_data(balanced_data)
+    train, val, test = split_data(labeled_data)
+
+    # Balance data into 50% true / 50% false samples
+    train = balance_data(train)
 
     save_to_pickle((train, val, test), os.path.join(CACHE_FOLDER, TRAIN_VAL_TEST_FILE + ".pkl"))
 

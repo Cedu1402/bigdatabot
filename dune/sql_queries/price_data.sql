@@ -12,7 +12,7 @@
     FROM
       dex_solana.trades AS t
     JOIN tokens as tk on t.token_bought_mint_address = tk.account_mint
-    WHERE t.block_time BETWEEN tk.call_block_time AND tk.call_block_time + INTERVAL '{{min_token_age_h}}' hour
+    WHERE token_sold_mint_address = 'So11111111111111111111111111111111111111112' AND t.block_time BETWEEN tk.call_block_time AND tk.call_block_time + INTERVAL '{{min_token_age_h}}' hour
     GROUP BY
       token_bought_mint_address,
       DATE_TRUNC('minute', block_time)
@@ -26,7 +26,7 @@
     FROM
       dex_solana.trades AS t
     JOIN tokens as tk on t.token_sold_mint_address = tk.account_mint
-    WHERE t.block_time BETWEEN tk.call_block_time AND tk.call_block_time + INTERVAL '{{min_token_age_h}}' hour
+    WHERE token_bought_mint_address = 'So11111111111111111111111111111111111111112' AND t.block_time BETWEEN tk.call_block_time AND tk.call_block_time + INTERVAL '{{min_token_age_h}}' hour
     GROUP BY
       token_sold_mint_address,
       DATE_TRUNC('minute', block_time)
@@ -48,7 +48,7 @@
     FROM
       dex_solana.trades AS t
     JOIN tokens as tk on t.token_bought_mint_address = tk.account_mint
-    WHERE t.block_time BETWEEN tk.call_block_time AND tk.call_block_time + INTERVAL '{{min_token_age_h}}' hour
+    WHERE token_sold_mint_address = 'So11111111111111111111111111111111111111112' AND t.block_time BETWEEN tk.call_block_time AND tk.call_block_time + INTERVAL '{{min_token_age_h}}' hour
   ),
   last_sell_price AS (
     SELECT
@@ -67,9 +67,10 @@
     FROM
       dex_solana.trades AS t
     JOIN tokens as tk on t.token_sold_mint_address = tk.account_mint
-    WHERE t.block_time BETWEEN tk.call_block_time AND tk.call_block_time + INTERVAL '{{min_token_age_h}}' hour
+    WHERE token_bought_mint_address = 'So11111111111111111111111111111111111111112' AND t.block_time BETWEEN tk.call_block_time AND tk.call_block_time + INTERVAL '{{min_token_age_h}}' hour
   )
 SELECT
+  sv.token,
   bv.trading_minute,
   bv.volume AS buy_volume,
   sv.volume AS sell_volume,
