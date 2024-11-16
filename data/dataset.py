@@ -65,7 +65,6 @@ def prepare_validation_data(use_cache: bool, columns: List[str]):
     labeled_data = prepare_steps(top_trader_trades, volume_close_1m)
     logger.info("Add inactive traders")
     labeled_data = add_inactive_traders(top_trader_trades, columns, labeled_data)
-
     logger.info("Cache prepared data")
     save_to_pickle(labeled_data, os.path.join(CACHE_FOLDER, VALIDATION_FILE + ".pkl"))
     return labeled_data
