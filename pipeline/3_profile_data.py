@@ -9,6 +9,8 @@ from data.sliding_window import unroll_data
 
 def profile_data(use_cache: bool):
     train, val, test = prepare_dataset(use_cache)
+    validation = prepare_dataset(use_cache)
+
     train_full = unroll_data(train)
 
     print(train_full.describe())

@@ -1,11 +1,5 @@
   WITH tokens  as (
-      SELECT pcc.account_mint, MIN(pcc.call_block_time) as call_block_time
-        FROM dex_solana.trades AS t
-            JOIN pumpdotfun_solana.pump_call_create as pcc on pcc.account_mint = t.token_bought_mint_address
-            JOIN query_4217799 as q4 on t.trader_id = q4.trader_id
-        WHERE pcc.call_block_time BETWEEN cast('{{time_from}}' as timestamp) AND  NOW() - INTERVAL '{{min_token_age_h}}' hour
-             AND t.block_time BETWEEN pcc.call_block_time AND pcc.call_block_time + INTERVAL '{{min_token_age_h}}' hour
-        GROUP BY pcc.account_mint
+      SELECT * FROM dune.testnet3232.result_solana_current_pump_dot_fun_tokens
   ),
   buy_volume AS (
     SELECT

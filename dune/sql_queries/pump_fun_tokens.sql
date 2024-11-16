@@ -1,10 +1,10 @@
 WITH profitable_traders AS (
     SELECT trader_id
-    FROM dune.testnet32.result_top_pump_dot_fun_trader
+    FROM dune.testnet3232.result_solana_pump_dot_fun_top_trader
 ),
 trades as (
     SELECT t.account_mint
-    FROM query_4208224 as t
+    FROM query_4284948 as t
     JOIN profitable_traders as pt  on pt.trader_id = t.trader_id
 )
 SELECT * from trades

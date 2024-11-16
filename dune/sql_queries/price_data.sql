@@ -1,7 +1,7 @@
   WITH tokens  as (
       SELECT q4.account_mint, pcc.call_block_time
         FROM pumpdotfun_solana.pump_call_create as pcc
-          JOIN query_4229122 as q4 on q4.account_mint = pcc.account_mint
+          JOIN dune.testnet3232.result_solanan_pump_dot_fun_traded_tokens as q4 on q4.account_mint = pcc.account_mint
   ),
   buy_volume AS (
     SELECT

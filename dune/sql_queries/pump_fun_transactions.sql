@@ -11,9 +11,9 @@ WITH filtered_calls AS (SELECT account_mint,
                            1                         as buy
                     FROM dex_solana.trades as t
                              JOIN filtered_calls as fc on fc.account_mint = t.token_bought_mint_address
-                             JOIN dune.testnet32.result_traded_tokens as rtt
+                             JOIN dune.testnet3232.result_solanan_pump_dot_fun_traded_tokens as rtt
                                   on rtt.account_mint = t.token_bought_mint_address
-                             JOIN dune.testnet32.result_top_pump_dot_fun_trader as tt on tt.trader_id = t.trader_id
+                             JOIN dune.testnet3232.result_solana_pump_dot_fun_top_trader as tt on tt.trader_id = t.trader_id
                     WHERE token_sold_mint_address = 'So11111111111111111111111111111111111111112'
                       AND t.block_time >= fc.call_block_time
                       AND t.block_time <= fc.call_block_time + INTERVAL '{{min_token_age_h}}' hour
@@ -26,9 +26,9 @@ WITH filtered_calls AS (SELECT account_mint,
                             0                       as buy
                      FROM dex_solana.trades as t
                               JOIN filtered_calls as fc on fc.account_mint = t.token_sold_mint_address
-                              JOIN dune.testnet32.result_traded_tokens as rtt
+                              JOIN dune.testnet3232.result_solanan_pump_dot_fun_traded_tokens as rtt
                                    on rtt.account_mint = t.token_sold_mint_address
-                              JOIN dune.testnet32.result_top_pump_dot_fun_trader as tt on tt.trader_id = t.trader_id
+                              JOIN dune.testnet3232.result_solana_pump_dot_fun_top_trader as tt on tt.trader_id = t.trader_id
                      WHERE token_bought_mint_address = 'So11111111111111111111111111111111111111112'
                        AND t.block_time >= fc.call_block_time
                        AND t.block_time <= fc.call_block_time + INTERVAL '{{min_token_age_h}}' hour

@@ -10,30 +10,21 @@ from log import logger
 
 
 def bin_data(data: List[pd.DataFrame], columns: List[str], bin_edges: Dict[str, List[float]]) -> List[pd.DataFrame]:
-    binned_temp_col = "binned"
-    for df in data:
-        for column in columns:
-            if column in df.columns and column in bin_edges:
-                # Use pd.cut with custom bin edges
-                df[binned_temp_col] = pd.cut(
-                    df[column],
-                    bins=bin_edges[column],
-                    labels=False,
-                    include_lowest=True
-                )
+    # Step 1: Add an identifier to each DataFrame and concatenate them
+    concatenated = pd.concat([df.assign(_df_index=i) for i, df in enumerate(data)], ignore_index=True)
 
-                # Fill NaNs for out-of-range values
-                df[binned_temp_col] = df[binned_temp_col].fillna(
-                    0  # Assigns to lowest bin for out-of-range low values
-                ).astype(int)
+    # Step 2: Apply binning for each specified column in the concatenated DataFrame
+    for column in columns:
+        if column in concatenated.columns and column in bin_edges:
+            concatenated[column] = np.digitize(concatenated[column],
+                                               bins=bin_edges[column],
+                                               right=False).clip(1, len(bin_edges[column]))
 
-                # Clip out-of-range high values to the maximum bin index
-                df[binned_temp_col] = df[binned_temp_col].where(df[column] >= bin_edges[column][-1],
-                                                                len(bin_edges[column]) - 1)
+    # Step 3: Split concatenated DataFrame back into the original list of DataFrames
+    result = [concatenated[concatenated["_df_index"] == i].drop(columns="_df_index").reset_index(drop=True) for i in
+              range(len(data))]
 
-                df[column] = df[binned_temp_col].astype(int)
-
-    return data
+    return result
 
 
 def compute_bin_edges(combined_data: pd.DataFrame, columns: List[str], n_bins: int) -> Dict:
@@ -108,10 +99,6 @@ def calculate_pct_change(data, column, token_mask):
 
 def add_features(data: pd.DataFrame) -> pd.DataFrame:
     data = data.sort_values(by=[TOKEN_COlUMN, TRADING_MINUTE_COLUMN])  # Sort by token and then by time
-
-    data[PRICE_COLUMN] = pd.to_numeric(data[PRICE_COLUMN], errors='coerce')
-    data[BUY_VOLUME_COLUMN] = pd.to_numeric(data[BUY_VOLUME_COLUMN], errors='coerce')
-    data[SELL_VOLUME_COLUMN] = pd.to_numeric(data[SELL_VOLUME_COLUMN], errors='coerce')
 
     data[MARKET_CAP_USD] = data.apply(
         lambda row: get_market_cap_from_tokens_per_sol_and_sol_price(float(row[PRICE_COLUMN]), SOL_PRICE),

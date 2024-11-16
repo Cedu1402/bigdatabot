@@ -1,7 +1,8 @@
 WITH profitable AS (
     SELECT *,
            CASE WHEN profit_loss > 0 THEN 1 ELSE 0 END AS profitable
-    FROM query_4208224
+    FROM query_4284948
+
 ),
 aggregated AS (
     SELECT
@@ -15,7 +16,6 @@ aggregated AS (
     FROM profitable
     GROUP BY trader_id
 )
-
 SELECT a.*
 FROM aggregated as a
 JOIN solana_utils.latest_balances as lb on lb.address = a.trader_id
