@@ -29,12 +29,13 @@ LABEL_COLUMN = "label"
 BUY_VOLUME_COLUMN = 'buy_volume'
 SELL_VOLUME_COLUMN = 'sell_volume'
 TOTAL_VOLUME_COLUMN = 'total_volume'
-SOL_PRICE = 150
+SOL_PRICE = 170
 MARKET_CAP_USD = 'market_cap_usd'
 PERCENTAGE_OF_1_MILLION_MARKET_CAP = 'percentage_of_1_million_market_cap'
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 CACHE_FOLDER = os.path.join(ROOT_DIR, "cache")
 MODEL_FOLDER = os.path.join(ROOT_DIR, "save_models")
+CONFIG_2_FILE = os.path.join(ROOT_DIR, "pipeline", "config", "2_prepare_data_sets.yaml")
 
 BIN_AMOUNT_KEY = "bin_amount"

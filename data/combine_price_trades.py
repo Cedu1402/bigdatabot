@@ -31,6 +31,25 @@ class InvalidPositionError(TraderStateError):
         super().__init__(f"Invalid {position_name}: {value}")
 
 
+def filter_rows_before_first_action(result: pd.DataFrame) -> pd.DataFrame:
+    """
+    Drop all rows where all traders have NO_ACTION for a specific token.
+
+    Args:
+        result (pd.DataFrame): The DataFrame containing trader states for each token.
+
+    Returns:
+        pd.DataFrame: The filtered DataFrame with rows dropped where all traders have NO_ACTION for a token.
+    """
+    # Identify rows where all traders have NO_ACTION state
+    no_action_mask = result.filter(like='state').eq(TraderState.NO_ACTION).all(axis=1)
+
+    # Drop rows where all traders have NO_ACTION
+    result = result[~no_action_mask]
+
+    return result
+
+
 def prepare_timestamps(price_data: pd.DataFrame, trades: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Prepare and standardize timestamp formats."""
 
@@ -178,4 +197,7 @@ def add_trader_info_to_price_data(
                 cumulative_positions
             )
 
-    return result.sort_values([TOKEN_COlUMN, TRADING_MINUTE_COLUMN])
+    result.sort_values([TOKEN_COlUMN, TRADING_MINUTE_COLUMN])
+    result = filter_rows_before_first_action(result)
+
+    return result

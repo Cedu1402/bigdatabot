@@ -2,10 +2,8 @@ import unittest
 from datetime import datetime
 
 import pandas as pd
-from adodbapi.ado_consts import adCurrency
 
 from constants import TOKEN_COlUMN, PRICE_COLUMN, TRADING_MINUTE_COLUMN
-from data.label_data import label_window
 from data.model_data import order_columns
 
 
@@ -27,5 +25,4 @@ class TestRunner(unittest.TestCase):
 
         # Assert
         actual_columns = list(actual[0].columns)
-        actual_columns.remove(0)
         self.assertEqual(expected_order, actual_columns)

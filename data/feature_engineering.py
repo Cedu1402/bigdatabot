@@ -93,8 +93,11 @@ def get_market_cap_from_tokens_per_sol_and_sol_price(tokens_per_sol, sol_price_u
 
 def calculate_pct_change(data, column, token_mask):
     """Calculate percentage change for a column, handle infinities, and fill NaNs."""
-    pct_change = data.loc[token_mask, column].pct_change(fill_method=None)
-    return pct_change.replace([np.inf, -np.inf], np.nan).fillna(0)
+    pct_change = data.loc[token_mask, column].replace(0, np.nan).pct_change(fill_method=None)
+    if pct_change.isin([np.inf, -np.inf]).all():
+        logger.error("All values are inf or -inf")
+
+    return pct_change.replace([np.inf, -np.inf], np.nan).fillna(0.0).astype('float64')
 
 
 def add_features(data: pd.DataFrame) -> pd.DataFrame:

@@ -1,13 +1,15 @@
 from dotenv import load_dotenv
 
-from constants import BIN_AMOUNT_KEY, RANDOM_SEED
+from config.config_reader import load_yaml_to_dict
+from constants import BIN_AMOUNT_KEY, RANDOM_SEED, CONFIG_2_FILE
 from data.dataset import prepare_dataset
 from data.random_seed import set_random_seed
 from ml_model.decision_tree_model import DecisionTreeModel
 
 
 def train_model(use_cache: bool):
-    train, val, test = prepare_dataset(use_cache)
+    data_config = load_yaml_to_dict(CONFIG_2_FILE)
+    train, val, test = prepare_dataset(use_cache, data_config)
     config = dict()
     config[BIN_AMOUNT_KEY]  = 100
     model = DecisionTreeModel(config)
