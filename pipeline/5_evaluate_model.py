@@ -27,7 +27,7 @@ def evaluate_model(use_cache: bool):
     print_evaluation(validation_y, prediction)
 
     # calculate return 1 token only one trade
-    ape_amount = 1000
+    ape_amount = 50
     total_return = 0
     token_bought = list()
     good_trades = 0

@@ -27,6 +27,20 @@ class TestRunner(unittest.IsolatedAsyncioTestCase):
         token, change, holding = get_token_change(tx, user)
 
         # Assert
-        self.assertEqual("AAMN63PjTHM75vDgjbhcYtywdsGnw5aUHcpRRL3Mpump", token)
-        self.assertEqual(1787794.448831, change)
-        self.assertEqual(1787794.448831, holding)
+        self.assertEqual("AAMN63PjTHM75vDgjbhcYtywdsGnw5aUHcpRRL3Mpump", str(token))
+        self.assertEqual(1787794448831, change)
+        self.assertEqual(1787794448831, holding)
+
+    async def test_get_token_change_token_to_token(self):
+        # Arrange
+        signature = "5vaN4H2kr1iMDvxQa4E5mBcBC3Mu55wJ7numxzd7r3F7EXQy1PLNXh5vyQk8CJ5npMXQn3a919eB1UknGvHVYqB"
+        tx_response = await self.client.get_transaction(Signature.from_string(signature),
+                                                        max_supported_transaction_version=0)
+
+        tx = transform_to_encoded_transaction_with_status_meta(tx_response)
+        user = Pubkey.from_string("Eyr5b8Jo3cXQXYBeDQYBoZoyWuVRZDsDdD4x8BSofSYb")
+        # Act
+        result = get_token_change(tx, user)
+
+        # Assert
+        self.assertIsNone(result)

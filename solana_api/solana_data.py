@@ -25,7 +25,7 @@ def transform_to_encoded_transaction_with_status_meta(tx: GetTransactionResp):
     return encoded_tx_with_meta
 
 
-async def get_block_transactions(client: AsyncClient, slot: int) -> Optional[list[EncodedTransactionWithStatusMeta]]:
+async def get_block_transactions(client: AsyncClient, slot: int) -> Optional[List[EncodedTransactionWithStatusMeta]]:
     try:
         block = await client.get_block(slot, max_supported_transaction_version=0)
         return block.value.transactions
@@ -34,21 +34,36 @@ async def get_block_transactions(client: AsyncClient, slot: int) -> Optional[lis
         return []
 
 
-def get_user_trades_in_block(client: AsyncClient, tx_list: List[str]) -> Optional[List[Trade]]:
-    pass
+async def get_user_trades_in_block(user: Pubkey, slot: int, rpc: str) -> List[Trade]:
+    trades = list()
+    try:
+        client = AsyncClient(rpc)
+        tx_list = await get_block_transactions(client, slot)
+        for tx in tx_list:
+            trade = get_user_trade(user, tx)
+            if trade is not None:
+                trades.append(trade)
+        return trades
+    except Exception as e:
+        logging.error("Failed to load trades", e)
+        return trades
 
 
-async def get_user_trade(user: Pubkey, tx: EncodedTransactionWithStatusMeta) -> Optional[Trade]:
-    if not is_user_trade(tx, user):
+def get_user_trade(user: Pubkey, tx: EncodedTransactionWithStatusMeta) -> Optional[Trade]:
+    try:
+        if not is_user_trade(tx, user):
+            return None
+
+        if not (is_raydium_trade(tx) or is_raydium_trade(tx)):
+            return None
+
+        sol_amount = get_sol_change(tx, user)
+        token, token_amount, token_holding_after = get_token_change(tx, user)
+
+        return Trade(token, token_amount, sol_amount, sol_amount < 0, token_holding_after)
+    except Exception as e:
+        logging.error("Failed to load trades", e)
         return None
-
-    if not (is_raydium_trade(tx) or is_raydium_trade(tx)):
-        return None
-
-    sol_amount = get_sol_change(tx, user)
-    token, token_amount, token_holding_after = get_token_change(tx, user)
-
-    return Trade(token, token_amount, sol_amount, sol_amount > 0, token_holding_after)
 
 
 def get_index_of_account(account_keys: List[Pubkey], account: Pubkey) -> Optional[int]:
@@ -58,19 +73,35 @@ def get_index_of_account(account_keys: List[Pubkey], account: Pubkey) -> Optiona
     return items[0]
 
 
-def get_sol_change(tx: EncodedTransactionWithStatusMeta, user: Pubkey) -> Optional[float]:
+def get_sol_change(tx: EncodedTransactionWithStatusMeta, user: Pubkey) -> Optional[int]:
     index = get_index_of_account(tx.transaction.message.account_keys, user)
     pre_sol_balance = tx.meta.pre_balances[index]
     post_sol_balance = tx.meta.post_balances[index]
 
-    change_sol = post_sol_balance - pre_sol_balance
+    change_sol = int(post_sol_balance) - int(pre_sol_balance)
     return change_sol
 
 
-def get_token_change(tx: EncodedTransactionWithStatusMeta, user: Pubkey) -> Optional[Tuple[Pubkey, float, float]]:
-    index = get_index_of_account(tx.transaction.message.account_keys, user)
-    
-    pass
+def get_token_change(tx: EncodedTransactionWithStatusMeta, user: Pubkey) -> Optional[Tuple[Pubkey, int, int]]:
+    user_pre_balances = [
+        balance for balance in tx.meta.pre_token_balances
+        if balance.owner == user
+    ]
+    user_post_balances = [
+        balance for balance in tx.meta.post_token_balances
+        if balance.owner == user
+    ]
+
+    # more than one token involved.
+    if len(user_pre_balances) > 1 or len(user_post_balances) > 1:
+        return None
+
+    post_balance = user_post_balances[0].ui_token_amount.amount if len(user_post_balances) == 1 else 0
+    pre_balance = user_pre_balances[0].ui_token_amount.amount if len(user_pre_balances) == 1 else 0
+    change = int(post_balance) - int(pre_balance)
+    token = user_post_balances[0].mint if len(user_post_balances) == 1 else user_pre_balances[0].mint
+
+    return token, change, int(post_balance)
 
 
 def is_user_trade(tx: EncodedTransactionWithStatusMeta, user: Pubkey) -> bool:

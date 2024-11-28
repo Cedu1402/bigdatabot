@@ -1,0 +1,41 @@
+import json
+import logging
+
+import redis
+from rq import Queue
+from solders.pubkey import Pubkey
+
+from bot.token_watcher import watch_token
+from constants import TOKEN_QUEUE
+from solana_api.solana_data import get_user_trades_in_block
+
+
+async def handle_user_event(event):
+    try:
+        r = redis.Redis()
+        queue = Queue(TOKEN_QUEUE, connection=r)
+
+        trader, data = event
+        logging.info(f"Received change for trader {trader}")
+        slot = data["params"]["result"]["context"]["slot"]
+        trades = await get_user_trades_in_block(Pubkey.from_string(trader), slot, "https://api.mainnet-beta.solana.com")
+        if len(trades) == 0:
+            return
+
+        logging.info(f"Trade found for trader {trader}")
+        for trade in trades:
+            # check if coin is in list already
+            token_exist = r.exists(trade.token)
+            # check if buy was over 1 sol
+            if not token_exist and trade.buy and abs(trade.sol_amount) < 1000000000:
+                continue
+
+            # add coin to list if not
+            await r.lpush(trade.token, json.dumps(trade))
+
+            if not token_exist:
+                # Enqueue a task with some data
+                queue.enqueue(watch_token, trade.token)
+
+    except Exception as e:
+        logging.error("Failed to process message", e)
