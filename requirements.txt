@@ -6,4 +6,7 @@ solders~=0.21.0
 Telethon~=1.37.0
 pandas~=2.2.3
 scikit-learn~=1.5.2
-pyyaml
+pyyaml~=6.0.2
+websockets~=10.4
+numpy~=2.0.2
+ydata-profiling~=4.12.0

@@ -4,6 +4,7 @@ SESSION = "mysession"
 CHAT_ID = "chat_id"
 TOPIC_ID = "topic_id"
 DUNE_API_KEY = "DUNE_API_KEY"
+SOLANA_WS="SOLANA_WS"
 TRAIN_VAL_TEST_FILE = "train_val_test"
 VALIDATION_FILE = "validation"
 RANDOM_SEED = 42
@@ -39,3 +40,5 @@ MODEL_FOLDER = os.path.join(ROOT_DIR, "save_models")
 CONFIG_2_FILE = os.path.join(ROOT_DIR, "pipeline", "config", "2_prepare_data_sets.yaml")
 
 BIN_AMOUNT_KEY = "bin_amount"
+PUMP_DOT_FUN_ID = "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P"
+RAYDIUM_ID = "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK"
