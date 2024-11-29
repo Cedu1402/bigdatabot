@@ -1,4 +1,14 @@
+from datetime import datetime, timedelta
+
 import pandas as pd
+
+
+def get_trading_minute():
+    current_time = datetime.utcnow()
+    trading_minute = current_time - timedelta(seconds=current_time.second,
+                                              microseconds=current_time.microsecond,
+                                              minutes=1)
+    return trading_minute
 
 
 def add_missing_minutes(data: pd.DataFrame) -> pd.DataFrame:

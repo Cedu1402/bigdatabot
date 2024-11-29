@@ -4,6 +4,7 @@ from datetime import datetime
 
 @dataclass
 class Trade:
+    trader: str
     token: str
     token_amount: float
     sol_amount: float

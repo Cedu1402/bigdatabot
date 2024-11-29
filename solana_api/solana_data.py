@@ -66,7 +66,7 @@ def get_user_trade(user: Pubkey, tx: EncodedTransactionWithStatusMeta, block_tim
         sol_amount = get_sol_change(tx, user)
         token, token_amount, token_holding_after = get_token_change(tx, user)
 
-        return Trade(token, token_amount, sol_amount, sol_amount < 0, token_holding_after,
+        return Trade(str(user), token, token_amount, sol_amount, sol_amount < 0, token_holding_after,
                      block_time_stamp_to_datetime(block_time))
     except Exception as e:
         logging.error("Failed to load trades", e)
