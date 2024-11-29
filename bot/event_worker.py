@@ -1,13 +1,15 @@
 import json
 import logging
+from datetime import datetime
 
 import redis
 from rq import Queue
 from solders.pubkey import Pubkey
 
+from birdeye_api.token_creation_endpoint import get_token_create_time
 from bot.token_watcher import watch_token
-from constants import TOKEN_QUEUE
-from solana_api.solana_data import get_user_trades_in_block
+from constants import TOKEN_QUEUE, CREATE_PREFIX, TRADE_PREFIX
+from solana_api.solana_data import get_user_trades_in_block, get_token_creation_date
 
 
 async def handle_user_event(event):
@@ -30,8 +32,16 @@ async def handle_user_event(event):
             if not token_exist and trade.buy and abs(trade.sol_amount) < 1000000000:
                 continue
 
+            token_create_time = r.get(CREATE_PREFIX + trade.token)
+            if token_create_time is None:
+                token_create_time = await get_token_create_time(trade.token)
+                await r.set(CREATE_PREFIX + trade.token, token_create_time.isoformat())
+
+            if (datetime.utcnow() - token_create_time).total_seconds() > 120 * 60:
+                continue
+
             # add coin to list if not
-            await r.lpush(trade.token, json.dumps(trade))
+            await r.lpush(TRADE_PREFIX + trade.token, json.dumps(trade))
 
             if not token_exist:
                 # Enqueue a task with some data

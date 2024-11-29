@@ -41,7 +41,7 @@ def evaluate_model(use_cache: bool):
         if token not in token_bought:
             token_bought.append(token)
             if validation_y[index]:
-                total_return += ape_amount
+                total_return += ape_amount - (ape_amount / 10)
                 good_trades += 1
             else:
                 total_return += -(ape_amount / 2)

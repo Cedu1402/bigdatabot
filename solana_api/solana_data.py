@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from typing import Optional, Tuple, List
 
 from solana.rpc.async_api import AsyncClient
@@ -8,6 +9,10 @@ from solders.transaction_status import EncodedTransactionWithStatusMeta
 
 from constants import PUMP_DOT_FUN_ID
 from solana_api.trade_model import Trade
+
+
+def block_time_stamp_to_datetime(timestamp: int) -> datetime:
+    return datetime.utcfromtimestamp(timestamp)
 
 
 def transform_to_encoded_transaction_with_status_meta(tx: GetTransactionResp):
@@ -25,22 +30,23 @@ def transform_to_encoded_transaction_with_status_meta(tx: GetTransactionResp):
     return encoded_tx_with_meta
 
 
-async def get_block_transactions(client: AsyncClient, slot: int) -> Optional[List[EncodedTransactionWithStatusMeta]]:
+async def get_block_transactions(client: AsyncClient, slot: int) -> Optional[
+    Tuple[int, List[EncodedTransactionWithStatusMeta]]]:
     try:
         block = await client.get_block(slot, max_supported_transaction_version=0)
-        return block.value.transactions
+        return block.value.block_time, block.value.transactions
     except Exception as e:
         logging.error("Failed to load block", e)
-        return []
+        return 0, []
 
 
 async def get_user_trades_in_block(user: Pubkey, slot: int, rpc: str) -> List[Trade]:
     trades = list()
     try:
         client = AsyncClient(rpc)
-        tx_list = await get_block_transactions(client, slot)
+        block_time, tx_list = await get_block_transactions(client, slot)
         for tx in tx_list:
-            trade = get_user_trade(user, tx)
+            trade = get_user_trade(user, tx, block_time)
             if trade is not None:
                 trades.append(trade)
         return trades
@@ -49,7 +55,7 @@ async def get_user_trades_in_block(user: Pubkey, slot: int, rpc: str) -> List[Tr
         return trades
 
 
-def get_user_trade(user: Pubkey, tx: EncodedTransactionWithStatusMeta) -> Optional[Trade]:
+def get_user_trade(user: Pubkey, tx: EncodedTransactionWithStatusMeta, block_time: int) -> Optional[Trade]:
     try:
         if not is_user_trade(tx, user):
             return None
@@ -60,7 +66,8 @@ def get_user_trade(user: Pubkey, tx: EncodedTransactionWithStatusMeta) -> Option
         sol_amount = get_sol_change(tx, user)
         token, token_amount, token_holding_after = get_token_change(tx, user)
 
-        return Trade(token, token_amount, sol_amount, sol_amount < 0, token_holding_after)
+        return Trade(token, token_amount, sol_amount, sol_amount < 0, token_holding_after,
+                     block_time_stamp_to_datetime(block_time))
     except Exception as e:
         logging.error("Failed to load trades", e)
         return None
