@@ -1,4 +1,5 @@
 import logging
+from asyncio import sleep
 from datetime import datetime
 from typing import Optional, Tuple, List
 
@@ -32,12 +33,18 @@ def transform_to_encoded_transaction_with_status_meta(tx: GetTransactionResp):
 
 async def get_block_transactions(client: AsyncClient, slot: int) -> Optional[
     Tuple[int, List[EncodedTransactionWithStatusMeta]]]:
-    try:
-        block = await client.get_block(slot, max_supported_transaction_version=0)
-        return block.value.block_time, block.value.transactions
-    except Exception as e:
-        logging.error("Failed to load block", e)
-        return 0, []
+    retries = 0
+    max_retries = 10
+    while retries < max_retries:
+        try:
+            block = await client.get_block(slot, max_supported_transaction_version=0)
+            return block.value.block_time, block.value.transactions
+        except Exception as e:
+            logging.error("Failed to load block", e)
+            retries += 1
+            await sleep(3)
+
+    return 0, []
 
 
 async def get_user_trades_in_block(user: Pubkey, slot: int, rpc: str) -> List[Trade]:

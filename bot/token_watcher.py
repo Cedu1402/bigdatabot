@@ -48,7 +48,6 @@ async def watch_token(token):
             continue
 
         df = add_trader_actions_to_dataframe(trades, trading_minute)
-
         # get close and volume data
         price_df = get_time_frame_ohlcv(token, trading_minute, 11, "1m")
 
@@ -79,4 +78,3 @@ async def watch_token(token):
             logger.info("Save prediction data")
             logger.info("Start trader watcher")
             queue.enqueue(watch_trade, token)
-    pass

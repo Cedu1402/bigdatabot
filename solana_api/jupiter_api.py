@@ -2,8 +2,8 @@ import asyncio
 from base64 import b64decode
 from typing import Optional, Any
 
+import aiohttp
 from solana.rpc.async_api import AsyncClient
-from solana.rpc.commitment import Finalized, Confirmed
 from solana.rpc.types import TxOpts
 from solders.keypair import Keypair
 from solders.message import to_bytes_versioned
@@ -17,6 +17,20 @@ SOL_MINT = 'So11111111111111111111111111111111111111112'
 RETRY_HTTP = 5
 RETRY_TX = 3
 RETRY_DELAY = 1
+
+
+async def get_token_price(token_address: str, show_extra_info: bool = False) -> float:
+    url = f'https://api.jup.ag/price/v2'
+    params = {
+        'ids': token_address,
+        'showExtraInfo': str(show_extra_info).lower()
+    }
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, params=params) as response:
+            response.raise_for_status()  # Ensure the request was successful
+            data = await response.json()
+            return float(data["data"][token_address]["price"])
 
 
 async def buy_token(client: AsyncClient, wallet: Keypair, token: str, amount: int):
@@ -67,6 +81,7 @@ async def send_transaction_with_retry(client: AsyncClient, signed_tx: VersionedT
             if attempt < retries:
                 logger.info("Retrying in %.2f seconds...", delay)
                 await asyncio.sleep(delay)
+
 
 async def swap_tokens(client: AsyncClient, wallet: Keypair, token: str, amount: int, buy: bool) -> bool:
     try:

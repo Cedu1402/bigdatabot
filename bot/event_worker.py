@@ -21,7 +21,6 @@ async def handle_user_event(event):
         logging.info(f"Received change for trader {trader}")
         slot = data["params"]["result"]["context"]["slot"]
 
-        # Todo retry if block is not finalized yet
         trades = await get_user_trades_in_block(Pubkey.from_string(trader), slot, "https://api.mainnet-beta.solana.com")
         if len(trades) == 0:
             return
