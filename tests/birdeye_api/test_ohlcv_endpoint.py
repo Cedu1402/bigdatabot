@@ -3,7 +3,8 @@ from datetime import datetime, timedelta
 
 from dotenv import load_dotenv
 
-from birdeye_api.ohlcv_endpoint import get_ohlcv
+from birdeye_api.ohlcv_endpoint import get_ohlcv, get_time_frame_ohlcv
+from data.close_volume_data import get_trading_minute
 
 
 class TestRunner(unittest.IsolatedAsyncioTestCase):
@@ -11,8 +12,8 @@ class TestRunner(unittest.IsolatedAsyncioTestCase):
     async def test_get_ohlcv_only_on_pump_fun(self):
         # Arrange
         load_dotenv()
-        token = "Hzw7R5uxSGX1DiFLLq3TCz3tYmD52ZUwz6rtNMRPpump"
-        start_date = datetime.now()
+        token = "4aR9JwW69Zy4nM8X46kGhSVuiYVTmMpN7bcATEwipump"
+        start_date = datetime.utcnow()
         end_date = start_date + timedelta(minutes=10)
         interval = "1m"
         # Act
@@ -20,3 +21,14 @@ class TestRunner(unittest.IsolatedAsyncioTestCase):
         # Assert
         self.assertEqual(actual, [])
 
+    async def test_get_time_frame_ohlcv(self):
+        # Arrange
+        load_dotenv()
+        token = "4aR9JwW69Zy4nM8X46kGhSVuiYVTmMpN7bcATEwipump"
+        trading_minute = get_trading_minute()
+        window = 11
+        interval = "1m"
+        # Act
+        actual = await get_time_frame_ohlcv(token, trading_minute, window, interval)
+        # Assert
+        self.assertEqual(11, len(actual))

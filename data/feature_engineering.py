@@ -112,8 +112,8 @@ def add_features(data: pd.DataFrame) -> pd.DataFrame:
     for token in data[TOKEN_COlUMN].unique():
         token_mask = (data[TOKEN_COlUMN] == token)
         data.loc[token_mask, PRICE_PCT_CHANGE] = calculate_pct_change(data, PRICE_COLUMN, token_mask)
-        data.loc[token_mask, BUY_VOLUME_PCT_CHANGE] = calculate_pct_change(data, BUY_VOLUME_COLUMN, token_mask)
-        data.loc[token_mask, SELL_VOLUME_PCT_CHANGE] = calculate_pct_change(data, SELL_VOLUME_COLUMN, token_mask)
+        # data.loc[token_mask, BUY_VOLUME_PCT_CHANGE] = calculate_pct_change(data, BUY_VOLUME_COLUMN, token_mask)
+        # data.loc[token_mask, SELL_VOLUME_PCT_CHANGE] = calculate_pct_change(data, SELL_VOLUME_COLUMN, token_mask)
         data.loc[token_mask, TOTAL_VOLUME_PCT_CHANGE] = calculate_pct_change(data, TOTAL_VOLUME_COLUMN, token_mask)
 
         data.loc[token_mask, PERCENTAGE_OF_1_MILLION_MARKET_CAP] = data[MARKET_CAP_USD] / 1_000_000

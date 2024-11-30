@@ -87,7 +87,7 @@ def log_class_distribution(train, val, test, class_column='label'):
 
     # Helper function to log class distribution
     def class_distribution(dataset, name):
-        distribution = dataset[class_column].value_counts(normalize=True) * 100
+        distribution = len([0 for item in dataset if item[LABEL_COLUMN].iloc[0]]) / (len(dataset) / 100)
         logger.info(f"{name} set class distribution:")
         logger.info(f"\n{distribution}\n")  # Log the distribution with a blank line for readability
 
