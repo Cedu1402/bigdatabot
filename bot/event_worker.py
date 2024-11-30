@@ -9,7 +9,7 @@ from solders.pubkey import Pubkey
 from birdeye_api.token_creation_endpoint import get_token_create_time
 from bot.token_watcher import watch_token
 from constants import TOKEN_QUEUE, CREATE_PREFIX, TRADE_PREFIX
-from solana_api.solana_data import get_user_trades_in_block, get_token_creation_date
+from solana_api.solana_data import get_user_trades_in_block
 
 
 async def handle_user_event(event):
