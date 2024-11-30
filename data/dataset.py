@@ -41,14 +41,12 @@ def prepare_steps(top_trader_trades: pd.DataFrame, volume_close_1m: pd.DataFrame
     return labeled_data
 
 
-def add_inactive_traders(top_trader_trades: pd.DataFrame, columns: List[str],
+def add_inactive_traders(existing_traders: List[str], columns: List[str],
                          labeled_data: pd.DataFrame) -> pd.DataFrame:
-    current_traders = get_trader_from_trades(top_trader_trades)
-
     for col in columns:
         if "_state" in col:
             trader = col.replace("_state", "").replace("trader_", "")
-            if trader not in current_traders["trader"].values:
+            if trader not in existing_traders:
                 labeled_data["trader_" + trader + "_state"] = 0
 
     return labeled_data
@@ -64,7 +62,8 @@ def prepare_validation_data(use_cache: bool, columns: List[str], config: dict):
     logger.info("Prepare validation data")
     labeled_data = prepare_steps(top_trader_trades, volume_close_1m, config)
     logger.info("Add inactive traders")
-    labeled_data = add_inactive_traders(top_trader_trades, columns, labeled_data)
+    current_traders = get_trader_from_trades(top_trader_trades)
+    labeled_data = add_inactive_traders(current_traders["trader"].to_list(), columns, labeled_data)
     logger.info("Split into windows")
     # Split volume data into sliding window chunks of 10min
     full_data_windows = create_sliding_windows(labeled_data, config["window_size"], config["step_size"])

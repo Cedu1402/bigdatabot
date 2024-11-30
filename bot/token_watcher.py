@@ -1,21 +1,30 @@
+import copy
 import json
 import logging
 from asyncio import sleep
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import pandas as pd
 import redis
+from rq import Queue
 
 from birdeye_api.ohlcv_endpoint import get_time_frame_ohlcv
-from constants import CREATE_PREFIX, TRADE_PREFIX, BIN_AMOUNT_KEY
+from bot.trade_watcher import watch_trade
+from constants import CREATE_PREFIX, TRADE_PREFIX, BIN_AMOUNT_KEY, TRADE_QUEUE
 from data.close_volume_data import get_trading_minute
-from data.trade_data import get_valid_trades, add_trader_actions_to_dataframe
+from data.data_type import convert_columns
+from data.dataset import add_inactive_traders
+from data.feature_engineering import add_features
+from data.trade_data import get_valid_trades, add_trader_actions_to_dataframe, get_traders
+from log import logger
 from ml_model.decision_tree_model import DecisionTreeModel
 
 
 async def watch_token(token):
     # every minute check if we should buy
     r = redis.Redis()
+    queue = Queue(TRADE_QUEUE, connection=r)
+
     config = dict()
     config[BIN_AMOUNT_KEY] = 10
     model = DecisionTreeModel(config)
@@ -52,13 +61,22 @@ async def watch_token(token):
         )
 
         # run data preparation
-        # 1. Add missing traders
-        # 2. Add features
+        logger.info("Adjust type of columns")
+        df = convert_columns(df)
 
+        # Add features
+        logger.info("Add features")
+        df = add_features(df)
 
+        logger.info("Add inactive traders")
+        df = add_inactive_traders(get_traders(trades), model.get_columns(), df)
 
         # predict
+        prediction = model.prepare_prediction_data(copy.deepcopy([df]), False)
 
         # start trading task and exit
-
+        if prediction[0]:
+            logger.info("Save prediction data")
+            logger.info("Start trader watcher")
+            queue.enqueue(watch_trade, token)
     pass

@@ -15,6 +15,13 @@ def group_trades_by_trader(trades: List[Trade]) -> Dict[str, List[Trade]]:
     return traders
 
 
+def get_traders(trades: List[Trade]) -> List[str]:
+    traders = set()
+    for trade in trades:
+        traders.add(trade.trader)
+    return list(traders)
+
+
 def get_valid_trades(trades: List[Trade], trading_minute: datetime) -> List[Trade]:
     return [trade for trade in trades if
             trade.time <= trading_minute + timedelta(minutes=1) - timedelta(microseconds=1)]
