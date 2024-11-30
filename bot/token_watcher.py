@@ -40,6 +40,7 @@ async def watch_token(token):
             return
 
         # get trades and prepare trader columns
+        # Todo refcator and add tests for merge, features and predict.
         trades = await r.lrange(TRADE_PREFIX + token, 0, -1)
         trades = [json.loads(item) for item in trades]
         valid_trades = get_valid_trades(trades, trading_minute)
@@ -65,6 +66,8 @@ async def watch_token(token):
 
         # Add features
         logger.info("Add features")
+
+        # Todo convert price to solana not dollars.
         df = add_features(df)
 
         logger.info("Add inactive traders")
