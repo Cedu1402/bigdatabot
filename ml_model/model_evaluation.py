@@ -1,6 +1,6 @@
 from sklearn.metrics import accuracy_score, f1_score, confusion_matrix
 
-from log import logger
+from loguru import logger
 
 
 def print_evaluation(y, prediction):

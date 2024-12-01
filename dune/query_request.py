@@ -6,7 +6,7 @@ from dune_client.models import ResultsResponse
 from cache_helper import cache_exists, get_cache_data, write_data_to_cache
 from dune.data_transform import transform_dune_result_to_pandas
 from dune.dune_client import get_dune_client
-from log import logger
+from loguru import logger
 
 
 def get_cache_file_data(query_id: int) -> Optional[ResultsResponse]:

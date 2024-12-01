@@ -1,8 +1,10 @@
 import asyncio
+from asyncio import sleep
 from datetime import datetime, timedelta
 
 import redis
 from binance import AsyncClient, BinanceSocketManager
+from loguru import logger
 
 from constants import SOLANA_PRICE
 
@@ -19,16 +21,20 @@ async def main():
     # Start the WebSocket
     async with stream as ticker_stream:
         while True:
-            msg = await ticker_stream.recv()  # Receive message
-            if msg:
-                price = msg['c']  # Extract the last price
-                # Check if 10 seconds have passed since the last save
-                now = datetime.utcnow()
-                if (now - last_saved_time) >= timedelta(seconds=10):
-                    await r.set(SOLANA_PRICE, str(price))  # Save to Redis
-                    print("Price saved to Redis.")
-                    print(f"Real-time SOL/USDT Price: {price}")
-                    last_saved_time = now  # Update the last saved time
+            try:
+                msg = await ticker_stream.recv()  # Receive message
+                if msg:
+                    price = msg['c']  # Extract the last price
+                    # Check if 10 seconds have passed since the last save
+                    now = datetime.utcnow()
+                    if (now - last_saved_time) >= timedelta(seconds=10):
+                        await r.set(SOLANA_PRICE, str(price))  # Save to Redis
+                        print("Price saved to Redis.")
+                        print(f"Real-time SOL/USDT Price: {price}")
+                        last_saved_time = now  # Update the last saved time
+            except Exception as e:
+                logger.exception("Failed to get solana price")
+                await sleep(10)
 
 
 if __name__ == "__main__":

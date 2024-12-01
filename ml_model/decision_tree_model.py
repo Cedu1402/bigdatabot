@@ -11,7 +11,7 @@ from data.feature_engineering import compute_bin_edges, bin_data
 from data.model_data import remove_columns, order_columns
 from data.pickle_files import save_to_pickle
 from data.sliding_window import unroll_data
-from log import logger
+from loguru import logger
 from ml_model.base_model import BaseModel
 from ml_model.load_model import load_model
 from ml_model.model_evaluation import print_evaluation

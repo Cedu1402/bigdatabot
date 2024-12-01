@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from config.config_reader import load_yaml_to_dict
 from constants import BIN_AMOUNT_KEY, CONFIG_2_FILE
 from data.dataset import prepare_validation_data
-from log import logger
+from loguru import logger
 from ml_model.decision_tree_model import DecisionTreeModel
 from ml_model.model_evaluation import print_evaluation
 

@@ -10,7 +10,7 @@ from solders.keypair import Keypair
 from solders.pubkey import Pubkey
 from solders.token.associated import get_associated_token_address
 
-from log import logger
+from loguru import logger
 
 
 async def get_token_balance(client: AsyncClient, wallet: Keypair, token_ca: str, retries: int = 5,

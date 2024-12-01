@@ -8,7 +8,7 @@ from solders.keypair import Keypair
 from telethon import TelegramClient, events
 
 from constants import SESSION
-from log import logger
+from loguru import logger
 from solana_api.simple_sniper import new_call_incoming
 from telegram.chat import get_cached_chat_id
 from telegram.sign_in import sign_in_to_telegram

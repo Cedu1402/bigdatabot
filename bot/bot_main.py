@@ -1,11 +1,11 @@
 import asyncio
 import json
-import logging
 from typing import List
 
 import redis
 import websockets
 from dotenv import load_dotenv
+from loguru import logger
 from rq import Queue
 
 from bot.event_worker import handle_user_event
@@ -25,10 +25,10 @@ async def on_message(websocket):
         try:
             message = await websocket.recv()
             data = json.loads(message)
-            logging.info(f"Received data: {data}")
+            logger.info("Received wallet action", data=data)
             queue.enqueue(handle_user_event, data)
         except Exception as e:
-            logging.error("Failed to process message", e)
+            logger.exception("Failed to process message")
 
 
 # Function to subscribe to account changes via WebSocket
@@ -47,7 +47,7 @@ async def subscribe_to_accounts(websocket, traders: List[str]):
             if "result" in response_data:
                 subscription_id = response_data["result"]
                 subscription_map[subscription_id] = address
-                logging.info(f"Subscription ID {subscription_id} mapped to account {address}")
+                logger.info("Subscription mapped", subscription_id=subscription_id, address=address)
                 break
 
 

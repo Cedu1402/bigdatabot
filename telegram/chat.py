@@ -5,7 +5,7 @@ from telethon.tl.types import Channel
 
 from cache_helper import cache_exists, get_cache_data, write_data_to_cache
 from constants import CHAT_ID
-from log import logger
+from loguru import logger
 
 
 async def get_chat(client: TelegramClient, chat_name: str) -> Optional[Channel]:

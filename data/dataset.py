@@ -13,7 +13,7 @@ from data.label_data import label_dataset
 from data.sliding_window import create_sliding_windows
 from data.solana_trader import get_trader_from_trades
 from dune.data_collection import collect_all_data, collect_validation_data
-from log import logger
+from loguru import logger
 
 
 def prepare_steps(top_trader_trades: pd.DataFrame, volume_close_1m: pd.DataFrame, config: dict) -> pd.DataFrame:
