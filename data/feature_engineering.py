@@ -100,14 +100,16 @@ def calculate_pct_change(data, column, token_mask):
     return pct_change.replace([np.inf, -np.inf], np.nan).fillna(0.0).astype('float64')
 
 
-def add_features(data: pd.DataFrame) -> pd.DataFrame:
+def add_features(data: pd.DataFrame, has_total_volume: bool =False) -> pd.DataFrame:
     data = data.sort_values(by=[TOKEN_COlUMN, TRADING_MINUTE_COLUMN])  # Sort by token and then by time
 
     data[MARKET_CAP_USD] = data.apply(
         lambda row: get_market_cap_from_tokens_per_sol_and_sol_price(float(row[PRICE_COLUMN]), SOL_PRICE),
         axis=1
     )
-    data[TOTAL_VOLUME_COLUMN] = data[BUY_VOLUME_COLUMN] + data[SELL_VOLUME_COLUMN]
+
+    if not has_total_volume:
+        data[TOTAL_VOLUME_COLUMN] = data[BUY_VOLUME_COLUMN] + data[SELL_VOLUME_COLUMN]
 
     for token in data[TOKEN_COlUMN].unique():
         token_mask = (data[TOKEN_COlUMN] == token)

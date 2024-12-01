@@ -57,44 +57,50 @@ async def watch_token(token) -> bool:
     model.load_model("simple_tree")
 
     while True:
-        trading_minute = get_trading_minute()
+        try:
+            trading_minute = get_trading_minute()
+            token_create_time = datetime.fromisoformat(r.get(CREATE_PREFIX + token))
 
-        # check if coin is older than 4h if yes exit
-        token_create_time = datetime.fromisoformat(r.get(CREATE_PREFIX + token))
-        if (datetime.utcnow() - token_create_time).total_seconds() > 120 * 60:
-            logging.info(f"Stop watch for token because of age {token}")
-            return False
+            # check if coin is older than 4h if yes exit
+            if (datetime.utcnow() - token_create_time).total_seconds() > 120 * 60:
+                logging.info(f"Stop watch for token because of age {token}")
+                return False
 
-        # get trades and prepare trader columns
-        # Todo refactor and add tests for merge, features and predict.
-        valid_trades = await get_valid_trades_of_token(token, r, trading_minute)
-        if len(valid_trades) == 0:
-            await sleep(1)
+            # get trades and prepare trader columns
+            valid_trades = await get_valid_trades_of_token(token, r, trading_minute)
+            if len(valid_trades) == 0:
+                await sleep(1)
+                continue
+
+            df = await get_base_data(valid_trades, trading_minute, token)
+
+            # run data preparation
+            logger.info("Adjust type of columns")
+            df = convert_columns(df)
+
+            # transform to sol price
+            solana_price = await get_sol_price(r)
+            df = transform_price_to_tokens_per_sol(df, solana_price)
+
+            # Add features
+            logger.info("Add features")
+            df = add_features(df, has_total_volume=True)
+
+            logger.info("Add inactive traders")
+            df = add_inactive_traders(get_traders(valid_trades), model.get_columns(), df)
+
+            # predict
+            prediction_data, _ = model.prepare_prediction_data(copy.deepcopy([df]), False)
+            prediction = model.predict(prediction_data)
+
+            # start trading task and exit
+            if prediction[0]:
+                logger.info("Save prediction data")
+                logger.info("Start trader watcher")
+                queue.enqueue(watch_trade, token)
+                return True
+            else:
+                await sleep(5)
+        except Exception as e:
+            await sleep(5)
             continue
-
-        df = await get_base_data(valid_trades, trading_minute, token)
-
-        # run data preparation
-        logger.info("Adjust type of columns")
-        df = convert_columns(df)
-
-        # transform to sol price
-        solana_price = await get_sol_price(r)
-        df = transform_price_to_tokens_per_sol(df, solana_price)
-
-        # Add features
-        logger.info("Add features")
-        df = add_features(df)
-
-        logger.info("Add inactive traders")
-        df = add_inactive_traders(get_traders(valid_trades), model.get_columns(), df)
-
-        # predict
-        prediction = model.prepare_prediction_data(copy.deepcopy([df]), False)
-
-        # start trading task and exit
-        if prediction[0]:
-            logger.info("Save prediction data")
-            logger.info("Start trader watcher")
-            queue.enqueue(watch_trade, token)
-            return True
