@@ -2,27 +2,32 @@ import json
 import logging
 from datetime import datetime
 
-import redis
 from loguru import logger
 from rq import Queue
 from solders.pubkey import Pubkey
 
 from birdeye_api.token_creation_endpoint import get_token_create_time
 from bot.token_watcher import watch_token
-from constants import TOKEN_QUEUE, CREATE_PREFIX, TRADE_PREFIX
+from constants import TOKEN_QUEUE, CREATE_PREFIX, TRADE_PREFIX, CURRENT_EVENT_WATCH_KEY
+from data.redis_helper import get_redis_client, decrement_counter
+from env_data.get_env_value import get_env_value
+from main import SOL_RPC
 from solana_api.solana_data import get_user_trades_in_block
 
 
 async def handle_user_event(event):
+    r = get_redis_client()
     try:
-        r = redis.Redis()
         queue = Queue(TOKEN_QUEUE, connection=r)
+        await r.incr(CURRENT_EVENT_WATCH_KEY)
 
         trader, data = event
         logging.info(f"Received change for trader {trader}")
         slot = data["params"]["result"]["context"]["slot"]
 
-        trades = await get_user_trades_in_block(Pubkey.from_string(trader), slot, "https://api.mainnet-beta.solana.com")
+        solana_rpc = get_env_value(SOL_RPC)
+
+        trades = await get_user_trades_in_block(Pubkey.from_string(trader), slot, solana_rpc)
         if len(trades) == 0:
             return
 
@@ -57,3 +62,5 @@ async def handle_user_event(event):
 
     except Exception as e:
         logging.exception("Failed to process message")
+    finally:
+        await decrement_counter(CURRENT_EVENT_WATCH_KEY, r)

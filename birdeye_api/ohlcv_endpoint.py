@@ -5,7 +5,8 @@ import aiohttp
 import pandas as pd
 
 from constants import BIRDEYE_KEY, TRADING_MINUTE_COLUMN, TOKEN_COlUMN, TOTAL_VOLUME_COLUMN, \
-    PRICE_COLUMN
+    PRICE_COLUMN, BIRD_EYE_COUNTER
+from data.redis_helper import get_redis_client
 from env_data.get_env_value import get_env_value
 
 
@@ -46,6 +47,7 @@ async def get_time_frame_ohlcv(token: str, trading_minute: datetime, window: int
 
 async def get_ohlcv(token: str, start_date: datetime, end_date: datetime, interval: str):
     url = "https://public-api.birdeye.so/defi/ohlcv"
+    r = get_redis_client()
     key = get_env_value(BIRDEYE_KEY)
     headers = {
         "accept": "application/json",
@@ -58,6 +60,10 @@ async def get_ohlcv(token: str, start_date: datetime, end_date: datetime, interv
         "time_from": int(start_date.timestamp()),
         "time_to": int(end_date.timestamp())
     }
+    await r.incr(BIRD_EYE_COUNTER)
+
+    if await r.get(BIRD_EYE_COUNTER) >= 50000:
+        raise Exception("Brideye limit reached!!!")
 
     async with aiohttp.ClientSession() as session:
         async with session.get(url, headers=headers, params=params) as response:

@@ -2,11 +2,11 @@
 
 import numpy as np
 import pandas as pd
+from loguru import logger
 
 from constants import TOKEN_COlUMN, TRADING_MINUTE_COLUMN, PRICE_COLUMN, PRICE_PCT_CHANGE, \
     SOL_PRICE, MARKET_CAP_USD, PERCENTAGE_OF_1_MILLION_MARKET_CAP, BUY_VOLUME_COLUMN, \
-    SELL_VOLUME_COLUMN, TOTAL_VOLUME_COLUMN, BUY_VOLUME_PCT_CHANGE, SELL_VOLUME_PCT_CHANGE, TOTAL_VOLUME_PCT_CHANGE
-from loguru import logger
+    SELL_VOLUME_COLUMN, TOTAL_VOLUME_COLUMN, TOTAL_VOLUME_PCT_CHANGE
 
 
 def bin_data(data: List[pd.DataFrame], columns: List[str], bin_edges: Dict[str, List[float]]) -> List[pd.DataFrame]:
@@ -100,7 +100,7 @@ def calculate_pct_change(data, column, token_mask):
     return pct_change.replace([np.inf, -np.inf], np.nan).fillna(0.0).astype('float64')
 
 
-def add_features(data: pd.DataFrame, has_total_volume: bool =False) -> pd.DataFrame:
+def add_features(data: pd.DataFrame, has_total_volume: bool = False) -> pd.DataFrame:
     data = data.sort_values(by=[TOKEN_COlUMN, TRADING_MINUTE_COLUMN])  # Sort by token and then by time
 
     data[MARKET_CAP_USD] = data.apply(

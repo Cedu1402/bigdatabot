@@ -19,6 +19,22 @@ services:
       - loki
     restart: always
 
+  # Redis service for queue management
+  redis:
+    image: redis:alpine
+    volumes:
+      - redis_data:/data
+    networks:
+      - app_network
+    command: [ "redis-server", "--appendonly", "yes" ] # Enables AOF for persistence
+    restart: always
+
 volumes:
   loki_data:
     driver: local
+  redis_data:
+    driver: local
+
+networks:
+  app_network:
+    driver: bridge

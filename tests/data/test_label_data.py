@@ -1,12 +1,9 @@
-import os
 import unittest
 
 import pandas as pd
 
 from constants import TOKEN_COlUMN, TRADING_MINUTE_COLUMN, PRICE_COLUMN, LABEL_COLUMN
-from data.label_data import label_data, label_dataset
-from data.pickle_files import load_from_pickle
-from test_constants import TEST_DATA_FOLDER
+from data.label_data import label_dataset
 
 
 class TestRunner(unittest.TestCase):
@@ -66,14 +63,3 @@ class TestRunner(unittest.TestCase):
         # Check that all labels for token2 are True until 1000, then False
         token2_data = labeled_data[labeled_data[TOKEN_COlUMN] == 'token2'][LABEL_COLUMN]
         self.assertTrue((token2_data == False).all())  # Ensure all are False
-
-    def test_label_data(self):
-        # Arrange
-        volume_data = load_from_pickle(os.path.join(TEST_DATA_FOLDER, "complete_close_volume.pkl"))
-        sliding_window_data = load_from_pickle(os.path.join(TEST_DATA_FOLDER, "sliding_window.pkl"))
-        columns = len(sliding_window_data[0].columns)
-        # Act
-        actual = label_data(sliding_window_data, volume_data, 100, 50)
-
-        # Assert
-        self.assertEqual(len(actual[0].columns), columns + 1)

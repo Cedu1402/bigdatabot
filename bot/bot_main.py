@@ -2,7 +2,6 @@ import asyncio
 import json
 from typing import List
 
-import redis
 import websockets
 from dotenv import load_dotenv
 from loguru import logger
@@ -10,6 +9,7 @@ from rq import Queue
 
 from bot.event_worker import handle_user_event
 from constants import SOLANA_WS, EVENT_QUEUE, BIN_AMOUNT_KEY
+from data.redis_helper import get_redis_client
 from env_data.get_env_value import get_env_value
 from ml_model.decision_tree_model import DecisionTreeModel
 
@@ -18,7 +18,7 @@ subscription_map = {}
 
 # Function to handle WebSocket messages
 async def on_message(websocket):
-    r = redis.Redis()
+    r = get_redis_client()
     queue = Queue(EVENT_QUEUE, connection=r)
 
     while True:

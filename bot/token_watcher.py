@@ -11,12 +11,13 @@ from rq import Queue
 
 from birdeye_api.ohlcv_endpoint import get_time_frame_ohlcv
 from bot.trade_watcher import watch_trade
-from constants import CREATE_PREFIX, TRADE_PREFIX, BIN_AMOUNT_KEY, TRADE_QUEUE
+from constants import CREATE_PREFIX, TRADE_PREFIX, BIN_AMOUNT_KEY, TRADE_QUEUE, CURRENT_TOKEN_WATCH_KEY
 from data.close_volume_data import get_trading_minute
 from data.data_format import get_sol_price, transform_price_to_tokens_per_sol
 from data.data_type import convert_columns
 from data.dataset import add_inactive_traders
 from data.feature_engineering import add_features
+from data.redis_helper import get_redis_client, decrement_counter
 from data.trade_data import get_valid_trades, add_trader_actions_to_dataframe, get_traders
 from ml_model.decision_tree_model import DecisionTreeModel
 from solana_api.trade_model import Trade
@@ -47,10 +48,11 @@ async def get_base_data(valid_trades: List[Trade], trading_minute: datetime, tok
 
 async def watch_token(token) -> bool:
     logger.info("Start token watch", token=token)
+    # Todo if token done skip
     # every minute check if we should buy
-    r = redis.Redis()
+    r = get_redis_client()
     queue = Queue(TRADE_QUEUE, connection=r)
-
+    await r.incr(CURRENT_TOKEN_WATCH_KEY)
     config = dict()
     config[BIN_AMOUNT_KEY] = 10
     model = DecisionTreeModel(config)
@@ -104,3 +106,5 @@ async def watch_token(token) -> bool:
         except Exception as e:
             await sleep(5)
             continue
+        finally:
+            await decrement_counter(CURRENT_TOKEN_WATCH_KEY, r)
