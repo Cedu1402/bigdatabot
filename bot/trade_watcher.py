@@ -14,7 +14,7 @@ async def watch_trade(token: str):
     start_price = await get_token_price(token)
     last_price = None
     r = get_async_redis()
-    await r.set(token + "_done", str(True))
+
     await r.incr(CURRENT_TRADE_WATCH_KEY)
     await sleep(10)
 

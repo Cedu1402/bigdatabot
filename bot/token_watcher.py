@@ -115,6 +115,7 @@ async def watch_token(token) -> bool:
             if prediction[0]:
                 logger.info("Start trader watcher", trading_minute=trading_minute, token=token)
                 queue.enqueue(watch_trade, token)
+                await r.set(token + "_done", str(True))
                 return True
             else:
                 await sleep(5)
