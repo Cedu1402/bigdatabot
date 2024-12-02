@@ -3,14 +3,14 @@ from datetime import datetime
 import aiohttp
 
 from constants import BIRDEYE_KEY, BIRD_EYE_COUNTER
-from data.redis_helper import get_redis_client
+from data.redis_helper import get_async_redis
 from env_data.get_env_value import get_env_value
 from solana_api.solana_data import block_time_stamp_to_datetime
 
 
 async def get_token_create_time(token: str) -> datetime:
     url = "https://public-api.birdeye.so/defi/token_creation_info"
-    r = get_redis_client()
+    r = get_async_redis()
 
     key = get_env_value(BIRDEYE_KEY)
     headers = {

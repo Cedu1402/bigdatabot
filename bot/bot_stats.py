@@ -5,7 +5,7 @@ from tabulate import tabulate
 
 from constants import GLOBAL_PROFIT_KEY, GOOD_TRADES_KEY, BAD_TRADES_KEY, CURRENT_TRADE_WATCH_KEY, \
     CURRENT_TOKEN_WATCH_KEY, CURRENT_EVENT_WATCH_KEY, MAX_TRADE_WATCH_KEY, MAX_TOKEN_WATCH_KEY, MAX_EVENT_WATCH_KEY
-from data.redis_helper import get_redis_client
+from data.redis_helper import get_async_redis
 
 
 async def update_maximums(r, current_key, max_key):
@@ -24,7 +24,7 @@ async def update_maximums(r, current_key, max_key):
 
 
 async def main():
-    r = get_redis_client()
+    r = get_async_redis()
 
     while True:
         global_return = await r.get(GLOBAL_PROFIT_KEY)

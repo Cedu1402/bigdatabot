@@ -4,7 +4,7 @@ from datetime import datetime
 from loguru import logger
 
 from constants import DUMMY_INVESTMENT_AMOUNT, CURRENT_TRADE_WATCH_KEY
-from data.redis_helper import get_redis_client, handle_failed_trade, handle_successful_trade, decrement_counter
+from data.redis_helper import get_async_redis, handle_failed_trade, handle_successful_trade, decrement_counter
 from solana_api.jupiter_api import get_token_price
 
 
@@ -13,8 +13,8 @@ async def watch_trade(token: str):
     buy_time = datetime.now()
     start_price = await get_token_price(token)
     last_price = None
-    r = get_redis_client()
-    # Todo mark token as done
+    r = get_async_redis()
+    await r.set(token + "_done", str(True))
     await r.incr(CURRENT_TRADE_WATCH_KEY)
     await sleep(10)
 

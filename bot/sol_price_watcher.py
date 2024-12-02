@@ -6,14 +6,14 @@ from binance import AsyncClient, BinanceSocketManager
 from loguru import logger
 
 from constants import SOLANA_PRICE
-from data.redis_helper import get_redis_client
+from data.redis_helper import get_async_redis
 
 
 async def main():
     client = await AsyncClient.create()
     # Set up the WebSocket manager
     bsm = BinanceSocketManager(client)
-    r = get_redis_client()
+    r = get_async_redis()
     last_saved_time = datetime.utcnow() - timedelta(seconds=10)
 
     # Subscribe to the real-time SOL/USDT price stream

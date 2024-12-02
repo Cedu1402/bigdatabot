@@ -24,9 +24,38 @@ services:
     image: redis:alpine
     volumes:
       - redis_data:/data
+    ports:
+      - "6379:6379"
     networks:
       - app_network
     command: [ "redis-server", "--appendonly", "yes" ] # Enables AOF for persistence
+    restart: always
+
+  event_queue:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: rq worker --url redis://redis:6379 EVENT_QUEUE
+    depends_on:
+      - redis
+    restart: always
+
+  token_queue:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: rq worker --url redis://redis:6379 EVENT_QUEUE
+    depends_on:
+      - redis
+    restart: always
+
+  trade_queue:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: rq worker --url redis://redis:6379 EVENT_QUEUE
+    depends_on:
+      - redis
     restart: always
 
 volumes:

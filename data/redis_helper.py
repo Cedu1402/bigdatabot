@@ -6,18 +6,28 @@ from constants import REDIS_URL, BAD_TRADES_KEY, BAD_TOKENS_KEY, GOOD_TRADES_KEY
 from env_data.get_env_value import get_env_value
 
 
-def get_redis_client() -> redis.Redis:
+def get_redis_url() -> str:
     redis_url = get_env_value(REDIS_URL)
     if redis_url is None:
         redis_url = 'localhost'
 
-    return redis.Redis(host=redis_url, port=6379, db=0)
+    return redis_url
+
+
+def get_async_redis() -> redis.asyncio.Redis:
+    return redis.asyncio.Redis(host=get_redis_url(), port=6379, db=0)
+
+
+def get_sync_redis() -> redis.Redis:
+    return redis.Redis(host=get_redis_url(), port=6379, db=0)
+
 
 async def decrement_counter(key: str, r: redis.Redis):
     try:
         await r.decr(key)
     except Exception as e:
         logger.exception("Failed to decrement counter", key=key)
+
 
 async def update_global_profit(r, amount: float):
     await r.incrbyfloat(GLOBAL_PROFIT_KEY, amount)
