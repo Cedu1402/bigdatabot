@@ -6,7 +6,7 @@ from loki_logger_handler.formatters.loguru_formatter import LoguruFormatter
 from loki_logger_handler.loki_logger_handler import LokiLoggerHandler
 
 # Loki push URL
-LOKI_URL = os.getenv("LOKI_URL", "http://localhost:3100/loki/api/v1/push")
+loki_url = "http://" + os.getenv("LOKI_URL", "localhost") + ":3100/loki/api/v1/push"
 
 # Loguru configuration
 logger.remove()  # Remove default logger
