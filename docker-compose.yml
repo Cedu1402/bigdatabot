@@ -48,6 +48,8 @@ services:
     depends_on:
       - redis
     restart: always
+    deploy:
+      replicas: 10
 
   token_queue:
     build:
@@ -62,6 +64,8 @@ services:
     depends_on:
       - redis
     restart: always
+    deploy:
+      replicas: 10
 
   trade_queue:
     build:
@@ -76,6 +80,8 @@ services:
     depends_on:
       - redis
     restart: always
+    deploy:
+      replicas: 10
 
   price_watcher:
     build:
