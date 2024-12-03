@@ -11,7 +11,7 @@ loki_url = "http://" + os.getenv("LOKI_URL", "localhost") + ":3100/loki/api/v1/p
 # Loguru configuration
 logger.remove()  # Remove default logger
 custom_handler = LokiLoggerHandler(
-    url=LOKI_URL,
+    url=loki_url,
     labels={"application": "solana-bot"},
     timeout=10,
     default_formatter=LoguruFormatter()
