@@ -9,7 +9,7 @@ from solders.keypair import Keypair
 from solders.message import to_bytes_versioned
 from solders.transaction import VersionedTransaction
 
-from loguru import logger
+from structure_log.logger_setup import logger
 from solana_api.http_helper import make_http_request_with_retry
 
 # Mint address for SOL token

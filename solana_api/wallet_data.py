@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from solana.rpc.async_api import AsyncClient
 from solders.keypair import Keypair
 
-from loguru import logger
+from structure_log.logger_setup import logger
 
 
 async def get_wallet_balance(client: AsyncClient, wallet: Keypair):

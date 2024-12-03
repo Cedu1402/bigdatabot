@@ -5,7 +5,7 @@ from telethon.tl.types import Channel
 
 from cache_helper import cache_exists, get_cache_data, write_data_to_cache
 from constants import CHAT_ID
-from loguru import logger
+from structure_log.logger_setup import logger
 
 
 async def get_chat(client: TelegramClient, chat_name: str) -> Optional[Channel]:
@@ -19,7 +19,7 @@ async def get_chat(client: TelegramClient, chat_name: str) -> Optional[Channel]:
                 if chat_name in dialog.name:
                     return dialog.entity
     except Exception as e:
-        logger.error("Failed to scan for channel", e)
+        logger.error("Failed to scan for channel")
 
     logger.warning("Channel not found")
     return None

@@ -1,6 +1,7 @@
 import asyncio
 from asyncio import sleep
 
+from dotenv import load_dotenv
 from tabulate import tabulate
 
 from constants import GLOBAL_PROFIT_KEY, GOOD_TRADES_KEY, BAD_TRADES_KEY, CURRENT_TRADE_WATCH_KEY, \
@@ -27,17 +28,17 @@ async def main():
     r = get_async_redis()
 
     while True:
-        global_return = await r.get(GLOBAL_PROFIT_KEY)
-        good_trades = await r.get(GOOD_TRADES_KEY)
-        bad_trades = await r.get(BAD_TRADES_KEY)
+        global_return = await r.get(GLOBAL_PROFIT_KEY) or 0
+        good_trades = await r.get(GOOD_TRADES_KEY) or 0
+        bad_trades = await r.get(BAD_TRADES_KEY) or 0
 
-        current_trades_watches = await r.get(CURRENT_TRADE_WATCH_KEY)
-        current_token_watches = await r.get(CURRENT_TOKEN_WATCH_KEY)
-        current_event_watches = await r.get(CURRENT_EVENT_WATCH_KEY)
+        current_trades_watches = await r.get(CURRENT_TRADE_WATCH_KEY) or 0
+        current_token_watches = await r.get(CURRENT_TOKEN_WATCH_KEY) or 0
+        current_event_watches = await r.get(CURRENT_EVENT_WATCH_KEY) or 0
 
-        max_trades = await r.get(MAX_TRADE_WATCH_KEY)
-        max_tokens = await r.get(MAX_TOKEN_WATCH_KEY)
-        max_events = await r.get(MAX_EVENT_WATCH_KEY)
+        max_trades = await r.get(MAX_TRADE_WATCH_KEY) or 0
+        max_tokens = await r.get(MAX_TOKEN_WATCH_KEY) or 0
+        max_events = await r.get(MAX_EVENT_WATCH_KEY) or 0
 
         # Update maximums for watches
         await update_maximums(r, CURRENT_TRADE_WATCH_KEY, MAX_TRADE_WATCH_KEY)
@@ -46,15 +47,15 @@ async def main():
 
         # Prepare data for the table
         table_data = [
-            ['Global Profit', global_return],
-            ['Good Trades', good_trades],
-            ['Bad Trades', bad_trades],
-            ['Current Trades Watches', current_trades_watches],
-            ['Max Trades Watches', max_trades],
-            ['Current Token Watches', current_token_watches],
-            ['Max Token Watches', max_tokens],
-            ['Current Event Watches', current_event_watches],
-            ['Max Event Watches', max_events]
+            ['Global Profit', int(global_return)],
+            ['Good Trades', int(good_trades)],
+            ['Bad Trades', int(bad_trades)],
+            ['Current Trades Watches', int(current_trades_watches)],
+            ['Max Trades Watches', int(max_trades)],
+            ['Current Token Watches', int(current_token_watches)],
+            ['Max Token Watches', int(max_tokens)],
+            ['Current Event Watches', int(current_event_watches)],
+            ['Max Event Watches', int(max_events)]
         ]
 
         # Print table in a formatted way
@@ -67,5 +68,6 @@ async def main():
 
 
 if __name__ == '__main__':
+    load_dotenv()
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main())

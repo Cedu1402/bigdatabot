@@ -4,9 +4,8 @@ from typing import List
 
 import websockets
 from dotenv import load_dotenv
-from loguru import logger
 from rq import Queue
-
+from structure_log.logger_setup import logger
 from bot.event_worker import handle_user_event
 from constants import SOLANA_WS, EVENT_QUEUE, BIN_AMOUNT_KEY
 from data.redis_helper import get_sync_redis
@@ -18,15 +17,15 @@ subscription_map = {}
 
 # Function to handle WebSocket messages
 async def on_message(websocket):
-
     queue = Queue(EVENT_QUEUE, connection=get_sync_redis())
 
     while True:
         try:
             message = await websocket.recv()
             data = json.loads(message)
-            logger.info("Received wallet action", data=data)
-            queue.enqueue(handle_user_event, data)
+            trader = subscription_map[data["params"]["subscription"]]
+            logger.info(f"Received wallet action {trader}", data=data, trader=trader)
+            queue.enqueue(handle_user_event, (trader, data))
         except Exception as e:
             logger.exception("Failed to process message")
 

@@ -8,7 +8,7 @@ from solana.rpc.api import Client
 from solana.rpc.async_api import AsyncClient
 from solders.keypair import Keypair
 
-from loguru import logger
+from structure_log.logger_setup import logger
 from solana_api.data_parser import extract_data
 from solana_api.jupiter_api import buy_token, get_quote, sell_token
 from solana_api.spl_token import get_token_balance, format_token_amount

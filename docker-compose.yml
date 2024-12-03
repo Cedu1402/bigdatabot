@@ -7,6 +7,8 @@ services:
     volumes:
       - loki_data:/loki
     restart: always
+    networks:
+      - app_network
 
   grafana:
     image: grafana/grafana:10.1.0
@@ -18,6 +20,8 @@ services:
     depends_on:
       - loki
     restart: always
+    networks:
+      - app_network
 
   # Redis service for queue management
   redis:
@@ -36,6 +40,11 @@ services:
       context: .
       dockerfile: Dockerfile
     command: rq worker --url redis://redis:6379 EVENT_QUEUE
+    environment:
+      - REDIS_URL=redis
+      - LOKI_URL=loki
+    networks:
+      - app_network
     depends_on:
       - redis
     restart: always
@@ -44,7 +53,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: rq worker --url redis://redis:6379 EVENT_QUEUE
+    command: rq worker --url redis://redis:6379 TOKEN_QUEUE
+    environment:
+      - REDIS_URL=redis
+      - LOKI_URL=loki
+    networks:
+      - app_network
     depends_on:
       - redis
     restart: always
@@ -53,7 +67,54 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: rq worker --url redis://redis:6379 EVENT_QUEUE
+    command: rq worker --url redis://redis:6379 TRADE_QUEUE
+    environment:
+      - REDIS_URL=redis
+      - LOKI_URL=loki
+    networks:
+      - app_network
+    depends_on:
+      - redis
+    restart: always
+
+  price_watcher:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python bot/sol_price_watcher.py
+    environment:
+      - REDIS_URL=redis
+      - LOKI_URL=loki
+    networks:
+      - app_network
+    depends_on:
+      - redis
+    restart: always
+
+  bot_main:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python bot/bot_main.py
+    environment:
+      - REDIS_URL=redis
+      - LOKI_URL=loki
+    networks:
+      - app_network
+    depends_on:
+      - redis
+    restart: always
+
+  bot_stats:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python bot/bot_stats.py
+    environment:
+      - REDIS_URL=redis
+      - LOKI_URL=loki
+    networks:
+      - app_network
     depends_on:
       - redis
     restart: always

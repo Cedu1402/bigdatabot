@@ -3,13 +3,15 @@ from asyncio import sleep
 from datetime import datetime, timedelta
 
 from binance import AsyncClient, BinanceSocketManager
-from loguru import logger
+from dotenv import load_dotenv
+from structure_log.logger_setup import logger
 
 from constants import SOLANA_PRICE
 from data.redis_helper import get_async_redis
 
 
 async def main():
+    load_dotenv()
     client = await AsyncClient.create()
     # Set up the WebSocket manager
     bsm = BinanceSocketManager(client)

@@ -1,37 +1,38 @@
 import json
-import logging
 from datetime import datetime
 
-from loguru import logger
+from dotenv import load_dotenv
+from structure_log.logger_setup import logger
 from rq import Queue
 from solders.pubkey import Pubkey
 
 from birdeye_api.token_creation_endpoint import get_token_create_time
 from bot.token_watcher import watch_token
-from constants import TOKEN_QUEUE, CREATE_PREFIX, TRADE_PREFIX, CURRENT_EVENT_WATCH_KEY
+from constants import TOKEN_QUEUE, CREATE_PREFIX, TRADE_PREFIX, CURRENT_EVENT_WATCH_KEY, SOL_RPC
 from data.redis_helper import get_async_redis, decrement_counter, get_sync_redis
 from env_data.get_env_value import get_env_value
-from main import SOL_RPC
 from solana_api.solana_data import get_user_trades_in_block
 
 
 async def handle_user_event(event):
     r = get_async_redis()
+    load_dotenv()
+
     try:
         queue = Queue(TOKEN_QUEUE, connection=get_sync_redis())
         await r.incr(CURRENT_EVENT_WATCH_KEY)
 
         trader, data = event
-        logging.info(f"Received change for trader {trader}")
+        logger.info(f"Received change for trader {trader}")
         slot = data["params"]["result"]["context"]["slot"]
 
         solana_rpc = get_env_value(SOL_RPC)
-
         trades = await get_user_trades_in_block(Pubkey.from_string(trader), slot, solana_rpc)
         if len(trades) == 0:
+            logger.info(f"No trades found for {trader} {slot}")
             return
 
-        logging.info(f"Trade found for trader {trader}")
+        logger.info(f"Trade found for trader {trader}")
         for trade in trades:
             # check if coin is in list already
             token_exist = r.exists(trade.token)
@@ -61,6 +62,6 @@ async def handle_user_event(event):
                 queue.enqueue(watch_token, trade.token)
 
     except Exception as e:
-        logging.exception("Failed to process message")
+        logger.exception("Failed to process message")
     finally:
         await decrement_counter(CURRENT_EVENT_WATCH_KEY, r)

@@ -1,8 +1,8 @@
-import logging
 from asyncio import sleep
 from datetime import datetime
 from typing import Optional, Tuple, List
 
+from structure_log.logger_setup import logger
 from solana.rpc.async_api import AsyncClient
 from solders.pubkey import Pubkey
 from solders.rpc.responses import GetTransactionResp
@@ -40,7 +40,7 @@ async def get_block_transactions(client: AsyncClient, slot: int) -> Optional[
             block = await client.get_block(slot, max_supported_transaction_version=0)
             return block.value.block_time, block.value.transactions
         except Exception as e:
-            logging.error("Failed to load block", e)
+            logger.exception("Failed to load block", slot=slot)
             retries += 1
             await sleep(3)
 
@@ -58,7 +58,7 @@ async def get_user_trades_in_block(user: Pubkey, slot: int, rpc: str) -> List[Tr
                 trades.append(trade)
         return trades
     except Exception as e:
-        logging.error("Failed to load trades", e)
+        logger.exception("Failed to load trades", trader=str(user))
         return trades
 
 
@@ -76,7 +76,7 @@ def get_user_trade(user: Pubkey, tx: EncodedTransactionWithStatusMeta, block_tim
         return Trade(str(user), token, token_amount, sol_amount, sol_amount < 0, token_holding_after,
                      block_time_stamp_to_datetime(block_time))
     except Exception as e:
-        logging.error("Failed to load trades", e)
+        logger.exception("Failed to load trades", trader=str(user))
         return None
 
 

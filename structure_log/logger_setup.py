@@ -1,4 +1,5 @@
 import os
+import sys
 
 from loguru import logger
 from loki_logger_handler.formatters.loguru_formatter import LoguruFormatter
@@ -16,7 +17,11 @@ custom_handler = LokiLoggerHandler(
     default_formatter=LoguruFormatter()
 )
 
-logger.configure(handlers=[{"sink": custom_handler, "serialize": True}])
+logger.configure(handlers=[{"sink": custom_handler, "serialize": True},
+                           {"sink": sys.stdout,
+                            "format": "<green>{time}</green> <level>{message}</level>"}])
+
+__all__ = ["logger"]
 
 # Example usage
 if __name__ == "__main__":

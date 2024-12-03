@@ -3,7 +3,7 @@ from telethon.tl.functions.channels import GetForumTopicsRequest
 
 from cache_helper import get_cache_data, cache_exists, write_data_to_cache
 from constants import TOPIC_ID
-from loguru import logger
+from structure_log.logger_setup import logger
 
 
 async def get_last_message_in_topic(client, chat_id, topic_id):

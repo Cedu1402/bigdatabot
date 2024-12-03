@@ -1,5 +1,5 @@
 import redis
-from loguru import logger
+from structure_log.logger_setup import logger
 
 from constants import REDIS_URL, BAD_TRADES_KEY, BAD_TOKENS_KEY, GOOD_TRADES_KEY, \
     GOOD_TOKENS_KEY, GLOBAL_PROFIT_KEY
@@ -35,10 +35,6 @@ async def update_global_profit(r, amount: float):
 
 async def increment_counter(r, key: str):
     await r.incr(key)
-
-
-async def decrement_counter(r, key: str):
-    await r.decr(key)
 
 
 async def add_to_redis_list(r, list_key: str, value: str):

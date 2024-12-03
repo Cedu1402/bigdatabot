@@ -2,7 +2,7 @@ import asyncio
 
 import aiohttp
 
-from loguru import logger
+from structure_log.logger_setup import logger
 
 
 async def make_http_request(method: str, url: str, **kwargs):

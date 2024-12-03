@@ -2,7 +2,7 @@
 
 import numpy as np
 import pandas as pd
-from loguru import logger
+from structure_log.logger_setup import logger
 
 from constants import TOKEN_COlUMN, TRADING_MINUTE_COLUMN, PRICE_COLUMN, PRICE_PCT_CHANGE, \
     SOL_PRICE, MARKET_CAP_USD, PERCENTAGE_OF_1_MILLION_MARKET_CAP, BUY_VOLUME_COLUMN, \

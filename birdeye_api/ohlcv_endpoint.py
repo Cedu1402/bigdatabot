@@ -1,6 +1,5 @@
-import logging
 from datetime import datetime, timedelta
-
+from structure_log.logger_setup import logger
 import aiohttp
 import pandas as pd
 
@@ -41,7 +40,7 @@ async def get_time_frame_ohlcv(token: str, trading_minute: datetime, window: int
 
         return ohlcv_to_dataframe(data)
     except Exception as e:
-        logging.error(e)
+        logger.error(e)
         return pd.DataFrame()
 
 
