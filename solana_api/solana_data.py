@@ -52,10 +52,12 @@ async def get_user_trades_in_block(user: Pubkey, slot: int, rpc: str) -> List[Tr
     try:
         client = AsyncClient(rpc)
         block_time, tx_list = await get_block_transactions(client, slot)
+        logger.info("Loaded block details", slot=slot)
         for tx in tx_list:
             trade = get_user_trade(user, tx, block_time)
             if trade is not None:
                 trades.append(trade)
+                logger.info("found trades in block", slot=slot)
         return trades
     except Exception as e:
         logger.exception("Failed to load trades", trader=str(user))
