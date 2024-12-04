@@ -2,7 +2,6 @@ from asyncio import sleep
 from datetime import datetime
 from typing import Optional, Tuple, List
 
-from structure_log.logger_setup import logger
 from solana.rpc.async_api import AsyncClient
 from solders.pubkey import Pubkey
 from solders.rpc.responses import GetTransactionResp
@@ -10,6 +9,7 @@ from solders.transaction_status import EncodedTransactionWithStatusMeta
 
 from constants import PUMP_DOT_FUN_ID
 from solana_api.trade_model import Trade
+from structure_log.logger_setup import logger
 
 
 def block_time_stamp_to_datetime(timestamp: int) -> datetime:
@@ -69,13 +69,17 @@ def get_user_trade(user: Pubkey, tx: EncodedTransactionWithStatusMeta, block_tim
         if not is_user_trade(tx, user):
             return None
 
-        if not (is_raydium_trade(tx) or is_raydium_trade(tx)):
+        if not (is_pump_fun_trade(tx) or is_raydium_trade(tx)):
             return None
 
         sol_amount = get_sol_change(tx, user)
-        token, token_amount, token_holding_after = get_token_change(tx, user)
+        token_data = get_token_change(tx, user)
+        if token_data is None:
+            return None
 
-        return Trade(str(user), token, token_amount, sol_amount, sol_amount < 0, token_holding_after,
+        token, token_amount, token_holding_after = token_data
+
+        return Trade(str(user), str(token), token_amount, sol_amount, sol_amount < 0, token_holding_after,
                      block_time_stamp_to_datetime(block_time))
     except Exception as e:
         logger.exception("Failed to load trades", trader=str(user))
@@ -101,11 +105,11 @@ def get_sol_change(tx: EncodedTransactionWithStatusMeta, user: Pubkey) -> Option
 def get_token_change(tx: EncodedTransactionWithStatusMeta, user: Pubkey) -> Optional[Tuple[Pubkey, int, int]]:
     user_pre_balances = [
         balance for balance in tx.meta.pre_token_balances
-        if balance.owner == user
+        if balance.owner == user and str(balance.mint) != 'So11111111111111111111111111111111111111112'
     ]
     user_post_balances = [
         balance for balance in tx.meta.post_token_balances
-        if balance.owner == user
+        if balance.owner == user and str(balance.mint) != 'So11111111111111111111111111111111111111112'
     ]
 
     # more than one token involved.
@@ -140,6 +144,9 @@ def is_pump_fun_trade(tx: EncodedTransactionWithStatusMeta) -> bool:
 
 
 def is_raydium_trade(tx: EncodedTransactionWithStatusMeta) -> bool:
+    if Pubkey.from_string("675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8") in tx.transaction.message.account_keys:
+        return True
+
     for log in tx.meta.log_messages:
         if "SwapEvent { dex: RaydiumSwap" in log:
             return True

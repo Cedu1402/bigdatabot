@@ -5,12 +5,13 @@ from typing import List
 import websockets
 from dotenv import load_dotenv
 from rq import Queue
-from structure_log.logger_setup import logger
+
 from bot.event_worker import handle_user_event
 from constants import SOLANA_WS, EVENT_QUEUE, BIN_AMOUNT_KEY
 from data.redis_helper import get_sync_redis
 from env_data.get_env_value import get_env_value
 from ml_model.decision_tree_model import DecisionTreeModel
+from structure_log.logger_setup import logger
 
 subscription_map = {}
 
@@ -28,6 +29,7 @@ async def on_message(websocket):
             queue.enqueue(handle_user_event, (trader, data))
         except Exception as e:
             logger.exception("Failed to process message")
+            break
 
 
 # Function to subscribe to account changes via WebSocket
@@ -60,13 +62,20 @@ async def main():
 
     traders = [column.replace("trader_", "").replace("_state", "") for column in model.get_columns() if
                "trader_" in column]
+    retries = 0
+    while True:
+        try:
+            async with websockets.connect(ws_url) as websocket:
+                logger.info("Connected to WebSocket")
+                # Subscribe to accounts via WebSocket
+                await subscribe_to_accounts(websocket, traders)
+                # Handle incoming WebSocket messages
+                await on_message(websocket)
+        except Exception as e:
+            logger.exception(f"Unexpected error: {e}. Retrying in {2 ** retries} seconds...")
 
-    async with websockets.connect(ws_url) as websocket:
-        # Subscribe to accounts via WebSocket
-        await subscribe_to_accounts(websocket, traders)
-
-        # Handle incoming WebSocket messages
-        await on_message(websocket)
+        retries += 1
+        await asyncio.sleep(min(30, 2 ** retries))
 
 
 if __name__ == '__main__':

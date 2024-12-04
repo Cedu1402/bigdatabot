@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from datetime import datetime
 
 
@@ -11,3 +11,8 @@ class Trade:
     buy: bool
     token_holding_after: float
     time: datetime
+
+    def __iter__(self):
+        data = asdict(self)
+        data["time"] = self.time.isoformat()  # Convert datetime to string
+        return iter(data.items())

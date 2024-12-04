@@ -2,7 +2,6 @@ import json
 from datetime import datetime
 
 from dotenv import load_dotenv
-from structure_log.logger_setup import logger
 from rq import Queue
 from solders.pubkey import Pubkey
 
@@ -12,6 +11,7 @@ from constants import TOKEN_QUEUE, CREATE_PREFIX, TRADE_PREFIX, CURRENT_EVENT_WA
 from data.redis_helper import get_async_redis, decrement_counter, get_sync_redis
 from env_data.get_env_value import get_env_value
 from solana_api.solana_data import get_user_trades_in_block
+from structure_log.logger_setup import logger
 
 
 async def handle_user_event(event):
@@ -23,25 +23,25 @@ async def handle_user_event(event):
         await r.incr(CURRENT_EVENT_WATCH_KEY)
 
         trader, data = event
-        logger.info(f"Received change for trader {trader}")
+        logger.info(f"Received change for trader {trader}", trader=trader)
         slot = data["params"]["result"]["context"]["slot"]
 
         solana_rpc = get_env_value(SOL_RPC)
         trades = await get_user_trades_in_block(Pubkey.from_string(trader), slot, solana_rpc)
         if len(trades) == 0:
-            logger.info(f"No trades found for {trader} {slot}")
+            logger.info(f"No trades found for {trader} {slot}", trader=trader, slot=slot)
             return
 
-        logger.info(f"Trade found for trader {trader}")
+        logger.info(f"Trade found for trader {trader}", trader=trader)
         for trade in trades:
             # check if coin is in list already
-            token_exist = r.exists(trade.token)
-            # check if buy was over 1 sol
-            if not token_exist and trade.buy and abs(trade.sol_amount) < 1000000000:
-                logger.info("Buy was not over one sol", trade=trade)
-                continue
+            token_exist = await r.exists(trade.token)
+            # # check if buy was over 1 sol
+            # if not token_exist and trade.buy and abs(trade.sol_amount) < 1000000000:
+            #     logger.info("Buy was not over one sol", trade=trade)
+            #     continue
 
-            token_create_time = r.get(CREATE_PREFIX + trade.token)
+            token_create_time = await r.get(CREATE_PREFIX + trade.token)
             if token_create_time is None:
                 try:
                     token_create_time = await get_token_create_time(trade.token)
