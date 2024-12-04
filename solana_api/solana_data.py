@@ -42,7 +42,7 @@ async def get_block_transactions(client: AsyncClient, slot: int) -> Optional[
         except Exception as e:
             logger.exception("Failed to load block", slot=slot)
             retries += 1
-            await sleep(3)
+            await sleep(20)
 
     return 0, []
 
