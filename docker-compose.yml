@@ -55,7 +55,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: rq worker --url redis://redis:6379 TOKEN_QUEUE --timeout 19000
+    command: rq worker --url redis://redis:6379 TOKEN_QUEUE
     environment:
       - REDIS_URL=redis
       - LOKI_URL=loki
@@ -71,7 +71,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: rq worker --url redis://redis:6379 TRADE_QUEUE --timeout 9000
+    command: rq worker --url redis://redis:6379 TRADE_QUEUE
     environment:
       - REDIS_URL=redis
       - LOKI_URL=loki

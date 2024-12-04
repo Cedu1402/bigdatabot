@@ -19,7 +19,7 @@ async def handle_user_event(event):
     load_dotenv()
 
     try:
-        queue = Queue(TOKEN_QUEUE, connection=get_sync_redis())
+        queue = Queue(TOKEN_QUEUE, connection=get_sync_redis(), default_timeout=19000)
         await r.incr(CURRENT_EVENT_WATCH_KEY)
 
         trader, data = event

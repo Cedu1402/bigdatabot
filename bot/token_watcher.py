@@ -69,7 +69,7 @@ async def watch_token(token) -> bool:
     if check_if_token_done(token, r):
         return False
 
-    queue = Queue(TRADE_QUEUE, connection=get_sync_redis())
+    queue = Queue(TRADE_QUEUE, connection=get_sync_redis(), default_timeout=9000)
     await r.incr(CURRENT_TOKEN_WATCH_KEY)
     config = dict()
     config[BIN_AMOUNT_KEY] = 10
