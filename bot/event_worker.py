@@ -15,11 +15,11 @@ from structure_log.logger_setup import logger
 
 
 async def handle_user_event(event):
+    r = get_async_redis()
+    load_dotenv()
     try:
-        r = get_async_redis()
-        load_dotenv()
         subscription_map = await r.get(SUBSCRIPTION_MAP)
-        logger.info("Raw subscription_map", subscription_map=subscription_map)
+        logger.info(f"Raw subscription_map {subscription_map}", subscription_map=subscription_map)
         subscription_map = json.loads(subscription_map)
         logger.info("Parsed subscription_map", subscription_map=subscription_map)
         data = json.loads(event)
