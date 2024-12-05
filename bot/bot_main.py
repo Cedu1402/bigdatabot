@@ -7,8 +7,8 @@ from dotenv import load_dotenv
 from rq import Queue
 
 from bot.event_worker import handle_user_event
-from constants import SOLANA_WS, EVENT_QUEUE, BIN_AMOUNT_KEY
-from data.redis_helper import get_sync_redis
+from constants import SOLANA_WS, EVENT_QUEUE, BIN_AMOUNT_KEY, SUBSCRIPTION_MAP
+from data.redis_helper import get_sync_redis, get_async_redis
 from env_data.get_env_value import get_env_value
 from ml_model.decision_tree_model import DecisionTreeModel
 from structure_log.logger_setup import logger
@@ -23,10 +23,7 @@ async def on_message(websocket):
     while True:
         try:
             message = await websocket.recv()
-            data = json.loads(message)
-            trader = subscription_map[data["params"]["subscription"]]
-            logger.info(f"Received wallet action {trader}", data=data, trader=trader)
-            queue.enqueue(handle_user_event, (trader, data))
+            queue.enqueue(handle_user_event, message)
         except Exception as e:
             logger.exception("Failed to process message")
             break
@@ -59,17 +56,18 @@ async def main():
     config[BIN_AMOUNT_KEY] = 10
     model = DecisionTreeModel(config)
     model.load_model("simple_tree")
-
+    r = get_async_redis()
     traders = [column.replace("trader_", "").replace("_state", "") for column in model.get_columns() if
                "trader_" in column]
     retries = 0
     while True:
         try:
-            async with websockets.connect(ws_url) as websocket:
+            async with websockets.connect(ws_url, max_size=200**7) as websocket:
                 logger.info("Connected to WebSocket")
                 # Subscribe to accounts via WebSocket
                 await subscribe_to_accounts(websocket, traders)
                 # Handle incoming WebSocket messages
+                await r.set(SUBSCRIPTION_MAP, json.dumps(subscription_map))
                 await on_message(websocket)
         except Exception as e:
             logger.exception(f"Unexpected error: {e}. Retrying in {2 ** retries} seconds...")

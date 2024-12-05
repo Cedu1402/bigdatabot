@@ -7,7 +7,7 @@ from solders.pubkey import Pubkey
 
 from birdeye_api.token_creation_endpoint import get_token_create_time
 from bot.token_watcher import watch_token
-from constants import TOKEN_QUEUE, CREATE_PREFIX, TRADE_PREFIX, CURRENT_EVENT_WATCH_KEY, SOL_RPC
+from constants import TOKEN_QUEUE, CREATE_PREFIX, TRADE_PREFIX, CURRENT_EVENT_WATCH_KEY, SOL_RPC, SUBSCRIPTION_MAP
 from data.redis_helper import get_async_redis, decrement_counter, get_sync_redis
 from env_data.get_env_value import get_env_value
 from solana_api.solana_data import get_user_trades_in_block
@@ -15,15 +15,17 @@ from structure_log.logger_setup import logger
 
 
 async def handle_user_event(event):
-    r = get_async_redis()
-    load_dotenv()
-
     try:
+        r = get_async_redis()
+        load_dotenv()
+        subscription_map = json.loads(await r.get(SUBSCRIPTION_MAP))
+        data = json.loads(event)
+        trader = subscription_map[data["params"]["subscription"]]
+        logger.info(f"Received wallet action {trader}", data=data, trader=trader)
+
         queue = Queue(TOKEN_QUEUE, connection=get_sync_redis(), default_timeout=19000)
         await r.incr(CURRENT_EVENT_WATCH_KEY)
 
-        trader, data = event
-        logger.info(f"Received change for trader {trader}", trader=trader)
         slot = data["params"]["result"]["context"]["slot"]
 
         solana_rpc = get_env_value(SOL_RPC)
