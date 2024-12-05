@@ -70,7 +70,7 @@ async def main():
                 await r.set(SUBSCRIPTION_MAP, json.dumps(subscription_map))
                 await on_message(websocket)
         except Exception as e:
-            logger.exception(f"Unexpected error: {e}. Retrying in {2 ** retries} seconds...")
+            logger.exception(f"Unexpected error. Retrying in {2 ** retries} seconds...")
 
         retries += 1
         await asyncio.sleep(min(30, 2 ** retries))
