@@ -20,6 +20,8 @@ services:
     depends_on:
       - loki
     restart: always
+    volumes:
+      - grafana_data:/var/lib/grafana
     networks:
       - app_network
 
@@ -129,6 +131,8 @@ volumes:
   loki_data:
     driver: local
   redis_data:
+    driver: local
+  grafana_data:
     driver: local
 
 networks:
