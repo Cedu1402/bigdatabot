@@ -23,7 +23,11 @@ async def handle_user_event(event):
         subscription_map = json.loads(subscription_map)
         logger.info("Parsed subscription_map", subscription_map=subscription_map)
         data = json.loads(event)
-        trader = subscription_map[data["params"]["subscription"]]
+        sub_id = data["params"]["subscription"]
+        logger.info("Trader id form event", sub_id=sub_id)
+        trader = subscription_map.get(sub_id, None)
+        if trader is None:
+            logger.error("Trader not found in map", sub_id=sub_id, subscription_map=subscription_map)
         logger.info(f"Received wallet action {trader}", data=data, trader=trader)
 
         queue = Queue(TOKEN_QUEUE, connection=get_sync_redis(), default_timeout=19000)
