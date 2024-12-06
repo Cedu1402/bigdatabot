@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta
 
 import aiohttp
@@ -7,8 +8,8 @@ from constants import BIRDEYE_KEY, TRADING_MINUTE_COLUMN, TOKEN_COlUMN, TOTAL_VO
     PRICE_COLUMN, BIRD_EYE_COUNTER
 from data.redis_helper import get_async_redis
 from env_data.get_env_value import get_env_value
-from structure_log.logger_setup import logger
-
+import logging
+logger = logging.getLogger(__name__)
 
 def ohlcv_to_dataframe(result: dict) -> pd.DataFrame:
     items = result.get("data", {}).get("items", [])

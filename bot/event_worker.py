@@ -14,7 +14,7 @@ from constants import TOKEN_QUEUE, CREATE_PREFIX, TRADE_PREFIX, CURRENT_EVENT_WA
 from data.redis_helper import get_async_redis, decrement_counter, get_sync_redis
 from env_data.get_env_value import get_env_value
 from solana_api.solana_data import get_latest_user_trade
-from structure_log.logger_setup import logger, setup_logger, ensure_logging_flushed
+from structure_log.logger_setup import setup_logger, ensure_logging_flushed
 
 setup_logger("event_worker")
 

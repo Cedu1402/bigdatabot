@@ -14,8 +14,8 @@ from data.sliding_window import unroll_data
 from ml_model.base_model import BaseModel
 from ml_model.load_model import load_model
 from ml_model.model_evaluation import print_evaluation
-from structure_log.logger_setup import logger
-
+import logging
+logger = logging.getLogger(__name__)
 
 class DecisionTreeModel(BaseModel):
 

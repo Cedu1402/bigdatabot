@@ -5,8 +5,8 @@ from telethon.tl.types import Channel
 
 from cache_helper import cache_exists, get_cache_data, write_data_to_cache
 from constants import CHAT_ID
-from structure_log.logger_setup import logger
-
+import logging
+logger = logging.getLogger(__name__)
 
 async def get_chat(client: TelegramClient, chat_name: str) -> Optional[Channel]:
     """Get last message from specified channels."""

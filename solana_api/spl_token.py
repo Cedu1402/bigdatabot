@@ -8,9 +8,8 @@ from solana.rpc.commitment import Confirmed
 from solders.keypair import Keypair
 from solders.pubkey import Pubkey
 from solders.token.associated import get_associated_token_address
-
-from structure_log.logger_setup import logger
-
+import logging
+logger = logging.getLogger(__name__)
 
 async def get_token_balance(client: AsyncClient, wallet: Keypair, token_ca: str, retries: int = 5,
                             delay: int = 1) -> int:

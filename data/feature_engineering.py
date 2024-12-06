@@ -6,7 +6,8 @@ import pandas as pd
 from constants import TOKEN_COlUMN, TRADING_MINUTE_COLUMN, PRICE_COLUMN, PRICE_PCT_CHANGE, \
     SOL_PRICE, MARKET_CAP_USD, PERCENTAGE_OF_1_MILLION_MARKET_CAP, BUY_VOLUME_COLUMN, \
     SELL_VOLUME_COLUMN, TOTAL_VOLUME_COLUMN, TOTAL_VOLUME_PCT_CHANGE
-from structure_log.logger_setup import logger
+import logging
+logger = logging.getLogger(__name__)
 
 
 def bin_data(data: List[pd.DataFrame], columns: List[str], bin_edges: Dict[str, List[float]]) -> List[pd.DataFrame]:

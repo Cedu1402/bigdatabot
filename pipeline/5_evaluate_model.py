@@ -7,7 +7,8 @@ from constants import BIN_AMOUNT_KEY, CONFIG_2_FILE
 from data.dataset import prepare_validation_data
 from ml_model.decision_tree_model import DecisionTreeModel
 from ml_model.model_evaluation import print_evaluation
-from structure_log.logger_setup import logger
+import logging
+logger = logging.getLogger(__name__)
 
 
 def evaluate_model(use_cache: bool):

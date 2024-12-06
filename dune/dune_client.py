@@ -2,7 +2,8 @@ from dune_client.client import DuneClient
 
 from constants import DUNE_API_KEY
 from env_data.get_env_value import get_env_value
-from structure_log.logger_setup import logger
+import logging
+logger = logging.getLogger(__name__)
 
 
 def get_dune_client():

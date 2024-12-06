@@ -5,9 +5,8 @@ import base58
 from dotenv import load_dotenv
 from solana.rpc.async_api import AsyncClient
 from solders.keypair import Keypair
-
-from structure_log.logger_setup import logger
-
+import logging
+logger = logging.getLogger(__name__)
 
 async def get_wallet_balance(client: AsyncClient, wallet: Keypair):
     """Fetches the wallet balance in lamports (1 SOL = 1e9 lamports)."""

@@ -10,7 +10,8 @@ from solders.message import to_bytes_versioned
 from solders.transaction import VersionedTransaction
 
 from solana_api.http_helper import make_http_request_with_retry
-from structure_log.logger_setup import logger
+import logging
+logger = logging.getLogger(__name__)
 
 # Mint address for SOL token
 SOL_MINT = 'So11111111111111111111111111111111111111112'

@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from constants import DUMMY_INVESTMENT_AMOUNT, CURRENT_TRADE_WATCH_KEY
 from data.redis_helper import get_async_redis, handle_failed_trade, handle_successful_trade, decrement_counter
 from solana_api.jupiter_api import get_token_price
-from structure_log.logger_setup import logger, setup_logger
+from structure_log.logger_setup import setup_logger
 
 
 async def watch_trade(token: str):
