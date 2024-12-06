@@ -2,7 +2,6 @@ import unittest
 from datetime import datetime
 
 from dotenv import load_dotenv
-from solana.rpc.async_api import AsyncClient
 
 from birdeye_api.token_creation_endpoint import get_token_create_info
 from constants import PUMP_DOT_FUN_AUTHORITY

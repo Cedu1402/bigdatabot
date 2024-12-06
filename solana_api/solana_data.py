@@ -125,7 +125,7 @@ def get_user_trade(user: Pubkey, tx: EncodedTransactionWithStatusMeta, block_tim
         token, token_amount, token_holding_after = token_data
 
         return Trade(str(user), str(token), token_amount, sol_amount, sol_amount < 0, token_holding_after,
-                     block_time_stamp_to_datetime(block_time))
+                     block_time_stamp_to_datetime(block_time).isoformat())
     except Exception as e:
         logger.exception("Failed to load trades", trader=str(user))
         return None

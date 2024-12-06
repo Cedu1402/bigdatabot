@@ -49,7 +49,7 @@ def get_from_api(query_id: int) -> Optional[ResultsResponse]:
         write_data_to_cache(query_id, query_result)
         return query_result
     except Exception as e:
-        logger.exception(e, "An unexpected error occurred while fetching query result.")
+        logger.exception("An unexpected error occurred while fetching query result.")
         return None
 
 

@@ -73,15 +73,21 @@ def get_trader_form_event(event, subscription_map: Dict[int, str]) -> Optional[s
     return trader
 
 
-async def handle_user_event(event):
+def setup_handler() -> Tuple[redis.asyncio.Redis, Queue]:
     r = get_async_redis()
     load_dotenv()
     setup_logger("event_worker")
+    queue = Queue(TOKEN_QUEUE, connection=get_sync_redis(), default_timeout=19000)
+    return r, queue
+
+
+async def handle_user_event(event):
+    r, queue = setup_handler()
+
     try:
         subscription_map = await get_subscription_map(r)
         trader = get_trader_form_event(event, subscription_map)
 
-        queue = Queue(TOKEN_QUEUE, connection=get_sync_redis(), default_timeout=19000)
         await r.incr(CURRENT_EVENT_WATCH_KEY)
 
         solana_rpc = get_env_value(SOL_RPC)
@@ -90,21 +96,12 @@ async def handle_user_event(event):
             logger.info(f"No trades found for {trader}", trader=trader)
             return
 
-        if not trade.token.endswith("pump"):
-            logger.info("Not a pump fun token", token=trade.token)
-            return
-
         logger.info(f"Trade found for trader {trader}", trader=trader)
         # check if coin is in list already
         token_exist = await r.exists(trade.token)
 
         if not (await check_token_create_info(r, trade.token)):
             return
-
-        # # check if buy was over 1 sol
-        # if not token_exist and trade.buy and abs(trade.sol_amount) < 1000000000:
-        #     logger.info("Buy was not over one sol", trade=trade)
-        #     continue
 
         # add coin to list if not
         await r.lpush(TRADE_PREFIX + trade.token, json.dumps(trade))

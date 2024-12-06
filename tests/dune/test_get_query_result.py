@@ -1,9 +1,6 @@
 import unittest
 from unittest.mock import patch
 
-import pandas as pd
-from dune_client.client import DuneClient
-
 from constants import DUNE_API_KEY, TRADE_LIST_QUERY
 from dune.query_request import get_query_result
 

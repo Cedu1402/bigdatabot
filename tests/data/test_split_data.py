@@ -1,6 +1,7 @@
 import unittest
-import pandas as pd
 from typing import List
+
+import pandas as pd
 
 from data.data_split import split_data
 

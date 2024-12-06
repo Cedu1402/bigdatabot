@@ -1,9 +1,9 @@
 import redis
-from structure_log.logger_setup import logger
 
 from constants import REDIS_URL, BAD_TRADES_KEY, BAD_TOKENS_KEY, GOOD_TRADES_KEY, \
     GOOD_TOKENS_KEY, GLOBAL_PROFIT_KEY
 from env_data.get_env_value import get_env_value
+from structure_log.logger_setup import logger
 
 
 def get_redis_url() -> str:

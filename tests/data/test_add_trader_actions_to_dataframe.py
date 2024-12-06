@@ -13,10 +13,10 @@ class TestRunner(unittest.TestCase):
 
         # Sample trades for testing
         self.trades = [
-            Trade("trader1", "token", 1, 1, True, 5, datetime(2024, 11, 30, 15, 44)),
-            Trade("trader1", "token", 1, 1, False, 2, datetime(2024, 11, 30, 15, 43)),
-            Trade("trader2", "token", 1, 1, True, 3, datetime(2024, 11, 30, 15, 42)),
-            Trade("trader2", "token", 1, 1, False, 0, datetime(2024, 11, 30, 15, 41)),
+            Trade("trader1", "token", 1, 1, True, 5, datetime(2024, 11, 30, 15, 44).isoformat()),
+            Trade("trader1", "token", 1, 1, False, 2, datetime(2024, 11, 30, 15, 43).isoformat()),
+            Trade("trader2", "token", 1, 1, True, 3, datetime(2024, 11, 30, 15, 42).isoformat()),
+            Trade("trader2", "token", 1, 1, False, 0, datetime(2024, 11, 30, 15, 41).isoformat()),
         ]
 
     def test_add_trader_actions_to_dataframe(self):

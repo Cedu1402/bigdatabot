@@ -4,15 +4,14 @@ import os
 
 import base58
 from dotenv import load_dotenv
-from solana.rpc.api import Client
 from solana.rpc.async_api import AsyncClient
 from solders.keypair import Keypair
 
-from structure_log.logger_setup import logger
 from solana_api.data_parser import extract_data
 from solana_api.jupiter_api import buy_token, get_quote, sell_token
-from solana_api.spl_token import get_token_balance, format_token_amount
+from solana_api.spl_token import get_token_balance
 from solana_api.wallet_data import get_wallet_balance
+from structure_log.logger_setup import logger
 
 DUMP_WAIT_TIME = 43200
 

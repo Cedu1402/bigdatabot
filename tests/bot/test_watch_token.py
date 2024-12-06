@@ -36,7 +36,7 @@ class TestRunner(unittest.IsolatedAsyncioTestCase):
         mock_queue.return_value = mock_queue_instance
 
         # Mock get_valid_trades_of_token
-        mock_get_valid_trades.return_value = [Trade("1", "2", 1, 1, True, 1, datetime.utcnow() - timedelta(hours=1))]
+        mock_get_valid_trades.return_value = [Trade("1", "2", 1, 1, True, 1, (datetime.utcnow() - timedelta(hours=1)).isoformat())]
 
         # Mock get_base_data
         mock_get_base_data.return_value = pd.DataFrame(

@@ -7,7 +7,6 @@ from typing import List
 import pandas as pd
 import redis
 from dotenv import load_dotenv
-from structure_log.logger_setup import logger, setup_logger
 from rq import Queue
 
 from birdeye_api.ohlcv_endpoint import get_time_frame_ohlcv
@@ -22,6 +21,7 @@ from data.redis_helper import get_async_redis, decrement_counter, get_sync_redis
 from data.trade_data import get_valid_trades, add_trader_actions_to_dataframe, get_traders
 from ml_model.decision_tree_model import DecisionTreeModel
 from solana_api.trade_model import Trade
+from structure_log.logger_setup import logger, setup_logger
 
 
 async def get_valid_trades_of_token(token: str, r: redis.Redis, trading_minute: datetime) -> List[Trade]:

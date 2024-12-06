@@ -4,6 +4,7 @@ import pandas as pd
 
 from data.model_data import remove_columns
 
+
 class TestRunner(unittest.TestCase):
 
     def setUp(self):

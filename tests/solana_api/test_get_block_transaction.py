@@ -1,4 +1,3 @@
-import asyncio
 import unittest
 
 from solana.rpc.async_api import AsyncClient

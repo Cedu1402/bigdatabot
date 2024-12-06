@@ -1,7 +1,8 @@
 import unittest
+from datetime import datetime, timedelta
+
 import pandas as pd
 from pandas.testing import assert_frame_equal
-from datetime import datetime, timedelta
 
 from data.combine_price_trades import calculate_minute_positions
 

@@ -1,4 +1,5 @@
 import unittest
+
 import pandas as pd
 
 from constants import TOKEN_COlUMN, PRICE_COLUMN

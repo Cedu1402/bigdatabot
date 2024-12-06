@@ -5,9 +5,9 @@ from dotenv import load_dotenv
 from config.config_reader import load_yaml_to_dict
 from constants import BIN_AMOUNT_KEY, CONFIG_2_FILE
 from data.dataset import prepare_validation_data
-from structure_log.logger_setup import logger
 from ml_model.decision_tree_model import DecisionTreeModel
 from ml_model.model_evaluation import print_evaluation
+from structure_log.logger_setup import logger
 
 
 def evaluate_model(use_cache: bool):

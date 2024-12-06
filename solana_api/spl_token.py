@@ -3,7 +3,6 @@ import os
 
 import base58
 from dotenv import load_dotenv
-from solana.rpc.api import Client
 from solana.rpc.async_api import AsyncClient
 from solana.rpc.commitment import Confirmed
 from solders.keypair import Keypair
@@ -32,7 +31,7 @@ async def get_token_balance(client: AsyncClient, wallet: Keypair, token_ca: str,
 
             logger.info("Attempt %d: Balance is 0, retrying in %d seconds...", attempt + 1, delay)
         except Exception as e:
-            logger.error(e, "Failed to get token balance")
+            logger.exception("Failed to get token balance")
         finally:
             await asyncio.sleep(delay)
 

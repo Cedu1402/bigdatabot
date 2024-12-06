@@ -4,10 +4,10 @@ from datetime import datetime, timedelta
 
 from binance import AsyncClient, BinanceSocketManager
 from dotenv import load_dotenv
-from structure_log.logger_setup import logger
 
 from constants import SOLANA_PRICE
 from data.redis_helper import get_async_redis
+from structure_log.logger_setup import logger
 
 
 async def main():

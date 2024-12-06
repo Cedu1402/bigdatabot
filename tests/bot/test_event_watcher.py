@@ -1,63 +1,91 @@
+import json
 import unittest
 from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest import mock
+from unittest.mock import AsyncMock
 
-from bot.event_worker import handle_user_event
-from constants import CREATE_PREFIX, TRADE_PREFIX
+from solders.pubkey import Pubkey
+
+from bot.event_worker import handle_user_event  # Replace with actual import path
+from bot.token_watcher import watch_token
+from constants import CURRENT_EVENT_WATCH_KEY, TRADE_PREFIX
+from solana_api.trade_model import Trade
 
 
-class TestRunner(unittest.IsolatedAsyncioTestCase):
-    @patch("bot.event_worker.get_async_redis")
-    @patch("bot.event_worker.get_sync_redis")
-    @patch("bot.event_worker.Queue")
-    async def test_handle_user_event(
-            self, mock_queue, mock_get_sync_redis, mock_get_async_redis
-    ):
-        # Mock Redis and RQ objects
-        mock_async_redis = AsyncMock()
-        mock_sync_redis = MagicMock()
-        mock_queue_instance = MagicMock()
-        mock_get_async_redis.return_value = mock_async_redis
-        mock_get_sync_redis.return_value = mock_sync_redis
-        mock_queue.return_value = mock_queue_instance
+class TestHandleUserEvent(unittest.IsolatedAsyncioTestCase):
 
-        # Set up test data
-        trader = "B5QzGuMknM2jTwUPzTBL4SbV6Zta6VAGMpTADCkbiwAq"
-        event = (trader, {"params": {"result": {"context": {"slot": 305072709}}}})
-        mock_async_redis.exists.return_value = False
-        mock_async_redis.get.return_value = None
+    @mock.patch('bot.event_worker.get_env_value')
+    @mock.patch('bot.event_worker.get_async_redis')
+    @mock.patch('bot.event_worker.get_sync_redis')
+    @mock.patch('bot.event_worker.get_latest_user_trade')
+    @mock.patch('bot.event_worker.check_token_create_info')
+    @mock.patch('bot.event_worker.Queue')
+    @mock.patch('bot.event_worker.decrement_counter')
+    async def test_handle_user_event(self, mock_decrement_counter, mock_queue, mock_check_token_create_info,
+                                     mock_get_latest_user_trade, mock_get_sync_redis, mock_get_async_redis,
+                                     mock_get_env_value):
+        # Mock Redis instance
+        mock_redis = AsyncMock()
+        mock_get_async_redis.return_value = mock_redis
+        mock_get_sync_redis.return_value = mock_redis
+
+        # Mock environment variables
+        mock_get_env_value.return_value = "https://api.mainnet-beta.solana.com"
+
+        # Mock trade data
+        trader = "GWwmd3zZQnLvqvixKGD3RKtaFVAtfPn1kGN4bx8tHRTR"
+        trade_data = Trade(trader, "testpump", 100, 1, True, 10, datetime.now().isoformat())
+        mock_get_latest_user_trade.return_value = trade_data
+
+        # Mock check_token_create_info to always return True
+        mock_check_token_create_info.return_value = True
+
+        # Mock Queue and enqueue method
+        mock_enqueue = mock.Mock()
+        mock_queue.return_value.enqueue = mock_enqueue
+
+        # Event data (from WebSocket message)
+        event_data = {
+            "jsonrpc": "2.0",
+            "method": "accountNotification",
+            "params": {
+                "result": {
+                    "context": {"slot": 5199307},
+                    "value": {
+                        "data": [
+                            "11116bv5nS2h3y12kD1yUKeMZvGcKLSjQgX6BeV7u1FrjeJcKfsHPXHRDEHrBesJhZyqnnq9qJeUuF7WHxiuLuL5twc38w2TXNLxnDbjmuR",
+                            "base58"
+                        ],
+                        "executable": False,
+                        "lamports": 33594,
+                        "owner": "11111111111111111111111111111111",
+                        "rentEpoch": 635,
+                        "space": 80
+                    }
+                },
+                "subscription": 23784
+            }
+        }
+
+        # Mock subscription_map
+        subscription_map = {23784: trader}
+
+        # Mock getting subscription map from Redis
+        mock_redis.get.return_value = json.dumps(subscription_map)
 
         # Call the function
-        await handle_user_event(event)
+        await handle_user_event(json.dumps(event_data))
 
-        # Assertions for Redis interactions
-        mock_async_redis.incr.assert_called_once_with("CURRENT_EVENT_WATCH_KEY")
+        # Ensure that the expected methods were called
+        mock_get_latest_user_trade.assert_called_once_with(Pubkey.from_string(trader),
+                                                           "https://api.mainnet-beta.solana.com")
+        mock_check_token_create_info.assert_called_once_with(mock_redis, "testpump")
+        mock_queue.return_value.enqueue.assert_called_once_with(watch_token, "testpump")
+        mock_decrement_counter.assert_called_once_with(CURRENT_EVENT_WATCH_KEY, mock_redis)
 
-        # Ensure counter was decremented
-        mock_async_redis.decr.assert_called_once_with("CURRENT_EVENT_WATCH_KEY")
-
-    @patch("your_module.get_async_redis")
-    @patch("your_module.get_sync_redis")
-    @patch("your_module.get_user_trades_in_block")
-    async def test_no_trades_found(
-            self, mock_get_user_trades_in_block, mock_get_async_redis
-    ):
-        mock_async_redis = AsyncMock()
-        mock_get_async_redis.return_value = mock_async_redis
-        mock_get_user_trades_in_block.return_value = []
-
-        trader = "trader_pubkey"
-        event = (trader, {"params": {"result": {"context": {"slot": 12345}}}})
-
-        await handle_user_event(event)
-
-        # No trades, should not enqueue or call lpush
-        mock_async_redis.lpush.assert_not_called()
-        mock_async_redis.exists.assert_not_called()
-
-        # Ensure counter was decremented
-        mock_async_redis.decr.assert_called_once_with("CURRENT_EVENT_WATCH_KEY")
+        # Verify that the token was added to Redis
+        mock_redis.lpush.assert_called_once_with(TRADE_PREFIX + "testpump", json.dumps(trade_data))
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()

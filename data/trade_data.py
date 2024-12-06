@@ -24,7 +24,7 @@ def get_traders(trades: List[Trade]) -> List[str]:
 
 def get_valid_trades(trades: List[Trade], trading_minute: datetime) -> List[Trade]:
     return [trade for trade in trades if
-            trade.time <= trading_minute + timedelta(minutes=1) - timedelta(microseconds=1)]
+            trade.get_time() <= trading_minute + timedelta(minutes=1) - timedelta(microseconds=1)]
 
 
 def get_end_of_current_minute(minute: datetime) -> datetime:
@@ -63,13 +63,13 @@ def add_trader_actions_to_dataframe(trades: List[Trade], trading_minute: datetim
         for i in range(10):
             current_minute = trading_minute - timedelta(minutes=9 - i)
             end_current_minute = get_end_of_current_minute(current_minute)
-            current_trades = [trade for trade in value if trade.time <= end_current_minute]
-            last_trade = max(current_trades, key=lambda trade: trade.time, default=None)
+            current_trades = [trade for trade in value if trade.get_time() <= end_current_minute]
+            last_trade = max(current_trades, key=lambda trade: trade.get_time(), default=None)
             if last_trade is None:
                 data.append(TraderState.NO_ACTION)
                 continue
 
-            if last_trade.time >= current_minute:
+            if last_trade.get_time() >= current_minute:
                 last_trade_state = get_trade_state(last_trade)
                 data.append(last_trade_state)
             else:

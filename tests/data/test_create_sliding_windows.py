@@ -1,7 +1,6 @@
 import os
 import unittest
 
-
 from data.pickle_files import load_from_pickle, save_to_pickle
 from data.sliding_window import create_sliding_windows
 from test_constants import TEST_DATA_FOLDER
