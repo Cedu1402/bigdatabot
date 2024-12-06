@@ -1,5 +1,6 @@
 import copy
 import json
+import logging
 from asyncio import sleep
 from datetime import datetime
 from typing import List
@@ -21,7 +22,10 @@ from data.redis_helper import get_async_redis, decrement_counter, get_sync_redis
 from data.trade_data import get_valid_trades, add_trader_actions_to_dataframe, get_traders
 from ml_model.decision_tree_model import DecisionTreeModel
 from solana_api.trade_model import Trade
-from structure_log.logger_setup import setup_logger
+from structure_log.logger_setup import setup_logger, ensure_logging_flushed
+
+setup_logger("token_watcher")
+logger = logging.getLogger(__name__)
 
 
 async def get_valid_trades_of_token(token: str, r: redis.Redis, trading_minute: datetime) -> List[Trade]:
@@ -51,7 +55,7 @@ async def check_if_token_done(token: str, r: redis.asyncio.Redis) -> bool:
     try:
         token_done = await r.get(token + "_done")
         if token_done is not None:
-            logger.info("Token done", token=token)
+            logger.info("Token done", extra={"token": str(token)})
             return True
     except Exception as e:
         logger.exception("Failed to check if token is done.")
@@ -64,7 +68,7 @@ async def watch_token(token) -> bool:
     # every minute check if we should buy
     load_dotenv()
     setup_logger("token_watcher")
-    logger.info("Start token watch", token=token)
+    logger.info("Start token watch", extra={"token": str(token)})
     r = get_async_redis()
 
     if await check_if_token_done(token, r):
@@ -86,20 +90,20 @@ async def watch_token(token) -> bool:
 
             # check if coin is older than 4h if yes exit
             if (datetime.utcnow() - token_create_time).total_seconds() > 120 * 60:
-                logger.info("Stop watch for token because of age", token=token)
+                logger.info("Stop watch for token because of age", extra={"token": str(token)})
                 return False
 
             # get trades and prepare trader columns
             valid_trades = await get_valid_trades_of_token(token, r, trading_minute)
             if len(valid_trades) == 0:
-                logger.info("No valid trades", trading_minute=trading_minute, token=token)
+                logger.info("No valid trades", extra={"token": str(token), "trading_minute": trading_minute})
                 await sleep(5)
                 continue
 
             df = await get_base_data(valid_trades, trading_minute, token)
 
             # run data preparation
-            logger.info("Adjust type of columns", trading_minute=trading_minute, token=token)
+            logger.info("Adjust type of columns", extra={"token": str(token), "trading_minute": trading_minute})
             df = convert_columns(df)
 
             # transform to sol price
@@ -107,10 +111,10 @@ async def watch_token(token) -> bool:
             df = transform_price_to_tokens_per_sol(df, solana_price)
 
             # Add features
-            logger.info("Add features", trading_minute=trading_minute, token=token)
+            logger.info("Add features", extra={"token": str(token), "trading_minute": trading_minute})
             df = add_features(df, has_total_volume=True)
 
-            logger.info("Add inactive traders", trading_minute=trading_minute, token=token)
+            logger.info("Add inactive traders", extra={"token": str(token), "trading_minute": trading_minute})
             df = add_inactive_traders(get_traders(valid_trades), model.get_columns(), df)
 
             # predict
@@ -119,7 +123,7 @@ async def watch_token(token) -> bool:
 
             # start trading task and exit
             if prediction[0]:
-                logger.info("Start trader watcher", trading_minute=trading_minute, token=token)
+                logger.info("Start trader watcher", extra={"token": str(token), "trading_minute": trading_minute})
                 queue.enqueue(watch_trade, token)
                 await r.set(token + "_done", str(True))
                 return True
@@ -130,3 +134,4 @@ async def watch_token(token) -> bool:
             continue
         finally:
             await decrement_counter(CURRENT_TOKEN_WATCH_KEY, r)
+            ensure_logging_flushed()

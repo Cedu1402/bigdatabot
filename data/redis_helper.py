@@ -1,9 +1,11 @@
+import logging
+
 import redis
 
 from constants import REDIS_URL, BAD_TRADES_KEY, BAD_TOKENS_KEY, GOOD_TRADES_KEY, \
     GOOD_TOKENS_KEY, GLOBAL_PROFIT_KEY
 from env_data.get_env_value import get_env_value
-import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -27,7 +29,7 @@ async def decrement_counter(key: str, r: redis.Redis):
     try:
         await r.decr(key)
     except Exception as e:
-        logger.exception("Failed to decrement counter", key=key)
+        logger.exception("Failed to decrement counter", extra={"key": key})
 
 
 async def update_global_profit(r, amount: float):

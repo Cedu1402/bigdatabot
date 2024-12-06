@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import datetime
 from typing import Dict, Optional, Tuple
 
@@ -17,6 +18,8 @@ from solana_api.solana_data import get_latest_user_trade
 from structure_log.logger_setup import setup_logger, ensure_logging_flushed
 
 setup_logger("event_worker")
+logger = logging.getLogger(__name__)
+
 
 async def load_token_create_info(token: str, r: redis.asyncio.Redis) -> Optional[Tuple[datetime, str]]:
     try:
@@ -41,11 +44,11 @@ async def check_token_create_info(r: redis.asyncio.Redis, token: str) -> bool:
         token_create_time = datetime.fromisoformat(token_create_time)
 
     if owner != PUMP_DOT_FUN_AUTHORITY:
-        logger.info("Not a pump fun token", token=token, owner=owner)
+        logger.info("Not a pump fun token", extra={'token': token, 'owner': owner})
         return False
 
     if (datetime.utcnow() - token_create_time).total_seconds() > 120 * 60:
-        logger.info("Token older than two horus, skip", token=token)
+        logger.info("Token older than two horus, skip", extra={'token': token})
         return False
 
     return True
@@ -55,9 +58,9 @@ async def get_subscription_map(r: redis.asyncio.Redis) -> Dict[int, str]:
     subscription_map = await r.get(SUBSCRIPTION_MAP)
     if subscription_map is None:
         return dict()
-    logger.debug("Raw subscription_map", subscription_map=str(subscription_map))
+    logger.debug("Raw subscription_map", extra={"subscription_map": str(subscription_map)})
     subscription_map = json.loads(subscription_map)
-    logger.debug("Parsed subscription_map", subscription_map=subscription_map)
+    logger.debug("Parsed subscription_map", extra={"subscription_map": str(subscription_map)})
     subscription_map = {int(key): value for key, value in subscription_map.items()}
     logger.info("Loaded subscription map from redis")
     return subscription_map
@@ -66,13 +69,13 @@ async def get_subscription_map(r: redis.asyncio.Redis) -> Dict[int, str]:
 def get_trader_form_event(event, subscription_map: Dict[int, str]) -> Optional[str]:
     data = json.loads(event)
     sub_id = data["params"]["subscription"]
-    logger.info("Trader id form event", sub_id=sub_id)
+    logger.info("Trader id form event", extra={"sub_id": sub_id})
     trader = subscription_map.get(sub_id, None)
     if trader is None:
-        logger.error("Trader not found in map", sub_id=sub_id, subscription_map=subscription_map)
+        logger.error("Trader not found in map", extra={"sub_id": sub_id, "subscription_map": subscription_map})
         return None
 
-    logger.info(f"Received wallet action {trader}", data=data, trader=trader)
+    logger.info(f"Received wallet action {trader}", extra={"data": data, "trader": trader})
     return trader
 
 
@@ -98,26 +101,26 @@ async def handle_user_event(event):
         solana_rpc = get_env_value(SOL_RPC)
         trade = await get_latest_user_trade(Pubkey.from_string(trader), solana_rpc)
         if trade is None:
-            logger.info(f"No trades found for {trader}", trader=trader)
+            logger.info(f"No trades found for {trader}", extra={"trader": trader})
             return
 
-        logger.info(f"Trade found for trader {trader}", trader=trader)
+        logger.info(f"Trade found for trader {trader}", extra={"trader": trader})
 
         # check if coin is in list already
         token_watch_redis_key = TOKEN_WATCHER_KEY + "_" + trade.token
         token_exist = bool(await r.exists(token_watch_redis_key))
-        logger.info("Token already in list", token_exist=token_exist)
+        logger.info("Token already in list", extra={"token_exist": token_exist})
 
         if not (await check_token_create_info(r, trade.token)):
             return
 
         await r.lpush(TRADE_PREFIX + trade.token, json.dumps(trade.to_dict()))
-        logger.info("Token trade added to list", trade=trade.to_dict())
+        logger.info("Token trade added to list", extra={"trade": trade.to_dict()})
 
         # add coin to list if not
         if not token_exist:
             # Enqueue a task with some data
-            logger.info("Add token to token watch", trade=trade.to_dict())
+            logger.info("Add token to token watch", extra={"trade": trade.to_dict()})
             queue.enqueue(watch_token, trade.token)
             await r.set(token_watch_redis_key, json.dumps(True))
 

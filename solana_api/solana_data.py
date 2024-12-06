@@ -1,3 +1,4 @@
+import logging
 from asyncio import sleep
 from datetime import datetime
 from typing import Optional, Tuple, List
@@ -12,7 +13,6 @@ from constants import PUMP_DOT_FUN_ID, LAST_SIGNATURE
 from data.redis_helper import get_async_redis
 from solana_api.trade_model import Trade
 
-import logging
 logger = logging.getLogger(__name__)
 
 
@@ -21,7 +21,7 @@ async def get_recent_signature(client: AsyncClient, account: Pubkey) -> RpcConfi
         response = await client.get_signatures_for_address(account, limit=1, commitment=Finalized)
         return response.value[0]
     except Exception as e:
-        logger.exception("Failed to get recent signature", trader=str(account))
+        logger.exception("Failed to get recent signature", extra={"trader": str(account)})
 
 
 async def get_transaction(client: AsyncClient,
@@ -32,7 +32,7 @@ async def get_transaction(client: AsyncClient,
                                                 commitment=Finalized)
         return response.value
     except Exception as e:
-        logger.exception("Failed to get recent signature", trader=str(signature.signature))
+        logger.exception("Failed to get recent signature", extra={"signature": str(signature.signature)})
 
 
 def block_time_stamp_to_datetime(timestamp: int) -> datetime:
@@ -63,7 +63,7 @@ async def get_block_transactions(client: AsyncClient, slot: int) -> Optional[
             block = await client.get_block(slot, max_supported_transaction_version=0)
             return block.value.block_time, block.value.transactions
         except Exception as e:
-            logger.exception("Failed to load block", slot=slot)
+            logger.exception("Failed to load block", extra={"slot": slot})
             retries += 1
             await sleep(20)
 
@@ -75,17 +75,18 @@ async def get_latest_user_trade(user: Pubkey, rpc: str) -> Optional[Trade]:
         r = get_async_redis()
         async with AsyncClient(rpc) as client:
             latest_signature = await get_recent_signature(client, user)
-            logger.info("Check latest signature of trader", trader=str(user), signature=str(latest_signature.signature))
+            logger.info("Check latest signature of trader", extra={"trader": str(user),
+                                                                   "signature"str(latest_signature.signature)})
             redis_key = str(user) + "_" + LAST_SIGNATURE
             already_done = await r.get(redis_key)
             if already_done == str(latest_signature.signature):
-                logger.info("Latest signature already checked", trader=str(user),
-                            signature=str(latest_signature.signature))
+                logger.info("Latest signature already checked", extra={"trader": str(user),
+                                                                       "signature": str(latest_signature.signature)})
                 return None
 
-            logger.info("Get tx for signature", signature=str(latest_signature.signature))
+            logger.info("Get tx for signature", extra={"signature": str(latest_signature.signature)})
             tx = await get_transaction(client, latest_signature)
-            logger.info("Check tx for trades", signature=str(latest_signature.signature))
+            logger.info("Check tx for trades", extra={"signature": str(latest_signature.signature)})
             trade = get_user_trade(user, tx.transaction, tx.block_time)
             await r.set(redis_key, str(latest_signature.signature))
 
@@ -99,15 +100,15 @@ async def get_user_trades_in_block(user: Pubkey, slot: int, rpc: str) -> List[Tr
     try:
         async with AsyncClient(rpc) as client:
             block_time, tx_list = await get_block_transactions(client, slot)
-            logger.info("Loaded block details", slot=slot)
+            logger.info("Loaded block details", extra={"slot": slot})
             for tx in tx_list:
                 trade = get_user_trade(user, tx, block_time)
                 if trade is not None:
                     trades.append(trade)
-                    logger.info("found trades in block", slot=slot)
+                    logger.info("found trades in block", extra={"slot": slot})
             return trades
     except Exception as e:
-        logger.exception("Failed to load trades", trader=str(user))
+        logger.exception("Failed to load trades", extra={"trader": str(user)})
         return trades
 
 
@@ -129,7 +130,7 @@ def get_user_trade(user: Pubkey, tx: EncodedTransactionWithStatusMeta, block_tim
         return Trade(str(user), str(token), token_amount, sol_amount, sol_amount < 0, token_holding_after,
                      block_time_stamp_to_datetime(block_time).isoformat())
     except Exception as e:
-        logger.exception("Failed to load trades", trader=str(user))
+        logger.exception("Failed to load trades", extra={"trader": str(user)})
         return None
 
 
@@ -192,7 +193,8 @@ def is_pump_fun_trade(tx: EncodedTransactionWithStatusMeta) -> bool:
 
 def is_raydium_trade(tx: EncodedTransactionWithStatusMeta) -> bool:
     if (Pubkey.from_string("675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8") in tx.transaction.message.account_keys or
-            Pubkey.from_string("5qucFmuXKGX1SLwNT5YXrFUnhAicELNkfup9dCFu4Xe") in tx.transaction.message.account_keys):
+            Pubkey.from_string(
+                "5qucFmuXKGX1SLwNT5YXrFUnhAicELNkfup9dCFu4Xe") in tx.transaction.message.account_keys):
         return True
 
     for log in tx.meta.log_messages:

@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from asyncio import sleep
 from datetime import datetime, timedelta
 
@@ -7,7 +8,10 @@ from dotenv import load_dotenv
 
 from constants import SOLANA_PRICE
 from data.redis_helper import get_async_redis
-from structure_log.logger_setup import logger
+from structure_log.logger_setup import setup_logger
+
+setup_logger("sol_price_watcher")
+logger = logging.getLogger(__name__)
 
 
 async def main():
