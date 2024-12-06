@@ -38,6 +38,7 @@ async def check_token_create_info(r: redis.asyncio.Redis, token: str) -> bool:
         if token_create_info is None:
             logger.info("Failed to load token create info")
             return False
+
         token_create_time, owner = token_create_info
     else:
         token_create_time, owner = json.loads(token_create_info)
@@ -113,7 +114,9 @@ async def handle_user_event(event):
         token_exist = bool(await r.exists(token_watch_redis_key))
         logger.info("Token already in list", extra={"token_exist": token_exist})
 
-        if not (await check_token_create_info(r, trade.token)):
+        result = await check_token_create_info(r, trade.token)
+        logger.info(f"check_token_create_info returned", extra={"result": result})
+        if not result:
             logger.info("Skip token create info check is false")
             return
 
