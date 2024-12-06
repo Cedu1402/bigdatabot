@@ -21,6 +21,7 @@ async def load_token_create_info(token: str, r: redis.asyncio.Redis) -> Optional
     try:
         token_create_time, owner = await get_token_create_info(token)
         await r.set(CREATE_PREFIX + token, json.dumps((token_create_time.isoformat(), owner)))
+        return token_create_time, owner
     except Exception as e:
         logger.exception(f"Failed to get token create time")
         return None
@@ -31,6 +32,7 @@ async def check_token_create_info(r: redis.asyncio.Redis, token: str) -> bool:
     if token_create_info is None:
         token_create_info = await load_token_create_info(token, r)
         if token_create_info is None:
+            logger.info("Failed to load token create info")
             return False
         token_create_time, owner = token_create_info
     else:
