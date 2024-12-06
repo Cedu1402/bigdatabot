@@ -12,7 +12,7 @@ from bot.token_watcher import watch_token
 from constants import TOKEN_QUEUE, CREATE_PREFIX, TRADE_PREFIX, CURRENT_EVENT_WATCH_KEY, SOL_RPC, SUBSCRIPTION_MAP
 from data.redis_helper import get_async_redis, decrement_counter, get_sync_redis
 from env_data.get_env_value import get_env_value
-from solana_api.solana_data import get_user_trades_in_block, get_latest_user_trade
+from solana_api.solana_data import get_latest_user_trade
 from structure_log.logger_setup import logger, setup_logger
 
 
@@ -48,7 +48,7 @@ async def handle_user_event(event):
         solana_rpc = get_env_value(SOL_RPC)
         trade = await get_latest_user_trade(Pubkey.from_string(trader), solana_rpc)
         if trade is None:
-            logger.info(f"No trades found for {trader} {slot}", trader=trader, slot=slot)
+            logger.info(f"No trades found for {trader}", trader=trader)
             return
 
         logger.info(f"Trade found for trader {trader}", trader=trader)
