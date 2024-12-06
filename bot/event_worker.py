@@ -76,9 +76,13 @@ def get_trader_form_event(event, subscription_map: Dict[int, str]) -> Optional[s
 
 
 def setup_handler() -> Tuple[redis.asyncio.Redis, Queue]:
+    setup_logger("event_worker")
+
+    logger.info("Start of event worker task")
+
     r = get_async_redis()
     load_dotenv()
-    setup_logger("event_worker")
+
     queue = Queue(TOKEN_QUEUE, connection=get_sync_redis(), default_timeout=19000)
     return r, queue
 
