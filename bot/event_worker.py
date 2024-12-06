@@ -16,6 +16,8 @@ from env_data.get_env_value import get_env_value
 from solana_api.solana_data import get_latest_user_trade
 from structure_log.logger_setup import logger, setup_logger, ensure_logging_flushed
 
+setup_logger("event_worker")
+
 
 async def load_token_create_info(token: str, r: redis.asyncio.Redis) -> Optional[Tuple[datetime, str]]:
     try:
@@ -76,8 +78,6 @@ def get_trader_form_event(event, subscription_map: Dict[int, str]) -> Optional[s
 
 
 def setup_handler() -> Tuple[redis.asyncio.Redis, Queue]:
-    setup_logger("event_worker")
-
     logger.info("Start of event worker task")
 
     r = get_async_redis()
