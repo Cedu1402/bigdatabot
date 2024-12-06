@@ -44,6 +44,8 @@ class TestHandleUserEvent(unittest.IsolatedAsyncioTestCase):
         mock_enqueue = mock.Mock()
         mock_queue.return_value.enqueue = mock_enqueue
 
+        mock_redis.exists.return_value = False
+
         # Event data (from WebSocket message)
         event_data = {
             "jsonrpc": "2.0",
@@ -84,7 +86,7 @@ class TestHandleUserEvent(unittest.IsolatedAsyncioTestCase):
         mock_decrement_counter.assert_called_once_with(CURRENT_EVENT_WATCH_KEY, mock_redis)
 
         # Verify that the token was added to Redis
-        mock_redis.lpush.assert_called_once_with(TRADE_PREFIX + "testpump", json.dumps(trade_data))
+        mock_redis.lpush.assert_called_once_with(TRADE_PREFIX + "testpump", json.dumps(trade_data.to_dict()))
 
 
 if __name__ == '__main__':

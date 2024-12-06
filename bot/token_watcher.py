@@ -26,7 +26,7 @@ from structure_log.logger_setup import logger, setup_logger
 
 async def get_valid_trades_of_token(token: str, r: redis.Redis, trading_minute: datetime) -> List[Trade]:
     trades = await r.lrange(TRADE_PREFIX + token, 0, -1)
-    trades = [json.loads(item) for item in trades]
+    trades = [Trade(**json.loads(item)) for item in trades]
     valid_trades = get_valid_trades(trades, trading_minute)
 
     return valid_trades

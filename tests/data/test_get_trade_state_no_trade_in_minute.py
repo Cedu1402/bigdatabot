@@ -16,7 +16,7 @@ class TestRunner(unittest.TestCase):
             sol_amount=2,
             buy=True,
             token_holding_after=5,
-            time=datetime(2024, 11, 30, 15, 30).isoformat(),
+            trade_time=datetime(2024, 11, 30, 15, 30).isoformat(),
         )
         result = get_trade_state_no_trade_in_minute(last_trade_state, last_trade)
         self.assertEqual(result, TraderState.STILL_HOLDS)
@@ -30,7 +30,7 @@ class TestRunner(unittest.TestCase):
             sol_amount=1,
             buy=False,
             token_holding_after=2,
-            time=datetime(2024, 11, 30, 15, 31).isoformat(),
+            trade_time=datetime(2024, 11, 30, 15, 31).isoformat(),
         )
         result = get_trade_state_no_trade_in_minute(last_trade_state, last_trade)
         self.assertEqual(result, TraderState.STILL_HOLDS)
@@ -44,7 +44,7 @@ class TestRunner(unittest.TestCase):
             sol_amount=0,
             buy=False,
             token_holding_after=0,
-            time=datetime(2024, 11, 30, 15, 32).isoformat(),
+            trade_time=datetime(2024, 11, 30, 15, 32).isoformat(),
         )
         result = get_trade_state_no_trade_in_minute(last_trade_state, last_trade)
         self.assertEqual(result, TraderState.STILL_HOLDS)
@@ -58,7 +58,7 @@ class TestRunner(unittest.TestCase):
             sol_amount=0,
             buy=False,
             token_holding_after=0,
-            time=datetime(2024, 11, 30, 15, 33).isoformat(),
+            trade_time=datetime(2024, 11, 30, 15, 33).isoformat(),
         )
         result = get_trade_state_no_trade_in_minute(last_trade_state, last_trade)
         self.assertEqual(result, TraderState.SOLD_ALL)
@@ -72,7 +72,7 @@ class TestRunner(unittest.TestCase):
             sol_amount=0,
             buy=False,
             token_holding_after=0,
-            time=datetime(2024, 11, 30, 15, 34).isoformat(),
+            trade_time=datetime(2024, 11, 30, 15, 34).isoformat(),
         )
         result = get_trade_state_no_trade_in_minute(last_trade_state, last_trade)
         self.assertEqual(result, TraderState.NO_ACTION)

@@ -10,7 +10,7 @@ from solders.pubkey import Pubkey
 from birdeye_api.token_creation_endpoint import get_token_create_info
 from bot.token_watcher import watch_token
 from constants import TOKEN_QUEUE, CREATE_PREFIX, TRADE_PREFIX, CURRENT_EVENT_WATCH_KEY, SOL_RPC, SUBSCRIPTION_MAP, \
-    PUMP_DOT_FUN_AUTHORITY
+    PUMP_DOT_FUN_AUTHORITY, TOKEN_WATCHER_KEY
 from data.redis_helper import get_async_redis, decrement_counter, get_sync_redis
 from env_data.get_env_value import get_env_value
 from solana_api.solana_data import get_latest_user_trade
@@ -97,19 +97,21 @@ async def handle_user_event(event):
             return
 
         logger.info(f"Trade found for trader {trader}", trader=trader)
-        # check if coin is in list already
-        token_exist = await r.exists(trade.token)
 
+        # check if coin is in list already
+        token_watch_redis_key = TOKEN_WATCHER_KEY + "_" + trade.token
+        token_exist = await r.exists(token_watch_redis_key)
         if not (await check_token_create_info(r, trade.token)):
             return
 
-        # add coin to list if not
-        await r.lpush(TRADE_PREFIX + trade.token, json.dumps(trade))
+        await r.lpush(TRADE_PREFIX + trade.token, json.dumps(trade.to_dict()))
 
+        # add coin to list if not
         if not token_exist:
             # Enqueue a task with some data
-            logger.info("Add token to token watch", trade=trade)
+            logger.info("Add token to token watch", trade=trade.to_dict())
             queue.enqueue(watch_token, trade.token)
+            await r.set(token_watch_redis_key, json.dumps(True))
 
     except Exception as e:
         logger.exception("Failed to process message")
