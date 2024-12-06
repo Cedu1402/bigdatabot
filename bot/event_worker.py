@@ -60,19 +60,26 @@ async def get_subscription_map(r: redis.asyncio.Redis) -> Dict[int, str]:
     return subscription_map
 
 
+def get_trader_form_event(event, subscription_map: Dict[int, str]) -> Optional[str]:
+    data = json.loads(event)
+    sub_id = data["params"]["subscription"]
+    logger.info("Trader id form event", sub_id=sub_id)
+    trader = subscription_map.get(sub_id, None)
+    if trader is None:
+        logger.error("Trader not found in map", sub_id=sub_id, subscription_map=subscription_map)
+        return None
+
+    logger.info(f"Received wallet action {trader}", data=data, trader=trader)
+    return trader
+
+
 async def handle_user_event(event):
     r = get_async_redis()
     load_dotenv()
     setup_logger("event_worker")
     try:
         subscription_map = await get_subscription_map(r)
-        data = json.loads(event)
-        sub_id = data["params"]["subscription"]
-        logger.info("Trader id form event", sub_id=sub_id)
-        trader = subscription_map.get(sub_id, None)
-        if trader is None:
-            logger.error("Trader not found in map", sub_id=sub_id, subscription_map=subscription_map)
-        logger.info(f"Received wallet action {trader}", data=data, trader=trader)
+        trader = get_trader_form_event(event, subscription_map)
 
         queue = Queue(TOKEN_QUEUE, connection=get_sync_redis(), default_timeout=19000)
         await r.incr(CURRENT_EVENT_WATCH_KEY)
