@@ -64,18 +64,59 @@ async def check_if_token_done(token: str, r: redis.asyncio.Redis) -> bool:
     return False
 
 
+async def check_age_of_token(r: redis.asyncio.Redis, token: str) -> bool:
+    logger.info("Check trading minute")
+
+    create_info = await r.get(CREATE_PREFIX + token)
+    create_time, _ = create_info
+    token_create_time = datetime.fromisoformat(create_time)
+
+    # check if coin is older than 4h if yes exit
+    if (datetime.utcnow() - token_create_time).total_seconds() > 120 * 60:
+        logger.info("Stop watch for token because of age", extra={"token": str(token)})
+        return False
+
+    return True
+
+
+async def prepare_current_dataset(valid_trades: List[Trade], trading_minute: datetime, token: str,
+                                  columns: List[str], r: redis.asyncio.Redis) -> pd.DataFrame:
+    logger.info("Get base dataset")
+    df = await get_base_data(valid_trades, trading_minute, token)
+
+    # run data preparation
+    logger.info("Adjust type of columns", extra={"token": str(token), "trading_minute": trading_minute})
+    df = convert_columns(df)
+
+    # transform to sol price
+    logger.info("Adjust prices based on current sol price")
+    solana_price = await get_sol_price(r)
+    df = transform_price_to_tokens_per_sol(df, solana_price)
+
+    # Add features
+    logger.info("Add features", extra={"token": str(token), "trading_minute": trading_minute})
+    df = add_features(df, has_total_volume=True)
+
+    logger.info("Add inactive traders", extra={"token": str(token), "trading_minute": trading_minute})
+    df = add_inactive_traders(get_traders(valid_trades), columns, df)
+
+    return df
+
+
 async def watch_token(token) -> bool:
     # every minute check if we should buy
     load_dotenv()
-    setup_logger("token_watcher")
     logger.info("Start token watch", extra={"token": str(token)})
     r = get_async_redis()
 
+    logger.info("Check if token already traded", extra={"token": str(token)})
     if await check_if_token_done(token, r):
         return False
 
     queue = Queue(TRADE_QUEUE, connection=get_sync_redis(), default_timeout=9000)
     await r.incr(CURRENT_TOKEN_WATCH_KEY)
+
+    logger.info("Load model")
     config = dict()
     config[BIN_AMOUNT_KEY] = 10
     model = DecisionTreeModel(config)
@@ -84,13 +125,7 @@ async def watch_token(token) -> bool:
     while True:
         try:
             trading_minute = get_trading_minute()
-            create_info = await r.get(CREATE_PREFIX + token)
-            create_time, _ = create_info
-            token_create_time = datetime.fromisoformat(create_time)
-
-            # check if coin is older than 4h if yes exit
-            if (datetime.utcnow() - token_create_time).total_seconds() > 120 * 60:
-                logger.info("Stop watch for token because of age", extra={"token": str(token)})
+            if not await check_age_of_token(r, token):
                 return False
 
             # get trades and prepare trader columns
@@ -100,22 +135,7 @@ async def watch_token(token) -> bool:
                 await sleep(5)
                 continue
 
-            df = await get_base_data(valid_trades, trading_minute, token)
-
-            # run data preparation
-            logger.info("Adjust type of columns", extra={"token": str(token), "trading_minute": trading_minute})
-            df = convert_columns(df)
-
-            # transform to sol price
-            solana_price = await get_sol_price(r)
-            df = transform_price_to_tokens_per_sol(df, solana_price)
-
-            # Add features
-            logger.info("Add features", extra={"token": str(token), "trading_minute": trading_minute})
-            df = add_features(df, has_total_volume=True)
-
-            logger.info("Add inactive traders", extra={"token": str(token), "trading_minute": trading_minute})
-            df = add_inactive_traders(get_traders(valid_trades), model.get_columns(), df)
+            df = await prepare_current_dataset(valid_trades, trading_minute, token, model.get_columns(), r)
 
             # predict
             prediction_data, _ = model.prepare_prediction_data(copy.deepcopy([df]), False)

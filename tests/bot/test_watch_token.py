@@ -1,6 +1,6 @@
 import unittest
 from datetime import datetime, timedelta
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, AsyncMock
 
 import pandas as pd
 
@@ -14,29 +14,35 @@ class TestRunner(unittest.IsolatedAsyncioTestCase):
     @patch("bot.token_watcher.get_valid_trades_of_token")
     @patch("bot.token_watcher.get_base_data")
     @patch("bot.token_watcher.get_sol_price")
-    @patch("bot.token_watcher.redis.Redis")
+    @patch("bot.token_watcher.check_if_token_done")
+    @patch("bot.token_watcher.redis.asyncio.Redis")
     @patch("bot.token_watcher.Queue")
     async def test_watch_token(
             self,
             mock_queue,
-            mock_redis,
+            mock_async_redis,
+            token_done,
             mock_get_sol_price,
             mock_get_base_data,
             mock_get_valid_trades,
     ):
         # Mock Redis
-        mock_redis_instance = MagicMock()
-        mock_redis.return_value = mock_redis_instance
-        mock_redis_instance.get.side_effect = lambda key: {
-            CREATE_PREFIX + "SOL": ((datetime.utcnow() - timedelta(hours=1)).isoformat(), "test"),
-        }.get(key)
+        mock_redis_instance = AsyncMock()
+        mock_async_redis.return_value = mock_redis_instance
+        mock_redis_instance.get.return_value = ((datetime.utcnow() - timedelta(hours=1)).isoformat(), "test")
+        mock_redis_instance.incr.return_value = None  # Simulate successful increment
+        mock_redis_instance.set.return_value = None
+
+        # token done check
+        token_done.return_value = False
 
         # Mock Queue
         mock_queue_instance = MagicMock()
         mock_queue.return_value = mock_queue_instance
 
         # Mock get_valid_trades_of_token
-        mock_get_valid_trades.return_value = [Trade("1", "2", 1, 1, True, 1, (datetime.utcnow() - timedelta(hours=1)).isoformat())]
+        mock_get_valid_trades.return_value = [
+            Trade("1", "2", 1, 1, True, 1, (datetime.utcnow() - timedelta(hours=1)).isoformat())]
 
         # Mock get_base_data
         mock_get_base_data.return_value = pd.DataFrame(

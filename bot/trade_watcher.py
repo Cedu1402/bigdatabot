@@ -16,7 +16,6 @@ logger = logging.getLogger(__name__)
 async def watch_trade(token: str):
     # get current price
     load_dotenv()
-    setup_logger("token_watcher")
 
     buy_time = datetime.now()
     start_price = await get_token_price(token)

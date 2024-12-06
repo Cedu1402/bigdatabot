@@ -97,7 +97,7 @@ async def handle_user_event(event):
         trader = get_trader_form_event(event, subscription_map)
         if trader is None:
             return
-        
+
         await r.incr(CURRENT_EVENT_WATCH_KEY)
 
         solana_rpc = get_env_value(SOL_RPC)
@@ -114,6 +114,7 @@ async def handle_user_event(event):
         logger.info("Token already in list", extra={"token_exist": token_exist})
 
         if not (await check_token_create_info(r, trade.token)):
+            logger.info("Skip token create info check is false")
             return
 
         await r.lpush(TRADE_PREFIX + trade.token, json.dumps(trade.to_dict()))
@@ -129,5 +130,6 @@ async def handle_user_event(event):
     except Exception as e:
         logger.exception("Failed to process message")
     finally:
+        logger.info("Finished watch task clean up and exit.")
         await decrement_counter(CURRENT_EVENT_WATCH_KEY, r)
         ensure_logging_flushed()
