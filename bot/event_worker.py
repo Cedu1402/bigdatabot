@@ -105,7 +105,8 @@ async def handle_user_event(event):
             return
 
         await r.lpush(TRADE_PREFIX + trade.token, json.dumps(trade.to_dict()))
-
+        logger.info("Token trade added to list", trade=trade.to_dict())
+        
         # add coin to list if not
         if not token_exist:
             # Enqueue a task with some data
