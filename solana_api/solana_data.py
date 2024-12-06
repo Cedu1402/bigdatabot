@@ -76,7 +76,7 @@ async def get_latest_user_trade(user: Pubkey, rpc: str) -> Optional[Trade]:
         async with AsyncClient(rpc) as client:
             latest_signature = await get_recent_signature(client, user)
             logger.info("Check latest signature of trader", extra={"trader": str(user),
-                                                                   "signature"str(latest_signature.signature)})
+                                                                   "signature": str(latest_signature.signature)})
             redis_key = str(user) + "_" + LAST_SIGNATURE
             already_done = await r.get(redis_key)
             if already_done == str(latest_signature.signature):
