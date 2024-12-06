@@ -9,7 +9,7 @@ from logstash_async.handler import AsynchronousLogstashHandler
 def setup_logger(label_name: str):
     # Logstash configuration
     logstash_host = os.getenv("LOGSTASH_HOST", "localhost")
-    logstash_port = int(os.getenv("LOGSTASH_PORT", 5044))
+    logstash_port = int(os.getenv("LOGSTASH_PORT", 9600))
 
     # Configure AsynchronousLogstashHandler
     logstash_handler = AsynchronousLogstashHandler(
