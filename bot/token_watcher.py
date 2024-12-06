@@ -67,7 +67,7 @@ async def watch_token(token) -> bool:
     logger.info("Start token watch", token=token)
     r = get_async_redis()
 
-    if check_if_token_done(token, r):
+    if await check_if_token_done(token, r):
         return False
 
     queue = Queue(TRADE_QUEUE, connection=get_sync_redis(), default_timeout=9000)
@@ -80,7 +80,9 @@ async def watch_token(token) -> bool:
     while True:
         try:
             trading_minute = get_trading_minute()
-            token_create_time = datetime.fromisoformat(r.get(CREATE_PREFIX + token))
+            create_info = r.get(CREATE_PREFIX + token)
+            create_time, _ = create_info
+            token_create_time = datetime.fromisoformat(create_time)
 
             # check if coin is older than 4h if yes exit
             if (datetime.utcnow() - token_create_time).total_seconds() > 120 * 60:

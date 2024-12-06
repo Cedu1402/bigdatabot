@@ -23,7 +23,12 @@ def setup_logger(label_name: str):
                                 "format": "<green>{time}</green> <level>{message}</level>"}])
 
 
-__all__ = ["logger", setup_logger]
+def ensure_logging_flushed():
+    logger.info("Flushing logs to Loki before exit")
+    logger.remove()  # Ensure all log entries are flushed before exit
+
+
+__all__ = ["logger", setup_logger, ensure_logging_flushed]
 
 # Example usage
 if __name__ == "__main__":

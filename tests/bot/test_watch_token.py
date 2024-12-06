@@ -28,7 +28,7 @@ class TestRunner(unittest.IsolatedAsyncioTestCase):
         mock_redis_instance = MagicMock()
         mock_redis.return_value = mock_redis_instance
         mock_redis_instance.get.side_effect = lambda key: {
-            CREATE_PREFIX + "SOL": (datetime.utcnow() - timedelta(hours=1)).isoformat(),
+            CREATE_PREFIX + "SOL": ((datetime.utcnow() - timedelta(hours=1)).isoformat(), "test"),
         }.get(key)
 
         # Mock Queue
