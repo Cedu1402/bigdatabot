@@ -4,16 +4,11 @@ from datetime import datetime
 from dotenv import load_dotenv
 from solana.rpc.async_api import AsyncClient
 
-from birdeye_api.token_creation_endpoint import get_token_create_time
+from birdeye_api.token_creation_endpoint import get_token_create_info
+from constants import PUMP_DOT_FUN_AUTHORITY
 
 
 class TestRunner(unittest.IsolatedAsyncioTestCase):
-
-    def setUp(self):
-        self.client = AsyncClient("https://api.mainnet-beta.solana.com")
-
-    async def asyncTearDown(self):
-        await self.client.close()
 
     async def test_get_token_create_time(self):
         # Arrange
@@ -21,6 +16,7 @@ class TestRunner(unittest.IsolatedAsyncioTestCase):
         token = "HHNmZNnCZ5jNxDCobBtLmvtj5JnJb2LWBNntXsBmpump"
         expected_date = datetime.strptime("2024-11-28 08:34:57", "%Y-%m-%d %H:%M:%S")
         # Act
-        date = await get_token_create_time(token)
+        date, owner = await get_token_create_info(token)
         # Assert
         self.assertEqual(expected_date, date)
+        self.assertEqual(owner, PUMP_DOT_FUN_AUTHORITY)

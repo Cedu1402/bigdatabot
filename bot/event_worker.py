@@ -1,32 +1,45 @@
 import json
 from datetime import datetime
-from typing import Dict
+from typing import Dict, Optional, Tuple
 
 import redis.asyncio
 from dotenv import load_dotenv
 from rq import Queue
 from solders.pubkey import Pubkey
 
-from birdeye_api.token_creation_endpoint import get_token_create_time
+from birdeye_api.token_creation_endpoint import get_token_create_info
 from bot.token_watcher import watch_token
-from constants import TOKEN_QUEUE, CREATE_PREFIX, TRADE_PREFIX, CURRENT_EVENT_WATCH_KEY, SOL_RPC, SUBSCRIPTION_MAP
+from constants import TOKEN_QUEUE, CREATE_PREFIX, TRADE_PREFIX, CURRENT_EVENT_WATCH_KEY, SOL_RPC, SUBSCRIPTION_MAP, \
+    PUMP_DOT_FUN_AUTHORITY
 from data.redis_helper import get_async_redis, decrement_counter, get_sync_redis
 from env_data.get_env_value import get_env_value
 from solana_api.solana_data import get_latest_user_trade
 from structure_log.logger_setup import logger, setup_logger
 
 
-async def check_token_create_time(r: redis.asyncio.Redis, token: str) -> bool:
-    token_create_time = await r.get(CREATE_PREFIX + token)
-    if token_create_time is None:
-        try:
-            token_create_time = await get_token_create_time(token)
-            await r.set(CREATE_PREFIX + token, token_create_time.isoformat())
-        except Exception as e:
-            logger.exception(f"Failed to get token create time")
+async def load_token_create_info(token: str, r: redis.asyncio.Redis) -> Optional[Tuple[datetime, str]]:
+    try:
+        token_create_time, owner = await get_token_create_info(token)
+        await r.set(CREATE_PREFIX + token, json.dumps((token_create_time.isoformat(), owner)))
+    except Exception as e:
+        logger.exception(f"Failed to get token create time")
+        return None
+
+
+async def check_token_create_info(r: redis.asyncio.Redis, token: str) -> bool:
+    token_create_info = await r.get(CREATE_PREFIX + token)
+    if token_create_info is None:
+        token_create_info = await load_token_create_info(token, r)
+        if token_create_info is None:
             return False
+        token_create_time, owner = token_create_info
     else:
+        token_create_time, owner = json.loads(token_create_info)
         token_create_time = datetime.fromisoformat(token_create_time)
+
+    if owner != PUMP_DOT_FUN_AUTHORITY:
+        logger.info("Not a pump fun token", token=token, owner=owner)
+        return False
 
     if (datetime.utcnow() - token_create_time).total_seconds() > 120 * 60:
         logger.info("Token older than two horus, skip", token=token)
@@ -70,11 +83,15 @@ async def handle_user_event(event):
             logger.info(f"No trades found for {trader}", trader=trader)
             return
 
+        if not trade.token.endswith("pump"):
+            logger.info("Not a pump fun token", token=trade.token)
+            return
+
         logger.info(f"Trade found for trader {trader}", trader=trader)
         # check if coin is in list already
         token_exist = await r.exists(trade.token)
 
-        if not (await check_token_create_time(r, trade.token)):
+        if not (await check_token_create_info(r, trade.token)):
             return
 
         # # check if buy was over 1 sol

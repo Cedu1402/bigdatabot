@@ -68,3 +68,4 @@ CONFIG_2_FILE = os.path.join(ROOT_DIR, "pipeline", "config", "2_prepare_data_set
 BIN_AMOUNT_KEY = "bin_amount"
 PUMP_DOT_FUN_ID = "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P"
 RAYDIUM_ID = "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK"
+PUMP_DOT_FUN_AUTHORITY="TSLvdd1pWpHVjahSpsvCXUbgwsL3JAcvokwaKt1eokM"

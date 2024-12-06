@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Tuple
 
 import aiohttp
 
@@ -8,7 +9,7 @@ from env_data.get_env_value import get_env_value
 from solana_api.solana_data import block_time_stamp_to_datetime
 
 
-async def get_token_create_time(token: str) -> datetime:
+async def get_token_create_info(token: str) -> Tuple[datetime, str]:
     url = "https://public-api.birdeye.so/defi/token_creation_info"
     r = get_async_redis()
 
@@ -34,4 +35,4 @@ async def get_token_create_time(token: str) -> datetime:
             response.raise_for_status()  # Raises error if status is 4xx or 5xx
             result = await response.json()
             timestamp = result["data"]["blockUnixTime"]
-            return block_time_stamp_to_datetime(timestamp)
+            return block_time_stamp_to_datetime(timestamp), result["data"]["owner"]
