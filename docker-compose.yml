@@ -55,7 +55,7 @@ services:
     environment:
       - REDIS_URL=redis
       - LOGSTASH_HOST=logstash
-      - LOGSTASH_PORT=5044
+      - LOGSTASH_PORT=9600
     networks:
       - app_network
     depends_on:
@@ -72,7 +72,7 @@ services:
     environment:
       - REDIS_URL=redis
       - LOGSTASH_HOST=logstash
-      - LOGSTASH_PORT=5044
+      - LOGSTASH_PORT=9600
     networks:
       - app_network
     depends_on:
@@ -89,7 +89,7 @@ services:
     environment:
       - REDIS_URL=redis
       - LOGSTASH_HOST=logstash
-      - LOGSTASH_PORT=5044
+      - LOGSTASH_PORT=9600
     networks:
       - app_network
     depends_on:
@@ -106,7 +106,7 @@ services:
     environment:
       - REDIS_URL=redis
       - LOGSTASH_HOST=logstash
-      - LOGSTASH_PORT=5044
+      - LOGSTASH_PORT=9600
     networks:
       - app_network
     depends_on:
@@ -121,7 +121,7 @@ services:
     environment:
       - REDIS_URL=redis
       - LOGSTASH_HOST=logstash
-      - LOGSTASH_PORT=5044
+      - LOGSTASH_PORT=9600
     networks:
       - app_network
     depends_on:
@@ -136,7 +136,7 @@ services:
     environment:
       - REDIS_URL=redis
       - LOGSTASH_HOST=logstash
-      - LOGSTASH_PORT=5044
+      - LOGSTASH_PORT=9600
     networks:
       - app_network
     depends_on:
