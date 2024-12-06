@@ -80,7 +80,7 @@ async def watch_token(token) -> bool:
     while True:
         try:
             trading_minute = get_trading_minute()
-            create_info = r.get(CREATE_PREFIX + token)
+            create_info = await r.get(CREATE_PREFIX + token)
             create_time, _ = create_info
             token_create_time = datetime.fromisoformat(create_time)
 
