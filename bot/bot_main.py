@@ -63,6 +63,8 @@ async def main():
     r = get_async_redis()
     traders = [column.replace("trader_", "").replace("_state", "") for column in model.get_columns() if
                "trader_" in column]
+    traders.remove("Ad3AvvE3Qj7xf8sLh8vA34X7fqydhpsPrvEF3EZTwaki")
+
     retries = 0
     while True:
         try:
