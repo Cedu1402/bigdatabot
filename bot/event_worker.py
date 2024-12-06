@@ -101,12 +101,14 @@ async def handle_user_event(event):
         # check if coin is in list already
         token_watch_redis_key = TOKEN_WATCHER_KEY + "_" + trade.token
         token_exist = await r.exists(token_watch_redis_key)
+        logger.info("Token already in list", token_exist=token_exist)
+
         if not (await check_token_create_info(r, trade.token)):
             return
 
         await r.lpush(TRADE_PREFIX + trade.token, json.dumps(trade.to_dict()))
         logger.info("Token trade added to list", trade=trade.to_dict())
-        
+
         # add coin to list if not
         if not token_exist:
             # Enqueue a task with some data
