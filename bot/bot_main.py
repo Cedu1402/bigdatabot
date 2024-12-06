@@ -11,7 +11,7 @@ from constants import SOLANA_WS, EVENT_QUEUE, BIN_AMOUNT_KEY, SUBSCRIPTION_MAP
 from data.redis_helper import get_sync_redis, get_async_redis
 from env_data.get_env_value import get_env_value
 from ml_model.decision_tree_model import DecisionTreeModel
-from structure_log.logger_setup import logger
+from structure_log.logger_setup import logger, setup_logger
 
 subscription_map = {}
 
@@ -78,5 +78,6 @@ async def main():
 
 if __name__ == '__main__':
     load_dotenv()
+    setup_logger("bot_main")
     # Run the event loop
     asyncio.run(main())

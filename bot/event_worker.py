@@ -1,6 +1,8 @@
 import json
 from datetime import datetime
+from typing import Dict
 
+import redis.asyncio
 from dotenv import load_dotenv
 from rq import Queue
 from solders.pubkey import Pubkey
@@ -11,17 +13,26 @@ from constants import TOKEN_QUEUE, CREATE_PREFIX, TRADE_PREFIX, CURRENT_EVENT_WA
 from data.redis_helper import get_async_redis, decrement_counter, get_sync_redis
 from env_data.get_env_value import get_env_value
 from solana_api.solana_data import get_user_trades_in_block
-from structure_log.logger_setup import logger
+from structure_log.logger_setup import logger, setup_logger
+
+
+async def get_subscription_map(r: redis.asyncio.Redis) -> Dict[int, str]:
+    subscription_map = await r.get(SUBSCRIPTION_MAP)
+    if subscription_map is None:
+        return dict()
+    logger.info("Raw subscription_map", subscription_map=str(subscription_map))
+    subscription_map = json.loads(subscription_map)
+    logger.info("Parsed subscription_map", subscription_map=subscription_map)
+    subscription_map = {int(key): value for key, value in subscription_map.items()}
+    return subscription_map
 
 
 async def handle_user_event(event):
     r = get_async_redis()
     load_dotenv()
+    setup_logger("event_worker")
     try:
-        subscription_map = await r.get(SUBSCRIPTION_MAP)
-        logger.info(f"Raw subscription_map {subscription_map}", subscription_map=subscription_map)
-        subscription_map = json.loads(subscription_map)
-        logger.info("Parsed subscription_map", subscription_map=subscription_map)
+        subscription_map = await get_subscription_map(r)
         data = json.loads(event)
         sub_id = data["params"]["subscription"]
         logger.info("Trader id form event", sub_id=sub_id)

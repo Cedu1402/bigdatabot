@@ -5,23 +5,25 @@ from loguru import logger
 from loki_logger_handler.formatters.loguru_formatter import LoguruFormatter
 from loki_logger_handler.loki_logger_handler import LokiLoggerHandler
 
-# Loki push URL
-loki_url = "http://" + os.getenv("LOKI_URL", "localhost") + ":3100/loki/api/v1/push"
 
-# Loguru configuration
-logger.remove()  # Remove default logger
-custom_handler = LokiLoggerHandler(
-    url=loki_url,
-    labels={"application": "solana-bot"},
-    timeout=10,
-    default_formatter=LoguruFormatter()
-)
+def setup_logger(label_name: str):
+    # Loki push URL
+    loki_url = "http://" + os.getenv("LOKI_URL", "localhost") + ":3100/loki/api/v1/push"
 
-logger.configure(handlers=[{"sink": custom_handler, "serialize": True},
-                           {"sink": sys.stdout,
-                            "format": "<green>{time}</green> <level>{message}</level>"}])
+    # Loguru configuration
+    logger.remove()  # Remove default logger
+    custom_handler = LokiLoggerHandler(
+        url=loki_url,
+        labels={"application": label_name},
+        timeout=10,
+        default_formatter=LoguruFormatter()
+    )
+    logger.configure(handlers=[{"sink": custom_handler, "serialize": True},
+                               {"sink": sys.stdout,
+                                "format": "<green>{time}</green> <level>{message}</level>"}])
 
-__all__ = ["logger"]
+
+__all__ = ["logger", setup_logger]
 
 # Example usage
 if __name__ == "__main__":

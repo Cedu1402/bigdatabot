@@ -7,7 +7,7 @@ from typing import List
 import pandas as pd
 import redis
 from dotenv import load_dotenv
-from structure_log.logger_setup import logger
+from structure_log.logger_setup import logger, setup_logger
 from rq import Queue
 
 from birdeye_api.ohlcv_endpoint import get_time_frame_ohlcv
@@ -61,10 +61,11 @@ async def check_if_token_done(token: str, r: redis.asyncio.Redis) -> bool:
 
 
 async def watch_token(token) -> bool:
-    logger.info("Start token watch", token=token)
     # every minute check if we should buy
-    r = get_async_redis()
     load_dotenv()
+    setup_logger("token_watcher")
+    logger.info("Start token watch", token=token)
+    r = get_async_redis()
 
     if check_if_token_done(token, r):
         return False

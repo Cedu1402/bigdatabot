@@ -2,22 +2,23 @@ from asyncio import sleep
 from datetime import datetime
 
 from dotenv import load_dotenv
-from structure_log.logger_setup import logger
 
 from constants import DUMMY_INVESTMENT_AMOUNT, CURRENT_TRADE_WATCH_KEY
 from data.redis_helper import get_async_redis, handle_failed_trade, handle_successful_trade, decrement_counter
 from solana_api.jupiter_api import get_token_price
+from structure_log.logger_setup import logger, setup_logger
 
 
 async def watch_trade(token: str):
     # get current price
+    load_dotenv()
+    setup_logger("token_watcher")
+
     buy_time = datetime.now()
     start_price = await get_token_price(token)
     last_price = None
-
     r = get_async_redis()
-    load_dotenv()
-    
+
     await r.incr(CURRENT_TRADE_WATCH_KEY)
     await sleep(10)
 

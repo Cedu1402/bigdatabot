@@ -12,6 +12,7 @@ RUN pip install --no-cache-dir -r requirements.txt && rm requirements.txt
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH /app:$PYTHONPATH
+ENV AM_I_IN_A_DOCKER_CONTAINER=Yes
 
 # Copy application files
 COPY . .
