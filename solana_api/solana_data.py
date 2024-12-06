@@ -3,13 +3,34 @@ from datetime import datetime
 from typing import Optional, Tuple, List
 
 from solana.rpc.async_api import AsyncClient
+from solana.rpc.commitment import Finalized
 from solders.pubkey import Pubkey
-from solders.rpc.responses import GetTransactionResp
-from solders.transaction_status import EncodedTransactionWithStatusMeta
+from solders.rpc.responses import GetTransactionResp, RpcConfirmedTransactionStatusWithSignature
+from solders.transaction_status import EncodedTransactionWithStatusMeta, EncodedConfirmedTransactionWithStatusMeta
 
-from constants import PUMP_DOT_FUN_ID
+from constants import PUMP_DOT_FUN_ID, LAST_SIGNATURE
+from data.redis_helper import get_async_redis
 from solana_api.trade_model import Trade
 from structure_log.logger_setup import logger
+
+
+async def get_recent_signature(client: AsyncClient, account: Pubkey) -> RpcConfirmedTransactionStatusWithSignature:
+    try:
+        response = await client.get_signatures_for_address(account, limit=1, commitment=Finalized)
+        return response.value[0]
+    except Exception as e:
+        logger.exception("Failed to get recent signature", trader=str(account))
+
+
+async def get_transaction(client: AsyncClient,
+                          signature: RpcConfirmedTransactionStatusWithSignature) -> EncodedConfirmedTransactionWithStatusMeta:
+    try:
+        response = await client.get_transaction(signature.signature,
+                                                max_supported_transaction_version=0,
+                                                commitment=Finalized)
+        return response.value
+    except Exception as e:
+        logger.exception("Failed to get recent signature", trader=str(signature.signature))
 
 
 def block_time_stamp_to_datetime(timestamp: int) -> datetime:
@@ -47,18 +68,38 @@ async def get_block_transactions(client: AsyncClient, slot: int) -> Optional[
     return 0, []
 
 
+async def get_latest_user_trade(user: Pubkey, rpc: str) -> Optional[Trade]:
+    try:
+        r = get_async_redis()
+        async with AsyncClient(rpc) as client:
+            latest_signature = await get_recent_signature(client, user)
+            redis_key = str(user) + "_" + LAST_SIGNATURE
+            already_done = await r.get(redis_key)
+            if already_done == str(latest_signature.signature):
+                return None
+
+            tx = await get_transaction(client, latest_signature)
+            trade = get_user_trade(user, tx.transaction, tx.block_time)
+
+            await r.set(redis_key, str(latest_signature.signature))
+
+            return trade
+    except Exception as e:
+        logger.exception("Failed to load latest user trade")
+
+
 async def get_user_trades_in_block(user: Pubkey, slot: int, rpc: str) -> List[Trade]:
     trades = list()
     try:
-        client = AsyncClient(rpc)
-        block_time, tx_list = await get_block_transactions(client, slot)
-        logger.info("Loaded block details", slot=slot)
-        for tx in tx_list:
-            trade = get_user_trade(user, tx, block_time)
-            if trade is not None:
-                trades.append(trade)
-                logger.info("found trades in block", slot=slot)
-        return trades
+        async with AsyncClient(rpc) as client:
+            block_time, tx_list = await get_block_transactions(client, slot)
+            logger.info("Loaded block details", slot=slot)
+            for tx in tx_list:
+                trade = get_user_trade(user, tx, block_time)
+                if trade is not None:
+                    trades.append(trade)
+                    logger.info("found trades in block", slot=slot)
+            return trades
     except Exception as e:
         logger.exception("Failed to load trades", trader=str(user))
         return trades
@@ -144,11 +185,13 @@ def is_pump_fun_trade(tx: EncodedTransactionWithStatusMeta) -> bool:
 
 
 def is_raydium_trade(tx: EncodedTransactionWithStatusMeta) -> bool:
-    if Pubkey.from_string("675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8") in tx.transaction.message.account_keys:
+    if (Pubkey.from_string("675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8") in tx.transaction.message.account_keys or
+            Pubkey.from_string("5qucFmuXKGX1SLwNT5YXrFUnhAicELNkfup9dCFu4Xe") in tx.transaction.message.account_keys):
         return True
 
     for log in tx.meta.log_messages:
-        if "SwapEvent { dex: RaydiumSwap" in log:
+        if ("SwapEvent { dex: RaydiumSwap" in log or "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8" in log or
+                "5qucFmuXKGX1SLwNT5YXrFUnhAicELNkfup9dCFu4Xe" in log):
             return True
 
     return False
