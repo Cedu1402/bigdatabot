@@ -18,7 +18,6 @@ from structure_log.logger_setup import logger, setup_logger, ensure_logging_flus
 
 setup_logger("event_worker")
 
-
 async def load_token_create_info(token: str, r: redis.asyncio.Redis) -> Optional[Tuple[datetime, str]]:
     try:
         token_create_time, owner = await get_token_create_info(token)

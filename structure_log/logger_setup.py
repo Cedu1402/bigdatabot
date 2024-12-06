@@ -1,36 +1,54 @@
+import logging
 import os
 import sys
 
-from loguru import logger
-from loki_logger_handler.formatters.loguru_formatter import LoguruFormatter
-from loki_logger_handler.loki_logger_handler import LokiLoggerHandler
+from logstash_async.formatter import LogstashFormatter
+from logstash_async.handler import AsynchronousLogstashHandler
 
 
 def setup_logger(label_name: str):
-    # Loki push URL
-    loki_url = "http://" + os.getenv("LOKI_URL", "localhost") + ":3100/loki/api/v1/push"
+    # Logstash configuration
+    logstash_host = os.getenv("LOGSTASH_HOST", "localhost")
+    logstash_port = int(os.getenv("LOGSTASH_PORT", 5044))
 
-    # Loguru configuration
-    logger.remove()  # Remove default logger
-    custom_handler = LokiLoggerHandler(
-        url=loki_url,
-        labels={"application": label_name},
-        timeout=10,
-        default_formatter=LoguruFormatter()
+    # Configure AsynchronousLogstashHandler
+    logstash_handler = AsynchronousLogstashHandler(
+        host=logstash_host,
+        port=logstash_port,
+        database_path=None  # No local database for buffering
     )
-    logger.configure(handlers=[{"sink": custom_handler, "serialize": True},
-                               {"sink": sys.stdout,
-                                "format": "<green>{time}</green> <level>{message}</level>"}])
+    logstash_handler.setFormatter(
+        LogstashFormatter(
+            extra={"application": label_name}
+        )
+    )
+
+    # Configure root logger
+    logging.basicConfig(level=logging.INFO)  # Set default log level
+    logger = logging.getLogger()
+    logger.handlers = []  # Clear any existing handlers
+    logger.addHandler(logstash_handler)
+
+    # Console handler for local output
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(
+        logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    )
+    logger.addHandler(console_handler)
+
+    return logger
 
 
 def ensure_logging_flushed():
-    logger.info("Flushing logs to Loki before exit")
-    logger.remove()  # Ensure all log entries are flushed before exit
+    # Flush all logging handlers
+    logging.shutdown()
 
 
-__all__ = ["logger", setup_logger, ensure_logging_flushed]
+__all__ = ["setup_logger", "ensure_logging_flushed"]
 
 # Example usage
 if __name__ == "__main__":
+    logger = setup_logger("example_app")
     logger.info("This is an informational message.")
     logger.error("This is an error message.")
+    ensure_logging_flushed()

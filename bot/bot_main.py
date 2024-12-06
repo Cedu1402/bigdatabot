@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 from typing import List
 
 import websockets
@@ -11,9 +12,12 @@ from constants import SOLANA_WS, EVENT_QUEUE, BIN_AMOUNT_KEY, SUBSCRIPTION_MAP
 from data.redis_helper import get_sync_redis, get_async_redis
 from env_data.get_env_value import get_env_value
 from ml_model.decision_tree_model import DecisionTreeModel
-from structure_log.logger_setup import logger, setup_logger
+from structure_log.logger_setup import setup_logger
 
 subscription_map = {}
+
+setup_logger("bot_main")
+logger = logging.getLogger(__name__)
 
 
 # Function to handle WebSocket messages
@@ -45,7 +49,7 @@ async def subscribe_to_accounts(websocket, traders: List[str]):
             if "result" in response_data:
                 subscription_id = response_data["result"]
                 subscription_map[subscription_id] = address
-                logger.info("Subscription mapped", subscription_id=subscription_id, address=address)
+                logger.info("Subscription mapped", extra={"subscription_id": subscription_id, "address": address})
                 break
 
 
@@ -62,7 +66,7 @@ async def main():
     retries = 0
     while True:
         try:
-            async with websockets.connect(ws_url, max_size=200**7) as websocket:
+            async with websockets.connect(ws_url, max_size=200 ** 7) as websocket:
                 logger.info("Connected to WebSocket")
                 # Subscribe to accounts via WebSocket
                 await subscribe_to_accounts(websocket, traders)

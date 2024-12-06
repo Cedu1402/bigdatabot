@@ -1,27 +1,37 @@
 services:
-  loki:
-    image: grafana/loki:2.8.0
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.2
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - "xpack.security.enabled=false"
     ports:
-      - "3100:3100"
-    command: -config.file=/etc/loki/local-config.yaml
+      - "9200:9200"
+    networks:
+      - app_network
     volumes:
-      - loki_data:/loki
-    restart: always
+      - elasticsearch-data:/usr/share/elasticsearch/data
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.10.2
+    container_name: logstash
+    ports:
+      - "5044:5044" # For Beats input
+      - "9600:9600" # For Logstash API
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
     networks:
       - app_network
 
-  grafana:
-    image: grafana/grafana:10.1.0
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.10.2
+    container_name: kibana
     ports:
-      - "3000:3000"
+      - "5601:5601"
+    environment:
+      - "ELASTICSEARCH_HOSTS=http://elasticsearch:9200"
     depends_on:
-      - loki
-    restart: always
-    volumes:
-      - grafana_data:/var/lib/grafana
+      - elasticsearch
     networks:
       - app_network
 
@@ -44,14 +54,15 @@ services:
     command: rq worker --url redis://redis:6379 EVENT_QUEUE
     environment:
       - REDIS_URL=redis
-      - LOKI_URL=loki
+      - LOGSTASH_HOST=logstash
+      - LOGSTASH_PORT=5044
     networks:
       - app_network
     depends_on:
       - redis
     restart: always
     deploy:
-      replicas: 10
+      replicas: 1
 
   token_queue:
     build:
@@ -60,14 +71,15 @@ services:
     command: rq worker --url redis://redis:6379 TOKEN_QUEUE
     environment:
       - REDIS_URL=redis
-      - LOKI_URL=loki
+      - LOGSTASH_HOST=logstash
+      - LOGSTASH_PORT=5044
     networks:
       - app_network
     depends_on:
       - redis
     restart: always
     deploy:
-      replicas: 10
+      replicas: 1
 
   trade_queue:
     build:
@@ -76,14 +88,15 @@ services:
     command: rq worker --url redis://redis:6379 TRADE_QUEUE
     environment:
       - REDIS_URL=redis
-      - LOKI_URL=loki
+      - LOGSTASH_HOST=logstash
+      - LOGSTASH_PORT=5044
     networks:
       - app_network
     depends_on:
       - redis
     restart: always
     deploy:
-      replicas: 10
+      replicas: 1
 
   price_watcher:
     build:
@@ -92,7 +105,8 @@ services:
     command: python bot/sol_price_watcher.py
     environment:
       - REDIS_URL=redis
-      - LOKI_URL=loki
+      - LOGSTASH_HOST=logstash
+      - LOGSTASH_PORT=5044
     networks:
       - app_network
     depends_on:
@@ -106,7 +120,8 @@ services:
     command: python bot/bot_main.py
     environment:
       - REDIS_URL=redis
-      - LOKI_URL=loki
+      - LOGSTASH_HOST=logstash
+      - LOGSTASH_PORT=5044
     networks:
       - app_network
     depends_on:
@@ -120,7 +135,8 @@ services:
     command: python bot/bot_stats.py
     environment:
       - REDIS_URL=redis
-      - LOKI_URL=loki
+      - LOGSTASH_HOST=logstash
+      - LOGSTASH_PORT=5044
     networks:
       - app_network
     depends_on:
@@ -128,11 +144,9 @@ services:
     restart: always
 
 volumes:
-  loki_data:
-    driver: local
   redis_data:
     driver: local
-  grafana_data:
+  elasticsearch-data:
     driver: local
 
 networks:
