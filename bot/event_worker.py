@@ -16,6 +16,25 @@ from solana_api.solana_data import get_latest_user_trade
 from structure_log.logger_setup import logger, setup_logger
 
 
+async def check_token_create_time(r: redis.asyncio.Redis, token: str) -> bool:
+    token_create_time = await r.get(CREATE_PREFIX + token)
+    if token_create_time is None:
+        try:
+            token_create_time = await get_token_create_time(token)
+            await r.set(CREATE_PREFIX + token, token_create_time.isoformat())
+        except Exception as e:
+            logger.exception(f"Failed to get token create time")
+            return False
+    else:
+        token_create_time = datetime.fromisoformat(token_create_time)
+
+    if (datetime.utcnow() - token_create_time).total_seconds() > 120 * 60:
+        logger.info("Token older than two horus, skip", token=token)
+        return False
+
+    return True
+
+
 async def get_subscription_map(r: redis.asyncio.Redis) -> Dict[int, str]:
     subscription_map = await r.get(SUBSCRIPTION_MAP)
     if subscription_map is None:
@@ -52,25 +71,16 @@ async def handle_user_event(event):
             return
 
         logger.info(f"Trade found for trader {trader}", trader=trader)
-
         # check if coin is in list already
         token_exist = await r.exists(trade.token)
+
+        if not (await check_token_create_time(r, trade.token)):
+            return
+
         # # check if buy was over 1 sol
         # if not token_exist and trade.buy and abs(trade.sol_amount) < 1000000000:
         #     logger.info("Buy was not over one sol", trade=trade)
         #     continue
-
-        token_create_time = await r.get(CREATE_PREFIX + trade.token)
-        if token_create_time is None:
-            try:
-                token_create_time = await get_token_create_time(trade.token)
-                await r.set(CREATE_PREFIX + trade.token, token_create_time.isoformat())
-            except Exception as e:
-                logger.exception(f"Failed to get token create time")
-
-        if (datetime.utcnow() - token_create_time).total_seconds() > 120 * 60:
-            logger.info("Token older than two horus, skip", trade=trade)
-            return
 
         # add coin to list if not
         await r.lpush(TRADE_PREFIX + trade.token, json.dumps(trade))
