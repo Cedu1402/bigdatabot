@@ -17,15 +17,13 @@ class TestRunner(unittest.IsolatedAsyncioTestCase):
     @patch("bot.token_watcher.check_if_token_done")
     @patch("bot.token_watcher.redis.asyncio.Redis")
     @patch("bot.token_watcher.Queue")
-    async def test_watch_token(
-            self,
-            mock_queue,
-            mock_async_redis,
-            token_done,
-            mock_get_sol_price,
-            mock_get_base_data,
-            mock_get_valid_trades,
-    ):
+    async def test_watch_token(self,
+                               mock_queue,
+                               mock_async_redis,
+                               token_done,
+                               mock_get_sol_price,
+                               mock_get_base_data,
+                               mock_get_valid_trades):
         # Mock Redis
         mock_redis_instance = AsyncMock()
         mock_async_redis.return_value = mock_redis_instance
@@ -69,6 +67,46 @@ class TestRunner(unittest.IsolatedAsyncioTestCase):
         mock_get_base_data.assert_called_once()
         mock_get_sol_price.assert_called_once()
 
+    @patch("bot.token_watcher.get_valid_trades_of_token")
+    @patch("bot.token_watcher.check_if_token_done")
+    @patch("bot.token_watcher.redis.asyncio.Redis")
+    async def test_token_done(self, mock_async_redis, mock_token_done, mock_get_valid_trades):
+        # Mock Redis
+        mock_redis_instance = AsyncMock()
+        mock_async_redis.return_value = mock_redis_instance
+
+        # Token done check
+        mock_token_done.return_value = True  # Token is done, should exit early
+
+        # Run the function
+        result = await watch_token("SOL")
+
+        # Assertions
+        self.assertFalse(result)  # Expect False because token is already done
+        mock_token_done.assert_called_once()
+
+    @patch("bot.token_watcher.get_valid_trades_of_token")
+    @patch("bot.token_watcher.check_if_token_done")
+    @patch("bot.token_watcher.check_age_of_token")
+    @patch("bot.token_watcher.redis.asyncio.Redis")
+    async def test_token_age(self, mock_async_redis, mock_token_done, mock_check_age, mock_get_valid_trades):
+        # Mock Redis
+        mock_redis_instance = AsyncMock()
+        mock_async_redis.return_value = mock_redis_instance
+        mock_redis_instance.get.return_value = ((datetime.utcnow() - timedelta(hours=1)).isoformat(), "test")
+
+        # Token done check
+        mock_token_done.return_value = False
+
+        # Token is older than 4 hours, should exit early
+        mock_check_age.return_value = False
+
+        # Run the function
+        result = await watch_token("SOL")
+
+        # Assertions
+        self.assertFalse(result)  # Expect False because token is too old
+        mock_check_age.assert_called_once()
 
 if __name__ == "__main__":
     unittest.main()
