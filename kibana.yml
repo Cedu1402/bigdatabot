@@ -1,0 +1,3 @@
+elasticsearch.username: "kibana_system"
+elasticsearch.password: "ahfu923unf"
+elasticsearch.hosts: [ "http://elasticsearch:9200" ]
