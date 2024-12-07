@@ -43,8 +43,7 @@ services:
       - ELASTICSEARCH_USERNAME=kibana_system
       - ELASTICSEARCH_PASSWORD=ahfu923unf
       - ELASTICSEARCH_PASSWORD_MAIN=${ELASTICSEARCH_PASSWORD}
-      - ELASTICSEARCH_SSL_VERIFICATION_MODE=none
-      - xpack.security.enabled=true  # Enable security
+      - SERVER_HOST=0.0.0.0
     depends_on:
       - elasticsearch
     networks:
