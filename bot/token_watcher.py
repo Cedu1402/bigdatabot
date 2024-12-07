@@ -68,8 +68,8 @@ async def check_age_of_token(r: redis.asyncio.Redis, token: str) -> bool:
     logger.info("Check trading minute", extra={"token": str(token)})
 
     create_info = await r.get(CREATE_PREFIX + token)
-    create_time, _ = create_info
-    token_create_time = datetime.fromisoformat(create_time)
+    token_create_time, owner = json.loads(create_info)
+    token_create_time = datetime.fromisoformat(token_create_time)
 
     # check if coin is older than 4h if yes exit
     if (datetime.utcnow() - token_create_time).total_seconds() > 120 * 60:
