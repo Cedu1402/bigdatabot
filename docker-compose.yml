@@ -12,11 +12,6 @@ services:
       - app_network
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
-      - ./kibana_user_setup.sh:/usr/share/kibana_user_setup.sh
-    entrypoint: [ "/bin/sh", "-c" ]
-    command: |
-      /usr/local/bin/kibana_user_setup.sh
-      /usr/local/bin/docker-entrypoint.sh eswrapper
 
   logstash:
     image: docker.elastic.co/logstash/logstash:8.10.2
@@ -33,7 +28,9 @@ services:
       - app_network
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.10.2
+    build:
+      context: .
+      dockerfile: Elastic.Dockerfile # Reference the custom Dockerfile
     container_name: kibana
     ports:
       - "5601:5601"
