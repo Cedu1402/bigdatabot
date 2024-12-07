@@ -14,7 +14,7 @@ services:
       - elasticsearch-data:/usr/share/elasticsearch/data
 
   logstash:
-    image: docker.elastic.co/logstash/logstash:8.10.2
+    image: docker.elastic.co/logstash/logstash:8.15.5
     container_name: logstash
     ports:
       - "5000:5000" # For http input
@@ -38,6 +38,7 @@ services:
       - "ELASTICSEARCH_HOSTS=http://elasticsearch:9200"
       - "ELASTICSEARCH_USERNAME=kibana_system"
       - "ELASTICSEARCH_PASSWORD=${KIBANA_SYSTEM_PASSWORD}"
+      - "ELASTICSEARCH_PASSWORD_MAIN=${ELASTICSEARCH_PASSWORD}"
       - "xpack.security.enabled=true"  # Enable security
     depends_on:
       - elasticsearch
