@@ -15,7 +15,7 @@ curl -X POST "http://elasticsearch:9200/_security/user/kibana_system/_password" 
   -H "Content-Type: application/json" \
   -u elastic:$ELASTICSEARCH_PASSWORD_MAIN \
   -d '{
-    "password": "'KIBANA_SYSTEM_PASSWORD'"
+    "password": "'"$KIBANA_SYSTEM_PASSWORD"'"
   }'
 
 echo "Password for kibana_system user has been updated successfully."
