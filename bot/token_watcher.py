@@ -152,6 +152,6 @@ async def watch_token(token) -> bool:
         except Exception as e:
             await sleep(5)
             continue
-        finally:
-            await decrement_counter(CURRENT_TOKEN_WATCH_KEY, r)
-            ensure_logging_flushed()
+
+    await decrement_counter(CURRENT_TOKEN_WATCH_KEY, r)
+    ensure_logging_flushed()
