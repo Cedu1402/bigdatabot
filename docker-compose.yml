@@ -5,7 +5,7 @@ services:
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=true
-      - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD}
+      - ELASTIC_PASSWORD=${ELASTICSEARCH_PASSWORD}
       - ELASTICSEARCH_SSL_VERIFICATION_MODE=none
       - xpack.security.http.ssl.enabled=false
     ports:
