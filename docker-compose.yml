@@ -39,7 +39,7 @@ services:
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - ELASTICSEARCH_USERNAME=kibana_system
-      - ELASTICSEARCH_PASSWORD=${KIBANA_SYSTEM_PASSWORD}
+      - ELASTICSEARCH_PASSWORD=ahfu923unf
       - ELASTICSEARCH_PASSWORD_MAIN=${ELASTICSEARCH_PASSWORD}
       - ELASTICSEARCH_SSL_VERIFICATION_MODE=none
       - xpack.security.enabled=true  # Enable security
