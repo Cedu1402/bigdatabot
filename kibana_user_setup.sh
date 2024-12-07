@@ -2,13 +2,13 @@
 set -e
 
 echo "Waiting for Elasticsearch to be ready..."
-while ! curl -k -s -u elastic:$ELASTICSEARCH_PASSWORD_MAIN https://elasticsearch:9200 >/dev/null; do
+while ! curl -k -s -u elastic:$ELASTICSEARCH_PASSWORD_MAIN http://elasticsearch:9200 >/dev/null; do
   sleep 5
   echo "Waiting for Elasticsearch to be ready..."
 done
 
 # Attempt to change password with detailed error handling
-response=$(curl -k -s -w "%{http_code}" -X POST "https://elasticsearch:9200/_security/user/kibana_system/_password" \
+response=$(curl -k -s -w "%{http_code}" -X POST "http://elasticsearch:9200/_security/user/kibana_system/_password" \
   -H "Content-Type: application/json" \
   -u elastic:$ELASTICSEARCH_PASSWORD_MAIN \
   -d "{\"password\": \"$KIBANA_SYSTEM_PASSWORD\"}")
