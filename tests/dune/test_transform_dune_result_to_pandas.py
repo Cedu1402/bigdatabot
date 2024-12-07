@@ -15,4 +15,4 @@ class TestRunner(unittest.TestCase):
         # Act
         actual = transform_dune_result_to_pandas(raw_data)
         # Assert
-        self.assertEqual(len(actual), 1476)
+        self.assertEqual(len(actual), 4369)

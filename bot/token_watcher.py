@@ -65,7 +65,7 @@ async def check_if_token_done(token: str, r: redis.asyncio.Redis) -> bool:
 
 
 async def check_age_of_token(r: redis.asyncio.Redis, token: str) -> bool:
-    logger.info("Check trading minute")
+    logger.info("Check trading minute", extra={"token": str(token)})
 
     create_info = await r.get(CREATE_PREFIX + token)
     create_time, _ = create_info
@@ -76,6 +76,7 @@ async def check_age_of_token(r: redis.asyncio.Redis, token: str) -> bool:
         logger.info("Stop watch for token because of age", extra={"token": str(token)})
         return False
 
+    logger.info("Token still in valid time range", extra={"token": str(token)})
     return True
 
 
@@ -129,15 +130,17 @@ async def watch_token(token) -> bool:
                 return False
 
             # get trades and prepare trader columns
+            logger.info("Get valid trades", extra={"token": str(token)})
             valid_trades = await get_valid_trades_of_token(token, r, trading_minute)
             if len(valid_trades) == 0:
                 logger.info("No valid trades", extra={"token": str(token), "trading_minute": trading_minute})
                 await sleep(5)
                 continue
-
+            logger.info("Prepare dataset for prediction", extra={"token": str(token)})
             df = await prepare_current_dataset(valid_trades, trading_minute, token, model.get_columns(), r)
 
             # predict
+            logger.info("Prepare data for model prediction", extra={"token": str(token)})
             prediction_data, _ = model.prepare_prediction_data(copy.deepcopy([df]), False)
             prediction = model.predict(prediction_data)
 
@@ -148,8 +151,10 @@ async def watch_token(token) -> bool:
                 await r.set(token + "_done", str(True))
                 return True
             else:
+                logger.info("No buy signal found by model", extra={"token": str(token)})
                 await sleep(5)
         except Exception as e:
+            logger.exception("Failed to predict buy signal", exc_info=True, extra={"token": str(token)})
             await sleep(5)
             continue
 
