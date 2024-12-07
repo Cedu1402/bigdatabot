@@ -4,7 +4,7 @@ import redis
 from constants import PRICE_COLUMN, SOLANA_PRICE
 
 
-async def get_sol_price(r: redis.Redis) -> float:
+async def get_sol_price(r: redis.asyncio.Redis) -> float:
     price = await r.get(SOLANA_PRICE)
     if price is None:
         return float(150)
