@@ -123,12 +123,15 @@ async def watch_token(token) -> bool:
         config[BIN_AMOUNT_KEY] = 10
         model = DecisionTreeModel(config)
         model.load_model("simple_tree")
-
+        last_trading_minute = None
         while True:
             try:
                 trading_minute = get_trading_minute()
                 if not await check_age_of_token(r, token):
                     return False
+
+                if last_trading_minute is not None and (trading_minute - last_trading_minute).total_seconds() > 0:
+                    await sleep(5)
 
                 # get trades and prepare trader columns
                 logger.info("Get valid trades", extra={"token": str(token)})
