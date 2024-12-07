@@ -12,7 +12,7 @@ services:
       - app_network
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
-      - ./kibana_user_setup.sh:/usr/local/bin/kibana_user_setup.sh
+      - ./kibana_user_setup.sh:/usr/share/kibana_user_setup.sh
     entrypoint: [ "/bin/sh", "-c" ]
     command: |
       /usr/local/bin/kibana_user_setup.sh
