@@ -2,7 +2,7 @@
 set -e
 
 echo "ELASTICSEARCH_PASSWORD_MAIN: $ELASTICSEARCH_PASSWORD_MAIN"
-echo "ELASTICSEARCH_PASSWORD: $ELASTICSEARCH_PASSWORD"
+echo "KIBANA_SYSTEM_PASSWORD: $KIBANA_SYSTEM_PASSWORD"
 
 # Wait for Elasticsearch to be ready
 until curl -s -u elastic:$ELASTICSEARCH_PASSWORD_MAIN http://elasticsearch:9200; do
@@ -15,7 +15,7 @@ curl -X POST "http://elasticsearch:9200/_security/user/kibana_system/_password" 
   -H "Content-Type: application/json" \
   -u elastic:$ELASTICSEARCH_PASSWORD_MAIN \
   -d '{
-    "password": "'$ELASTICSEARCH_PASSWORD'"
+    "password": "'KIBANA_SYSTEM_PASSWORD'"
   }'
 
 echo "Password for kibana_system user has been updated successfully."
