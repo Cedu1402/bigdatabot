@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+echo "ELASTICSEARCH_PASSWORD_MAIN: $ELASTICSEARCH_PASSWORD_MAIN"
+echo "ELASTICSEARCH_PASSWORD: $ELASTICSEARCH_PASSWORD"
+
 # Wait for Elasticsearch to be ready
 until curl -s -u elastic:$ELASTICSEARCH_PASSWORD_MAIN http://elasticsearch:9200; do
   echo "Waiting for Elasticsearch to start..."
