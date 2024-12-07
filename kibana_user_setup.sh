@@ -1,21 +1,23 @@
 #!/bin/bash
 set -e
 
-echo "ELASTICSEARCH_PASSWORD_MAIN: $ELASTICSEARCH_PASSWORD_MAIN"
-echo "KIBANA_SYSTEM_PASSWORD: $KIBANA_SYSTEM_PASSWORD"
-
-# Wait for Elasticsearch to be ready
-until curl -s -u elastic:$ELASTICSEARCH_PASSWORD_MAIN http://elasticsearch:9200; do
-  echo "Waiting for Elasticsearch to start..."
+echo "Waiting for Elasticsearch to be ready..."
+while ! curl -k -s -u elastic:$ELASTICSEARCH_PASSWORD_MAIN https://elasticsearch:9200 >/dev/null; do
   sleep 5
 done
 
-# Change the password for the kibana_system user
-curl -X POST "http://elasticsearch:9200/_security/user/kibana_system/_password" \
+# Attempt to change password with detailed error handling
+response=$(curl -k -s -w "%{http_code}" -X POST "https://elasticsearch:9200/_security/user/kibana_system/_password" \
   -H "Content-Type: application/json" \
   -u elastic:$ELASTICSEARCH_PASSWORD_MAIN \
-  -d '{
-    "password": "'"$KIBANA_SYSTEM_PASSWORD"'"
-  }'
+  -d "{\"password\": \"$KIBANA_SYSTEM_PASSWORD\"}")
 
-echo "Password for kibana_system user has been updated successfully."
+http_code=$(echo "$response" | tail -c 4)
+
+if [ "$http_code" -eq 200 ]; then
+  echo "Password for kibana_system user updated successfully."
+else
+  echo "Failed to update kibana_system password. HTTP Status: $http_code"
+  echo "Response: $response"
+  exit 1
+fi
