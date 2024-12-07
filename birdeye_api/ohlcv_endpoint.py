@@ -63,8 +63,10 @@ async def get_ohlcv(token: str, start_date: datetime, end_date: datetime, interv
         "time_to": int(end_date.timestamp())
     }
     await r.incr(BIRD_EYE_COUNTER)
-
-    if await r.get(BIRD_EYE_COUNTER) >= 50000:
+    counter = await r.get(BIRD_EYE_COUNTER)
+    if counter is None:
+        counter = 1
+    if int(counter) >= 50000:
         raise Exception("Brideye limit reached!!!")
 
     async with aiohttp.ClientSession() as session:
