@@ -12,6 +12,14 @@ services:
       - app_network
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
+      - ./kibana_user_setup.sh:/usr/local/bin/kibana_user_setup.sh
+    command:
+      - /bin/bash
+        - -c
+        - |
+        chmod +x /usr/local/bin/kibana_user_setup.sh
+        /usr/local/bin/kibana_user_setup.sh &
+        /usr/local/bin/docker-entrypoint.sh eswrapper
 
   logstash:
     image: docker.elastic.co/logstash/logstash:8.10.2
@@ -34,8 +42,8 @@ services:
       - "5601:5601"
     environment:
       - "ELASTICSEARCH_HOSTS=http://elasticsearch:9200"
-      - "ELASTICSEARCH_USERNAME=elastic"
-      - "ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD}"  # Ensure password is set here
+      - "ELASTICSEARCH_USERNAME=kibana_system"
+      - "ELASTICSEARCH_PASSWORD=${KIBANA_SYSTEM_PASSWORD}"
       - "xpack.security.enabled=true"  # Enable security
     depends_on:
       - elasticsearch
