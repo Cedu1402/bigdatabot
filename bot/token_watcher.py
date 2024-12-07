@@ -117,46 +117,49 @@ async def watch_token(token) -> bool:
     queue = Queue(TRADE_QUEUE, connection=get_sync_redis(), default_timeout=9000)
     await r.incr(CURRENT_TOKEN_WATCH_KEY)
 
-    logger.info("Load model")
-    config = dict()
-    config[BIN_AMOUNT_KEY] = 10
-    model = DecisionTreeModel(config)
-    model.load_model("simple_tree")
+    try:
+        logger.info("Load model")
+        config = dict()
+        config[BIN_AMOUNT_KEY] = 10
+        model = DecisionTreeModel(config)
+        model.load_model("simple_tree")
 
-    while True:
-        try:
-            trading_minute = get_trading_minute()
-            if not await check_age_of_token(r, token):
-                return False
+        while True:
+            try:
+                trading_minute = get_trading_minute()
+                if not await check_age_of_token(r, token):
+                    return False
 
-            # get trades and prepare trader columns
-            logger.info("Get valid trades", extra={"token": str(token)})
-            valid_trades = await get_valid_trades_of_token(token, r, trading_minute)
-            if len(valid_trades) == 0:
-                logger.info("No valid trades", extra={"token": str(token), "trading_minute": trading_minute})
+                # get trades and prepare trader columns
+                logger.info("Get valid trades", extra={"token": str(token)})
+                valid_trades = await get_valid_trades_of_token(token, r, trading_minute)
+                if len(valid_trades) == 0:
+                    logger.info("No valid trades", extra={"token": str(token), "trading_minute": trading_minute})
+                    await sleep(5)
+                    continue
+                logger.info("Prepare dataset for prediction", extra={"token": str(token)})
+                df = await prepare_current_dataset(valid_trades, trading_minute, token, model.get_columns(), r)
+
+                # predict
+                logger.info("Prepare data for model prediction", extra={"token": str(token)})
+                prediction_data, _ = model.prepare_prediction_data(copy.deepcopy([df]), False)
+                prediction = model.predict(prediction_data)
+
+                # start trading task and exit
+                if prediction[0]:
+                    logger.info("Start trader watcher", extra={"token": str(token), "trading_minute": trading_minute})
+                    queue.enqueue(watch_trade, token)
+                    await r.set(token + "_done", str(True))
+                    return True
+                else:
+                    logger.info("No buy signal found by model", extra={"token": str(token)})
+                    await sleep(5)
+            except Exception as e:
+                logger.exception("Failed to predict buy signal", exc_info=True, extra={"token": str(token)})
                 await sleep(5)
                 continue
-            logger.info("Prepare dataset for prediction", extra={"token": str(token)})
-            df = await prepare_current_dataset(valid_trades, trading_minute, token, model.get_columns(), r)
-
-            # predict
-            logger.info("Prepare data for model prediction", extra={"token": str(token)})
-            prediction_data, _ = model.prepare_prediction_data(copy.deepcopy([df]), False)
-            prediction = model.predict(prediction_data)
-
-            # start trading task and exit
-            if prediction[0]:
-                logger.info("Start trader watcher", extra={"token": str(token), "trading_minute": trading_minute})
-                queue.enqueue(watch_trade, token)
-                await r.set(token + "_done", str(True))
-                return True
-            else:
-                logger.info("No buy signal found by model", extra={"token": str(token)})
-                await sleep(5)
-        except Exception as e:
-            logger.exception("Failed to predict buy signal", exc_info=True, extra={"token": str(token)})
-            await sleep(5)
-            continue
-
-    await decrement_counter(CURRENT_TOKEN_WATCH_KEY, r)
-    ensure_logging_flushed()
+    except Exception as e:
+        logger.exception("Failed to get token", extra={"token": str(token)}, exc_info=True)
+    finally:
+        await decrement_counter(CURRENT_TOKEN_WATCH_KEY, r)
+        ensure_logging_flushed()
