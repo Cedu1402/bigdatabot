@@ -4,6 +4,7 @@ set -e
 echo "Waiting for Elasticsearch to be ready..."
 while ! curl -k -s -u elastic:$ELASTICSEARCH_PASSWORD_MAIN https://elasticsearch:9200 >/dev/null; do
   sleep 5
+  echo "Waiting for Elasticsearch to be ready..."
 done
 
 # Attempt to change password with detailed error handling
