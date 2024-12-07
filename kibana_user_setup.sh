@@ -10,7 +10,7 @@ done
 # Create Kibana system role
 curl -X POST "http://elasticsearch:9200/_security/role/kibana_system" \
   -H "Content-Type: application/json" \
-  -u elastic:$ELASTICSEARCH_PASSWORD \
+  -u elastic:$ELASTICSEARCH_PASSWORD_MAIN \
   -d '{
     "cluster": ["monitor"],
     "indices": [
@@ -24,9 +24,9 @@ curl -X POST "http://elasticsearch:9200/_security/role/kibana_system" \
 # Create Kibana system user
 curl -X POST "http://elasticsearch:9200/_security/user/kibana_system" \
   -H "Content-Type: application/json" \
-  -u elastic:$ELASTICSEARCH_PASSWORD \
+  -u elastic:$ELASTICSEARCH_PASSWORD_MAIN \
   -d '{
-    "password": "'$KIBANA_SYSTEM_PASSWORD'",
+    "password": "'$ELASTICSEARCH_PASSWORD'",
     "roles": ["kibana_system"],
     "full_name": "Kibana System User"
   }'
