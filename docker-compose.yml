@@ -63,7 +63,7 @@ services:
       - redis
     restart: always
     deploy:
-      replicas: 1
+      replicas: 3
 
   token_queue:
     build:
@@ -80,7 +80,7 @@ services:
       - redis
     restart: always
     deploy:
-      replicas: 1
+      replicas: 5
 
   trade_queue:
     build:
@@ -97,7 +97,7 @@ services:
       - redis
     restart: always
     deploy:
-      replicas: 1
+      replicas: 5
 
   price_watcher:
     build:
