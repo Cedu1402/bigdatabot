@@ -96,10 +96,10 @@ async def handle_user_event(event):
     try:
         subscription_map = await get_subscription_map(r)
         trader = get_trader_form_event(event, subscription_map)
+        await r.incr(CURRENT_EVENT_WATCH_KEY)
+
         if trader is None:
             return
-
-        await r.incr(CURRENT_EVENT_WATCH_KEY)
 
         solana_rpc = get_env_value(SOL_RPC)
         trade = await get_latest_user_trade(Pubkey.from_string(trader), solana_rpc)
