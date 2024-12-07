@@ -13,13 +13,10 @@ services:
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
       - ./kibana_user_setup.sh:/usr/local/bin/kibana_user_setup.sh
-    command:
-      - /bin/bash
-        - -c
-        - |
-        chmod +x /usr/local/bin/kibana_user_setup.sh
-        /usr/local/bin/kibana_user_setup.sh &
-        /usr/local/bin/docker-entrypoint.sh eswrapper
+    command: |
+      chmod +x /usr/local/bin/kibana_user_setup.sh &&
+      /usr/local/bin/kibana_user_setup.sh &
+      /usr/local/bin/docker-entrypoint.sh eswrapper
 
   logstash:
     image: docker.elastic.co/logstash/logstash:8.10.2
