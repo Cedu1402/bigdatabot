@@ -11,5 +11,9 @@ RUN chmod +x /usr/local/bin/kibana_user_setup.sh
 
 USER kibana
 
+# Inject environment variables into kibana.yml
+RUN echo 'elasticsearch.username: ${ELASTICSEARCH_USERNAME}' >> /usr/share/kibana/config/kibana.yml && \
+    echo 'elasticsearch.password: ${ELASTICSEARCH_PASSWORD}' >> /usr/share/kibana/config/kibana.yml
+
 # Execute the setup script and then start the Kibana container
 CMD ["/bin/sh", "-c", "/usr/local/bin/kibana_user_setup.sh && /bin/tini -- /usr/share/kibana/bin/kibana"]
