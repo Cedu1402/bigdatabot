@@ -12,4 +12,4 @@ RUN chmod +x /usr/local/bin/kibana_user_setup.sh
 USER kibana
 
 # Execute the setup script and then start the Kibana container
-CMD ["/bin/sh", "-c", "/usr/local/bin/kibana_user_setup.sh && /bin/tini -- /usr/local/bin/kibana"]
+CMD ["/bin/sh", "-c", "/usr/local/bin/kibana_user_setup.sh /bin/tini -- /usr/share/kibana/bin/kibana"]
