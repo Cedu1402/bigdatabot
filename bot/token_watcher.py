@@ -132,6 +132,9 @@ async def watch_token(token) -> bool:
 
                 if last_trading_minute is not None and (trading_minute - last_trading_minute).total_seconds() > 0:
                     await sleep(5)
+                    continue
+                    
+                last_trading_minute = trading_minute
 
                 # get trades and prepare trader columns
                 logger.info("Get valid trades", extra={"token": str(token)})
