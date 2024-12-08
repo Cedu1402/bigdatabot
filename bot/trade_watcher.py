@@ -24,36 +24,39 @@ async def watch_trade(token: str):
 
     await r.incr(CURRENT_TRADE_WATCH_KEY)
     await sleep(10)
+    try:
+        while True:
+            try:
+                if (datetime.now() - buy_time).total_seconds() >= 120 * 60:
+                    logger.info(
+                        "Failed token because of time",
+                        extra={"start_price": start_price, "last_price": last_price, "token": token}
+                    )
+                    await handle_failed_trade(r, token, DUMMY_INVESTMENT_AMOUNT / 2)
+                    return
 
-    while True:
-        try:
-            if (datetime.now() - buy_time).total_seconds() >= 120 * 60:
-                logger.info(
-                    "Failed token because of time",
-                    extra={"start_price": start_price, "last_price": last_price, "token": token}
-                )
-                await handle_failed_trade(r, token, DUMMY_INVESTMENT_AMOUNT / 2)
-                return
+                last_price = await get_token_price(token)
+                if last_price >= start_price * 1.10:  # 110% of start price
+                    logger.info(
+                        f"Price increased by 110%: {last_price} > {start_price * 1.10}",
+                        extra={"start_price": start_price, "last_price": last_price, "token": token}
+                    )
 
-            last_price = await get_token_price(token)
-            if last_price >= start_price * 1.10:  # 110% of start price
-                logger.info(
-                    f"Price increased by 110%: {last_price} > {start_price * 1.10}",
-                    extra={"start_price": start_price, "last_price": last_price, "token": token}
-                )
+                    await handle_successful_trade(r, token, DUMMY_INVESTMENT_AMOUNT)
+                    return
 
-                await handle_successful_trade(r, token, DUMMY_INVESTMENT_AMOUNT)
-                return
-
-            if last_price <= start_price * 0.50:  # 50% of start price
-                logger.info(
-                    f"Price decreased by 50%: {last_price} < {start_price * 0.50}",
-                    extra={"start_price": start_price, "last_price": last_price, "token": token}
-                )
-                await handle_failed_trade(r, token, DUMMY_INVESTMENT_AMOUNT / 2)
-                return
-        except Exception as e:
-            logger.exception("Error in trade watch", extra={"token": token})
-        finally:
-            await sleep(10)
-            await decrement_counter(CURRENT_TRADE_WATCH_KEY, r)
+                if last_price <= start_price * 0.50:  # 50% of start price
+                    logger.info(
+                        f"Price decreased by 50%: {last_price} < {start_price * 0.50}",
+                        extra={"start_price": start_price, "last_price": last_price, "token": token}
+                    )
+                    await handle_failed_trade(r, token, DUMMY_INVESTMENT_AMOUNT / 2)
+                    return
+            except Exception as e:
+                logger.exception("Error in trade watch", extra={"token": token})
+            finally:
+                await sleep(10)
+    except Exception as e:
+        logger.exception("Failed to watch trade", extra={"token": token})
+    finally:
+        await decrement_counter(CURRENT_TRADE_WATCH_KEY, r)

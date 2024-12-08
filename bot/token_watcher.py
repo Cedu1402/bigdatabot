@@ -133,7 +133,7 @@ async def watch_token(token) -> bool:
                 if last_trading_minute is not None and (trading_minute - last_trading_minute).total_seconds() > 0:
                     await sleep(5)
                     continue
-                    
+
                 last_trading_minute = trading_minute
 
                 # get trades and prepare trader columns
@@ -143,6 +143,7 @@ async def watch_token(token) -> bool:
                     logger.info("No valid trades", extra={"token": str(token), "trading_minute": trading_minute})
                     await sleep(5)
                     continue
+
                 logger.info("Prepare dataset for prediction", extra={"token": str(token)})
                 df = await prepare_current_dataset(valid_trades, trading_minute, token, model.get_columns(), r)
 
