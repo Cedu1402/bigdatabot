@@ -131,10 +131,14 @@ async def watch_token(token) -> bool:
                     return False
 
                 if last_trading_minute is not None and (trading_minute - last_trading_minute).total_seconds() > 0:
+                    logger.info("Skip because not yet next trading minute",
+                                extra={"token": str(token),
+                                       "trading_minute": trading_minute,
+                                       "last_trading_minute": last_trading_minute})
                     await sleep(5)
                     continue
 
-                last_trading_minute = trading_minute
+                last_trading_minute = copy.deepcopy(trading_minute)
 
                 # get trades and prepare trader columns
                 logger.info("Get valid trades", extra={"token": str(token)})

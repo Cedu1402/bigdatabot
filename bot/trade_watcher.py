@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 async def watch_trade(token: str):
     # get current price
     load_dotenv()
-
+    logger.info("Start trade watcher", extra={"token": token})
     buy_time = datetime.now()
     start_price = await get_token_price(token)
     last_price = None
@@ -36,9 +36,9 @@ async def watch_trade(token: str):
                     return
 
                 last_price = await get_token_price(token)
-                if last_price >= start_price * 1.10:  # 110% of start price
+                if last_price >= start_price * 2.10:  # 110% of start price
                     logger.info(
-                        f"Price increased by 110%: {last_price} > {start_price * 1.10}",
+                        f"Price increased by 110%",
                         extra={"start_price": start_price, "last_price": last_price, "token": token}
                     )
 
