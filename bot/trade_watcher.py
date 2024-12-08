@@ -17,8 +17,13 @@ async def watch_trade(token: str):
     # get current price
     load_dotenv()
     logger.info("Start trade watcher", extra={"token": token})
+
     buy_time = datetime.now()
     start_price = await get_token_price(token)
+
+    logger.info("Simulate buy of token",
+                extra={"token": token, "start_price": start_price, "buy_time": buy_time.isoformat()})
+
     last_price = None
     r = get_async_redis()
 
