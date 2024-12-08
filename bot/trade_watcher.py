@@ -23,8 +23,6 @@ async def watch_trade(token: str):
 
     logger.info("Simulate buy of token",
                 extra={"token": token, "start_price": start_price, "buy_time": buy_time.isoformat()})
-
-    last_price = None
     r = get_async_redis()
 
     await r.incr(CURRENT_TRADE_WATCH_KEY)
@@ -32,19 +30,24 @@ async def watch_trade(token: str):
     try:
         while True:
             try:
+
+                # Calculate profit/loss percentage
+                last_price = await get_token_price(token)
+                price_change_percentage = (last_price - start_price) / start_price * 100
+                profit = DUMMY_INVESTMENT_AMOUNT * (price_change_percentage / 100)
+
                 if (datetime.now() - buy_time).total_seconds() >= 120 * 60:
                     logger.info(
                         "Failed token because of time",
-                        extra={"start_price": start_price, "last_price": last_price, "token": token}
+                        extra={"start_price": start_price, "last_price": last_price, "token": token, "profit": profit}
                     )
                     await handle_failed_trade(r, token, DUMMY_INVESTMENT_AMOUNT / 2)
                     return
 
-                last_price = await get_token_price(token)
                 if last_price >= start_price * 2.10:  # 110% of start price
                     logger.info(
                         f"Price increased by 110%",
-                        extra={"start_price": start_price, "last_price": last_price, "token": token}
+                        extra={"start_price": start_price, "last_price": last_price, "token": token, "profit": profit}
                     )
 
                     await handle_successful_trade(r, token, DUMMY_INVESTMENT_AMOUNT)
@@ -53,7 +56,7 @@ async def watch_trade(token: str):
                 if last_price <= start_price * 0.50:  # 50% of start price
                     logger.info(
                         f"Price decreased by 50%: {last_price} < {start_price * 0.50}",
-                        extra={"start_price": start_price, "last_price": last_price, "token": token}
+                        extra={"start_price": start_price, "last_price": last_price, "token": token, "profit": profit}
                     )
                     await handle_failed_trade(r, token, DUMMY_INVESTMENT_AMOUNT / 2)
                     return

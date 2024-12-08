@@ -130,7 +130,7 @@ async def watch_token(token) -> bool:
                 if not await check_age_of_token(r, token):
                     return False
 
-                if last_trading_minute is not None and (trading_minute - last_trading_minute).total_seconds() > 0:
+                if last_trading_minute is not None and (trading_minute - last_trading_minute).total_seconds() == 0:
                     logger.info("Skip because not yet next trading minute",
                                 extra={"token": str(token),
                                        "trading_minute": trading_minute,
