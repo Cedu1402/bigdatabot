@@ -19,6 +19,9 @@ services:
     ports:
       - "5000:5000" # For http input
       - "9600:9600" # For Logstash API
+    environment:
+      - "LOGSTASH_JAVA_OPTS=-Xms1g -Xmx1g"  # Set initial and max heap size to 1GB
+    mem_limit: 1g  # Limit the container memory usage to 1GB
     volumes:
       - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
     networks:

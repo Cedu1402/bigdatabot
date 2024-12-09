@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from base64 import b64decode
 from typing import Optional, Any
 
@@ -10,7 +11,7 @@ from solders.message import to_bytes_versioned
 from solders.transaction import VersionedTransaction
 
 from solana_api.http_helper import make_http_request_with_retry
-import logging
+
 logger = logging.getLogger(__name__)
 
 # Mint address for SOL token
@@ -31,6 +32,7 @@ async def get_token_price(token_address: str, show_extra_info: bool = False) -> 
         async with session.get(url, params=params) as response:
             response.raise_for_status()  # Ensure the request was successful
             data = await response.json()
+            logger.info("Price result data", extra={"data": data})
             return float(data["data"][token_address]["price"])
 
 
