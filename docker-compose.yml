@@ -6,11 +6,11 @@ services:
       - discovery.type=single-node
       - xpack.security.enabled=false
       - xpack.security.http.ssl.enabled=false
-      - "ES_JAVA_OPTS=-Xms3g -Xmx3g"  # Limit heap to 2GB
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"  # Limit heap to 2GB
     deploy:
       resources:
         limits:
-          memory: 3G  # Limit container memory to 2GB
+          memory: 3G  # Limit container memory to 3GB
     ports:
       - "9200:9200"
     networks:
@@ -29,7 +29,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1G  # Limit container memory to 2GB
+          memory: 2G  # Limit container memory to 2GB
     volumes:
       - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
     networks:
