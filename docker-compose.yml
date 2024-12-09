@@ -6,6 +6,11 @@ services:
       - discovery.type=single-node
       - xpack.security.enabled=false
       - xpack.security.http.ssl.enabled=false
+      - "ES_JAVA_OPTS=-Xms3g -Xmx3g"  # Limit heap to 2GB
+    deploy:
+      resources:
+        limits:
+          memory: 3G  # Limit container memory to 2GB
     ports:
       - "9200:9200"
     networks:
@@ -21,7 +26,10 @@ services:
       - "9600:9600" # For Logstash API
     environment:
       - "LOGSTASH_JAVA_OPTS=-Xms1g -Xmx1g"  # Set initial and max heap size to 1GB
-    mem_limit: 1g  # Limit the container memory usage to 1GB
+    deploy:
+      resources:
+        limits:
+          memory: 1G  # Limit container memory to 2GB
     volumes:
       - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
     networks:
