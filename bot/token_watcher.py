@@ -1,6 +1,7 @@
 import copy
 import json
 import logging
+import os
 from asyncio import sleep
 from datetime import datetime
 from typing import List
@@ -18,6 +19,7 @@ from data.data_format import get_sol_price, transform_price_to_tokens_per_sol
 from data.data_type import convert_columns
 from data.dataset import add_inactive_traders
 from data.feature_engineering import add_features
+from data.pickle_files import save_to_pickle
 from data.redis_helper import get_async_redis, decrement_counter, get_sync_redis
 from data.trade_data import get_valid_trades, add_trader_actions_to_dataframe, get_traders
 from ml_model.decision_tree_model import DecisionTreeModel
@@ -34,6 +36,20 @@ async def get_valid_trades_of_token(token: str, r: redis.Redis, trading_minute: 
     valid_trades = get_valid_trades(trades, trading_minute)
 
     return valid_trades
+
+
+def save_dataset_for_debugging(data: pd.DataFrame, token: str, trading_minute: datetime):
+    try:
+        # Define the directory path using token and trading minute
+        folder_path = f'/data/{token}'  # Path in the container's volume
+        file_name = trading_minute.strftime('%Y-%m-%d_%H-%M-%S') + '.pkl'  # Format trading minute to a valid file name
+        file_path = os.path.join(folder_path, file_name)
+
+        # Save the data (DataFrame) to pickle file
+        save_to_pickle(data, file_path)
+        logger.info(f"Dataset saved", extra={"path": file_path})
+    except Exception as e:
+        logger.exception("Failed to save dataset for debugging")
 
 
 async def get_base_data(valid_trades: List[Trade], trading_minute: datetime, token: str) -> pd.DataFrame:
@@ -150,7 +166,8 @@ async def watch_token(token) -> bool:
 
                 logger.info("Prepare dataset for prediction", extra={"token": str(token)})
                 df = await prepare_current_dataset(valid_trades, trading_minute, token, model.get_columns(), r)
-
+                save_dataset_for_debugging(df, token, trading_minute)
+                
                 # predict
                 logger.info("Prepare data for model prediction", extra={"token": str(token)})
                 prediction_data, _ = model.prepare_prediction_data(copy.deepcopy([df]), False)
