@@ -88,8 +88,6 @@ async def get_latest_user_trade(user: Pubkey, rpc: str) -> Optional[Trade]:
             logger.info("Check tx for trades", extra={"signature": str(latest_signature.signature)})
             trade = get_user_trade(user, tx.transaction, tx.block_time)
 
-            insert_event(str(user), datetime.utcnow(), str(latest_signature.signature))
-
             return trade
     except Exception as e:
         logger.exception("Failed to load latest user trade")
@@ -128,7 +126,7 @@ def get_user_trade(user: Pubkey, tx: EncodedTransactionWithStatusMeta, block_tim
         token, token_amount, token_holding_after = token_data
 
         return Trade(str(user), str(token), token_amount, sol_amount, sol_amount < 0, token_holding_after,
-                     block_time_stamp_to_datetime(block_time).isoformat())
+                     block_time_stamp_to_datetime(block_time).isoformat(), str(tx.transaction.signatures[0]))
     except Exception as e:
         logger.exception("Failed to load trades", extra={"trader": str(user)})
         return None

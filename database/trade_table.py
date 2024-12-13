@@ -13,8 +13,8 @@ def insert_trade(trade: Trade):
 
                 # Prepare the SQL INSERT statement
                 insert_query = """
-               INSERT INTO trades (trader, token, token_amount, sol_amount, buy, token_holding_after, trade_time)
-               VALUES (%s, %s, %s, %s, %s, %s, %s)
+               INSERT INTO trades (trader, token, token_amount, sol_amount, buy, token_holding_after, trade_time, tx_signature)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                """
 
                 # Execute the INSERT query with the trade data
@@ -25,7 +25,8 @@ def insert_trade(trade: Trade):
                     trade.sol_amount,
                     trade.buy,
                     trade.token_holding_after,
-                    trade.get_time()
+                    trade.get_time(),
+                    trade.tx_signature
                 ))
 
                 # Commit the transaction

@@ -2,22 +2,22 @@ CREATE TABLE IF NOT EXISTS trades
 (
     id                  SERIAL PRIMARY KEY,
     trader              VARCHAR(255) NOT NULL,
-    token               VARCHAR(100) NOT NULL,
+    token               VARCHAR(255) NOT NULL,
     token_amount        BIGINT       NOT NULL,
     sol_amount          BIGINT       NOT NULL,
     buy                 BOOLEAN      NOT NULL,
     token_holding_after BIGINT       NOT NULL,
-    trade_time          TIMESTAMP    NOT NULL
+    trade_time          TIMESTAMP    NOT NULL,
+    tx_signature        VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS token_dataset
 (
     id             SERIAL PRIMARY KEY,
-    token          VARCHAR(100) NOT NULL,
+    token          VARCHAR(255) NOT NULL,
     trading_minute TIMESTAMP    NOT NULL,
     raw_data       BYTEA        NOT NULL
 );
-
 
 CREATE TABLE IF NOT EXISTS token_trade_history
 (

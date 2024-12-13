@@ -16,6 +16,7 @@ class TestRunner(BaseTestDatabase):
             buy=True,
             token_holding_after=1433487819740892,
             trade_time=datetime.now().isoformat(),
+            tx_signature="test_signature"
         )
 
         # Act
@@ -23,7 +24,7 @@ class TestRunner(BaseTestDatabase):
 
         # Assert
         self.cursor.execute("""
-            SELECT trader, token, token_amount, sol_amount, buy, token_holding_after, trade_time
+            SELECT trader, token, token_amount, sol_amount, buy, token_holding_after, trade_time, tx_signature
             FROM trades
         """)
         result = self.cursor.fetchone()
@@ -32,11 +33,13 @@ class TestRunner(BaseTestDatabase):
         self.assertEqual(result[0], trade.trader, "The trader should match the inserted value")
         self.assertEqual(result[1], trade.token, "The token should match the inserted value")
         self.assertEqual(result[2], trade.token_amount,
-                               msg="The token amount should match the inserted value")
+                         msg="The token amount should match the inserted value")
         self.assertEqual(result[3], trade.sol_amount,
-                               msg="The SOL amount should match the inserted value")
+                         msg="The SOL amount should match the inserted value")
         self.assertEqual(result[4], trade.buy, "The buy flag should match the inserted value")
         self.assertEqual(result[5], trade.token_holding_after,
-                               msg="The token holding should match the inserted value")
+                         msg="The token holding should match the inserted value")
         self.assertEqual(result[6].isoformat(), trade.get_time().isoformat(),
                          "The trade time should match the inserted value")
+        self.assertEqual(result[7], trade.tx_signature,
+                         "The trade tx signature should match the inserted value")

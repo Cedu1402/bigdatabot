@@ -11,6 +11,7 @@ class Trade:
     buy: bool
     token_holding_after: int
     trade_time: str
+    tx_signature: str
 
     def get_time(self) -> datetime:
         return datetime.fromisoformat(self.trade_time)
