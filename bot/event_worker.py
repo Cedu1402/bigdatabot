@@ -10,10 +10,13 @@ from solders.pubkey import Pubkey
 
 from birdeye_api.token_creation_endpoint import get_token_create_info
 from bot.token_watcher import watch_token
-from constants import TOKEN_QUEUE, CREATE_PREFIX, TRADE_PREFIX, SOL_RPC, SUBSCRIPTION_MAP, \
-    PUMP_DOT_FUN_AUTHORITY, TOKEN_WATCHER_KEY
+from constants import TOKEN_QUEUE, SOL_RPC, SUBSCRIPTION_MAP, \
+    PUMP_DOT_FUN_AUTHORITY
 from data.redis_helper import get_async_redis, get_sync_redis
 from database.event_table import insert_event
+from database.token_creation_info_table import select_token_creation_info, insert_token_creation_info
+from database.token_watch_table import token_watch_exists, insert_token_watch
+from database.trade_table import insert_trade
 from env_data.get_env_value import get_env_value
 from solana_api.solana_data import get_latest_user_trade
 from structure_log.logger_setup import setup_logger, ensure_logging_flushed
@@ -22,28 +25,27 @@ setup_logger("event_worker")
 logger = logging.getLogger(__name__)
 
 
-async def load_token_create_info(token: str, r: redis.asyncio.Redis) -> Optional[Tuple[datetime, str]]:
+async def load_token_create_info(token: str) -> Optional[Tuple[datetime, str]]:
     try:
         token_create_time, owner = await get_token_create_info(token)
-        await r.set(CREATE_PREFIX + token, json.dumps((token_create_time.isoformat(), owner)))
         return token_create_time, owner
     except Exception as e:
         logger.exception(f"Failed to get token create time")
         return None
 
 
-async def check_token_create_info(r: redis.asyncio.Redis, token: str) -> bool:
-    token_create_info = await r.get(CREATE_PREFIX + token)
+async def check_token_create_info(token: str) -> bool:
+    token_create_info = select_token_creation_info(token)
     if token_create_info is None:
-        token_create_info = await load_token_create_info(token, r)
+        token_create_info = await load_token_create_info(token)
         if token_create_info is None:
             logger.info("Failed to load token create info")
             return False
 
         token_create_time, owner = token_create_info
-    else:
-        token_create_time, owner = json.loads(token_create_info)
-        token_create_time = datetime.fromisoformat(token_create_time)
+        insert_token_creation_info(token, owner, token_create_time)
+
+    token_create_time, owner = token_create_info
 
     if owner != PUMP_DOT_FUN_AUTHORITY:
         logger.info("Not a pump fun token", extra={'token': token, 'owner': owner})
@@ -97,9 +99,8 @@ async def handle_user_event(event):
     try:
         subscription_map = await get_subscription_map(r)
         trader = get_trader_form_event(event, subscription_map)
-
+        insert_event(trader if trader is not None else "FAILED", datetime.utcnow(), "")
         if trader is None:
-            insert_event(trader if trader is not None else "FAILED", datetime.utcnow(), "")
             return
 
         solana_rpc = get_env_value(SOL_RPC)
@@ -111,25 +112,24 @@ async def handle_user_event(event):
         logger.info(f"Trade found for trader {trader}", extra={"trader": trader})
 
         # check if coin is in list already
-        token_watch_redis_key = TOKEN_WATCHER_KEY + "_" + trade.token
-        token_exist = bool(await r.exists(token_watch_redis_key))
-        logger.info("Token already in list", extra={"token_exist": token_exist})
+        token_is_watched = token_watch_exists(trade.token)
+        logger.info("Token already in list", extra={"token_exist": token_is_watched})
 
-        result = await check_token_create_info(r, trade.token)
+        result = await check_token_create_info(trade.token)
         logger.info(f"check_token_create_info returned", extra={"result": result})
         if not result:
             logger.info("Skip token create info check is false")
             return
 
-        await r.lpush(TRADE_PREFIX + trade.token, json.dumps(trade.to_dict()))
+        insert_trade(trade)
         logger.info("Token trade added to list", extra={"trade": trade.to_dict()})
 
         # add coin to list if not
-        if not token_exist:
+        if not token_is_watched:
             # Enqueue a task with some data
             logger.info("Add token to token watch", extra={"trade": trade.to_dict()})
             queue.enqueue(watch_token, trade.token)
-            await r.set(token_watch_redis_key, json.dumps(True))
+            insert_token_watch(trade.token, datetime.utcnow(), None)
 
     except Exception as e:
         logger.exception("Failed to process message")

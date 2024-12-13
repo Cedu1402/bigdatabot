@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS token_watch
     id         SERIAL PRIMARY KEY,
     token      VARCHAR(255) NOT NULL,
     start_time TIMESTAMP    NOT NULL,
-    end_time   TIMESTAMP    NOT NULL
+    end_time   TIMESTAMP    NULL
 );
 
 CREATE TABLE IF NOT EXISTS token_trade_history

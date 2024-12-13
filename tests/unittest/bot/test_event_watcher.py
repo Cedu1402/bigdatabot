@@ -3,11 +3,13 @@ import unittest
 from datetime import datetime
 from unittest import mock
 from unittest.mock import AsyncMock
+
 from solders.pubkey import Pubkey
+
 from bot.event_worker import handle_user_event
 from bot.token_watcher import watch_token
 from dto.trade_model import Trade
-from constants import CURRENT_EVENT_WATCH_KEY, TRADE_PREFIX
+
 
 class TestHandleUserEvent(unittest.IsolatedAsyncioTestCase):
 
@@ -40,8 +42,13 @@ class TestHandleUserEvent(unittest.IsolatedAsyncioTestCase):
     @mock.patch('bot.event_worker.get_latest_user_trade')
     @mock.patch('bot.event_worker.check_token_create_info')
     @mock.patch('bot.event_worker.Queue')
-    @mock.patch('bot.event_worker.decrement_counter')
-    async def test_handle_user_event_valid_trade(self, mock_decrement_counter, mock_queue, mock_check_token_create_info,
+    @mock.patch('bot.event_worker.token_watch_exists')
+    @mock.patch('bot.event_worker.insert_trade')
+    @mock.patch('bot.event_worker.insert_token_watch')
+    @mock.patch('bot.event_worker.insert_event')
+    async def test_handle_user_event_valid_trade(self, mock_insert_event, mock_insert_token_watch, mock_insert_trade,
+                                                 mock_token_watch_exists, mock_queue,
+                                                 mock_check_token_create_info,
                                                  mock_get_latest_user_trade, mock_get_sync_redis, mock_get_async_redis,
                                                  mock_get_env_value):
         # Mock Redis instance
@@ -54,7 +61,7 @@ class TestHandleUserEvent(unittest.IsolatedAsyncioTestCase):
 
         # Mock trade data
         trader = "GWwmd3zZQnLvqvixKGD3RKtaFVAtfPn1kGN4bx8tHRTR"
-        trade_data = Trade(trader, "testpump", 100, 1, True, 10, datetime.now().isoformat())
+        trade_data = Trade(trader, "testpump", 100, 1, True, 10, datetime.now().isoformat(), "test_sig")
         mock_get_latest_user_trade.return_value = trade_data
 
         # Mock check_token_create_info to always return True
@@ -64,7 +71,7 @@ class TestHandleUserEvent(unittest.IsolatedAsyncioTestCase):
         mock_enqueue = mock.Mock()
         mock_queue.return_value.enqueue = mock_enqueue
 
-        mock_redis.exists.return_value = False
+        mock_token_watch_exists.return_value = False
 
         # Mock subscription_map
         subscription_map = {23784: trader}
@@ -78,20 +85,21 @@ class TestHandleUserEvent(unittest.IsolatedAsyncioTestCase):
         # Ensure that the expected methods were called
         mock_get_latest_user_trade.assert_called_once_with(Pubkey.from_string(trader),
                                                            "https://api.mainnet-beta.solana.com")
-        mock_check_token_create_info.assert_called_once_with(mock_redis, "testpump")
+        mock_check_token_create_info.assert_called_once_with("testpump")
         mock_queue.return_value.enqueue.assert_called_once_with(watch_token, "testpump")
-        mock_decrement_counter.assert_called_once_with(CURRENT_EVENT_WATCH_KEY, mock_redis)
 
         # Verify that the token was added to Redis
-        mock_redis.lpush.assert_called_once_with(TRADE_PREFIX + "testpump", json.dumps(trade_data.to_dict()))
+        mock_insert_trade.assert_called_once_with(trade_data)
+        mock_insert_token_watch.assert_called_once()
+        mock_insert_event.assert_called_once()
 
     @mock.patch('bot.event_worker.get_env_value')
     @mock.patch('bot.event_worker.get_async_redis')
     @mock.patch('bot.event_worker.get_sync_redis')
     @mock.patch('bot.event_worker.get_latest_user_trade')
-    @mock.patch('bot.event_worker.check_token_create_info')
-    async def test_handle_user_event_no_trade(self, mock_check_token_create_info, mock_get_latest_user_trade,
-                                               mock_get_sync_redis, mock_get_async_redis, mock_get_env_value):
+    @mock.patch('bot.event_worker.insert_event')
+    async def test_handle_user_event_no_trade(self, mock_insert_event, mock_get_latest_user_trade,
+                                              mock_get_sync_redis, mock_get_async_redis, mock_get_env_value):
         # Mock Redis instance
         mock_redis = AsyncMock()
         mock_get_async_redis.return_value = mock_redis
@@ -103,9 +111,6 @@ class TestHandleUserEvent(unittest.IsolatedAsyncioTestCase):
         # Mock trade data (None scenario)
         trader = "GWwmd3zZQnLvqvixKGD3RKtaFVAtfPn1kGN4bx8tHRTR"
         mock_get_latest_user_trade.return_value = None  # No trade found
-
-        # Mock check_token_create_info to always return True
-        mock_check_token_create_info.return_value = True
 
         # Mock subscription_map
         subscription_map = {23784: trader}
@@ -120,14 +125,23 @@ class TestHandleUserEvent(unittest.IsolatedAsyncioTestCase):
         mock_get_latest_user_trade.assert_called_once_with(Pubkey.from_string(trader),
                                                            "https://api.mainnet-beta.solana.com")
         mock_redis.lpush.assert_not_called()
+        mock_insert_event.assert_called_once()
 
     @mock.patch('bot.event_worker.get_env_value')
     @mock.patch('bot.event_worker.get_async_redis')
     @mock.patch('bot.event_worker.get_sync_redis')
     @mock.patch('bot.event_worker.get_latest_user_trade')
     @mock.patch('bot.event_worker.check_token_create_info')
-    async def test_handle_user_event_token_already_exists(self, mock_check_token_create_info, mock_get_latest_user_trade,
-                                                           mock_get_sync_redis, mock_get_async_redis, mock_get_env_value):
+    @mock.patch('bot.event_worker.insert_event')
+    @mock.patch('bot.event_worker.insert_token_watch')
+    @mock.patch('bot.event_worker.token_watch_exists')
+    @mock.patch('bot.event_worker.insert_trade')
+    async def test_handle_user_event_token_already_exists(self, mock_insert_trade, mock_token_watch_exists,
+                                                          mock_insert_token_watch, mock_insert_event,
+                                                          mock_check_token_create_info,
+                                                          mock_get_latest_user_trade,
+                                                          mock_get_sync_redis, mock_get_async_redis,
+                                                          mock_get_env_value):
         # Mock Redis instance
         mock_redis = AsyncMock()
         mock_get_async_redis.return_value = mock_redis
@@ -138,7 +152,7 @@ class TestHandleUserEvent(unittest.IsolatedAsyncioTestCase):
 
         # Mock trade data
         trader = "GWwmd3zZQnLvqvixKGD3RKtaFVAtfPn1kGN4bx8tHRTR"
-        trade_data = Trade(trader, "testpump", 100, 1, True, 10, datetime.now().isoformat())
+        trade_data = Trade(trader, "testpump", 100, 1, True, 10, datetime.now().isoformat(), "")
         mock_get_latest_user_trade.return_value = trade_data
 
         # Mock check_token_create_info to always return True
@@ -157,15 +171,25 @@ class TestHandleUserEvent(unittest.IsolatedAsyncioTestCase):
         await handle_user_event(json.dumps(self.event_data))
 
         # Ensure that the token is not added again
-        mock_redis.rset.assert_not_called()
+        mock_insert_event.assert_called_once()
+        mock_token_watch_exists.assert_called_once_with(trade_data.token)
+        mock_insert_trade.assert_called_once_with(trade_data)
+        mock_insert_token_watch.assert_not_called()
 
     @mock.patch('bot.event_worker.get_env_value')
     @mock.patch('bot.event_worker.get_async_redis')
     @mock.patch('bot.event_worker.get_sync_redis')
     @mock.patch('bot.event_worker.get_latest_user_trade')
     @mock.patch('bot.event_worker.check_token_create_info')
-    async def test_handle_user_event_token_creation_check_fail(self, mock_check_token_create_info, mock_get_latest_user_trade,
-                                                                mock_get_sync_redis, mock_get_async_redis, mock_get_env_value):
+    @mock.patch('bot.event_worker.insert_event')
+    @mock.patch('bot.event_worker.token_watch_exists')
+    @mock.patch('bot.event_worker.insert_trade')
+    async def test_handle_user_event_token_creation_check_fail(self, mock_insert_trade,
+                                                               mock_token_watch_exists,
+                                                               mock_insert_event, mock_check_token_create_info,
+                                                               mock_get_latest_user_trade,
+                                                               mock_get_sync_redis, mock_get_async_redis,
+                                                               mock_get_env_value):
         # Mock Redis instance
         mock_redis = AsyncMock()
         mock_get_async_redis.return_value = mock_redis
@@ -176,11 +200,12 @@ class TestHandleUserEvent(unittest.IsolatedAsyncioTestCase):
 
         # Mock trade data
         trader = "GWwmd3zZQnLvqvixKGD3RKtaFVAtfPn1kGN4bx8tHRTR"
-        trade_data = Trade(trader, "testpump", 100, 1, True, 10, datetime.now().isoformat())
+        trade_data = Trade(trader, "testpump", 100, 1, True, 10, datetime.now().isoformat(), "")
         mock_get_latest_user_trade.return_value = trade_data
 
         # Mock check_token_create_info to return False (indicating a failed check)
         mock_check_token_create_info.return_value = False
+        mock_token_watch_exists.return_value = True
 
         # Mock subscription_map
         subscription_map = {23784: trader}
@@ -193,6 +218,10 @@ class TestHandleUserEvent(unittest.IsolatedAsyncioTestCase):
 
         # Ensure that token was not added due to creation check failure
         mock_redis.lpush.assert_not_called()
+        mock_token_watch_exists.assert_called_once_with(trade_data.token)
+        mock_insert_event.assert_called_once()
+        mock_insert_trade.assert_not_called()
+
 
 if __name__ == '__main__':
     unittest.main()

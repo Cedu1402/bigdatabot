@@ -1,12 +1,13 @@
 import logging
 from datetime import datetime
+from typing import Optional
 
 from database.db_connection import get_db_connection
 
 logger = logging.getLogger(__name__)
 
 
-def insert_token_watch(token: str, start_time: datetime, end_time: datetime) -> int:
+def insert_token_watch(token: str, start_time: datetime, end_time: Optional[datetime]) -> int:
     """
     Inserts a token watch entry into the token_watch table and returns the inserted row's ID.
 
@@ -43,7 +44,6 @@ def insert_token_watch(token: str, start_time: datetime, end_time: datetime) -> 
             "start_time": start_time,
             "end_time": end_time
         })
-        raise
 
 
 def token_watch_exists(token: str) -> bool:
