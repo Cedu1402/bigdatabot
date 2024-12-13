@@ -19,6 +19,14 @@ CREATE TABLE IF NOT EXISTS token_dataset
     raw_data       BYTEA        NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS token_watch
+(
+    id         SERIAL PRIMARY KEY,
+    token      VARCHAR(255) NOT NULL,
+    start_time TIMESTAMP    NOT NULL,
+    end_time   TIMESTAMP    NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS token_trade_history
 (
     id         SERIAL PRIMARY KEY,
