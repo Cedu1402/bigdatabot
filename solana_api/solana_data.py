@@ -9,8 +9,8 @@ from solders.pubkey import Pubkey
 from solders.rpc.responses import GetTransactionResp, RpcConfirmedTransactionStatusWithSignature
 from solders.transaction_status import EncodedTransactionWithStatusMeta, EncodedConfirmedTransactionWithStatusMeta
 
-from constants import PUMP_DOT_FUN_ID, LAST_SIGNATURE
-from data.redis_helper import get_async_redis
+from constants import PUMP_DOT_FUN_ID
+from database.event_table import insert_event, signature_exists
 from dto.trade_model import Trade
 
 logger = logging.getLogger(__name__)
@@ -72,13 +72,12 @@ async def get_block_transactions(client: AsyncClient, slot: int) -> Optional[
 
 async def get_latest_user_trade(user: Pubkey, rpc: str) -> Optional[Trade]:
     try:
-        r = get_async_redis()
         async with AsyncClient(rpc) as client:
             latest_signature = await get_recent_signature(client, user)
             logger.info("Check latest signature of trader", extra={"trader": str(user),
                                                                    "signature": str(latest_signature.signature)})
-            redis_key = str(user) + "_" + LAST_SIGNATURE
-            already_done = await r.get(redis_key)
+
+            already_done = signature_exists(str(latest_signature.signature))
             if already_done == str(latest_signature.signature):
                 logger.info("Latest signature already checked", extra={"trader": str(user),
                                                                        "signature": str(latest_signature.signature)})
@@ -88,7 +87,8 @@ async def get_latest_user_trade(user: Pubkey, rpc: str) -> Optional[Trade]:
             tx = await get_transaction(client, latest_signature)
             logger.info("Check tx for trades", extra={"signature": str(latest_signature.signature)})
             trade = get_user_trade(user, tx.transaction, tx.block_time)
-            await r.set(redis_key, str(latest_signature.signature))
+
+            insert_event(str(user), datetime.utcnow(), str(latest_signature.signature))
 
             return trade
     except Exception as e:

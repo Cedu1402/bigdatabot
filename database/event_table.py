@@ -35,3 +35,35 @@ def insert_event(wallet: str, time: datetime, signature: str):
             "time": time,
             "signature": signature
         })
+
+
+def signature_exists(signature: str) -> bool:
+    """
+    Checks if a signature already exists in the event table.
+
+    Args:
+        signature (str): The transaction signature to check.
+
+    Returns:
+        bool: True if the signature exists, False otherwise.
+    """
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                # Prepare the SQL SELECT statement to check for the signature
+                select_query = """
+                SELECT 1
+                FROM event
+                WHERE signature = %s
+                LIMIT 1
+                """
+
+                # Execute the SELECT query with the provided signature
+                cursor.execute(select_query, (signature,))
+                result = cursor.fetchone()
+
+                # Return True if the signature exists, False otherwise
+                return result is not None
+    except Exception as e:
+        logger.exception("Failed to check if signature exists", extra={"signature": signature})
+        return False

@@ -13,6 +13,7 @@ from bot.token_watcher import watch_token
 from constants import TOKEN_QUEUE, CREATE_PREFIX, TRADE_PREFIX, CURRENT_EVENT_WATCH_KEY, SOL_RPC, SUBSCRIPTION_MAP, \
     PUMP_DOT_FUN_AUTHORITY, TOKEN_WATCHER_KEY
 from data.redis_helper import get_async_redis, decrement_counter, get_sync_redis
+from database.event_table import insert_event
 from env_data.get_env_value import get_env_value
 from solana_api.solana_data import get_latest_user_trade
 from structure_log.logger_setup import setup_logger, ensure_logging_flushed
@@ -96,9 +97,9 @@ async def handle_user_event(event):
     try:
         subscription_map = await get_subscription_map(r)
         trader = get_trader_form_event(event, subscription_map)
-        await r.incr(CURRENT_EVENT_WATCH_KEY)
 
         if trader is None:
+            insert_event(trader if trader is not None else "FAILED", datetime.utcnow(), "")
             return
 
         solana_rpc = get_env_value(SOL_RPC)
