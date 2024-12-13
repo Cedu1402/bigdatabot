@@ -2,7 +2,7 @@ import json
 import unittest
 from datetime import datetime
 
-from solana_api.trade_model import Trade
+from dto.trade_model import Trade
 
 
 class TestRunner(unittest.TestCase):

@@ -6,7 +6,7 @@ import pandas as pd
 
 from bot.token_watcher import watch_token
 from constants import CREATE_PREFIX, PRICE_COLUMN, TOTAL_VOLUME_COLUMN, TRADING_MINUTE_COLUMN, TOKEN_COlUMN
-from solana_api.trade_model import Trade
+from dto.trade_model import Trade
 
 
 class TestRunner(unittest.IsolatedAsyncioTestCase):

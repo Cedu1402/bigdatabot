@@ -11,7 +11,7 @@ from solders.transaction_status import EncodedTransactionWithStatusMeta, Encoded
 
 from constants import PUMP_DOT_FUN_ID, LAST_SIGNATURE
 from data.redis_helper import get_async_redis
-from solana_api.trade_model import Trade
+from dto.trade_model import Trade
 
 logger = logging.getLogger(__name__)
 

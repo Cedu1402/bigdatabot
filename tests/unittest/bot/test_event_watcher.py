@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock
 from solders.pubkey import Pubkey
 from bot.event_worker import handle_user_event
 from bot.token_watcher import watch_token
-from solana_api.trade_model import Trade
+from dto.trade_model import Trade
 from constants import CURRENT_EVENT_WATCH_KEY, TRADE_PREFIX
 
 class TestHandleUserEvent(unittest.IsolatedAsyncioTestCase):

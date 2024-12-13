@@ -157,12 +157,26 @@ services:
       - redis
     restart: always
 
+  postgres:
+    image: postgres:17
+    container_name: postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: bigdatabot
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - app_network
+
 volumes:
   redis_data:
     driver: local
   elasticsearch-data:
     driver: local
-  token_queue_data:
+  postgres_data:
     driver: local
 
 networks:

@@ -3,7 +3,7 @@ from datetime import datetime
 
 from data.combine_price_trades import TraderState
 from data.trade_data import get_trade_state_no_trade_in_minute
-from solana_api.trade_model import Trade
+from dto.trade_model import Trade
 
 
 class TestRunner(unittest.TestCase):

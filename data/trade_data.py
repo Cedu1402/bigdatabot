@@ -5,7 +5,7 @@ from typing import List, Dict
 import pandas as pd
 
 from data.combine_price_trades import TraderState
-from solana_api.trade_model import Trade
+from dto.trade_model import Trade
 
 
 def group_trades_by_trader(trades: List[Trade]) -> Dict[str, List[Trade]]:

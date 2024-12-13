@@ -4,7 +4,7 @@ from datetime import datetime
 import pandas as pd
 
 from data.trade_data import add_trader_actions_to_dataframe
-from solana_api.trade_model import Trade
+from dto.trade_model import Trade
 
 
 class TestRunner(unittest.TestCase):

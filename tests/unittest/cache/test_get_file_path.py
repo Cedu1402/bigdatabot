@@ -16,7 +16,7 @@ class TestRunner(unittest.TestCase):
     def test_get_cache_file_path(self):
         # Arrange
         file_name = "test"
-        expected = os.path.join("../../cache/", file_name + ".pkl")
+        expected = os.path.join("../../../cache/", file_name + ".pkl")
         # Act
         actual = get_cache_file_path(file_name)
         # Assert

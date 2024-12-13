@@ -6,10 +6,10 @@ from datetime import datetime
 class Trade:
     trader: str
     token: str
-    token_amount: float
-    sol_amount: float
+    token_amount: int
+    sol_amount: int
     buy: bool
-    token_holding_after: float
+    token_holding_after: int
     trade_time: str
 
     def get_time(self) -> datetime:
