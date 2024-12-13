@@ -1,5 +1,4 @@
 import copy
-import json
 import logging
 import os
 from asyncio import sleep
@@ -13,26 +12,28 @@ from rq import Queue
 
 from birdeye_api.ohlcv_endpoint import get_time_frame_ohlcv
 from bot.trade_watcher import watch_trade
-from constants import CREATE_PREFIX, TRADE_PREFIX, BIN_AMOUNT_KEY, TRADE_QUEUE, CURRENT_TOKEN_WATCH_KEY
+from constants import BIN_AMOUNT_KEY, TRADE_QUEUE
 from data.close_volume_data import get_trading_minute
 from data.data_format import get_sol_price, transform_price_to_tokens_per_sol
 from data.data_type import convert_columns
 from data.dataset import add_inactive_traders
 from data.feature_engineering import add_features
 from data.pickle_files import save_to_pickle
-from data.redis_helper import get_async_redis, decrement_counter, get_sync_redis
+from data.redis_helper import get_async_redis, get_sync_redis
 from data.trade_data import get_valid_trades, add_trader_actions_to_dataframe, get_traders
-from ml_model.decision_tree_model import DecisionTreeModel
+from database.token_creation_info_table import select_token_creation_info
+from database.token_watch_table import get_token_watch, insert_token_watch, set_end_time
+from database.trade_table import get_trades_by_token
 from dto.trade_model import Trade
+from ml_model.decision_tree_model import DecisionTreeModel
 from structure_log.logger_setup import setup_logger, ensure_logging_flushed
 
 setup_logger("token_watcher")
 logger = logging.getLogger(__name__)
 
 
-async def get_valid_trades_of_token(token: str, r: redis.Redis, trading_minute: datetime) -> List[Trade]:
-    trades = await r.lrange(TRADE_PREFIX + token, 0, -1)
-    trades = [Trade(**json.loads(item)) for item in trades]
+def get_valid_trades_of_token(token: str, trading_minute: datetime) -> List[Trade]:
+    trades = get_trades_by_token(token)
     valid_trades = get_valid_trades(trades, trading_minute)
 
     return valid_trades
@@ -67,10 +68,10 @@ async def get_base_data(valid_trades: List[Trade], trading_minute: datetime, tok
     return df
 
 
-async def check_if_token_done(token: str, r: redis.asyncio.Redis) -> bool:
+def check_if_token_done(token: str) -> bool:
     try:
-        token_done = await r.get(token + "_done")
-        if token_done is not None:
+        token_watch_info = get_token_watch(token)
+        if token_watch_info is not None and token_watch_info[3]:
             logger.info("Token done", extra={"token": str(token)})
             return True
     except Exception as e:
@@ -80,12 +81,14 @@ async def check_if_token_done(token: str, r: redis.asyncio.Redis) -> bool:
     return False
 
 
-async def check_age_of_token(r: redis.asyncio.Redis, token: str) -> bool:
+def check_age_of_token(token: str) -> bool:
     logger.info("Check trading minute", extra={"token": str(token)})
+    token_create_info = select_token_creation_info(token)
+    if token_create_info is None:
+        logger.error("Failed to get token", extra={"token": str(token)})
+        return False
 
-    create_info = await r.get(CREATE_PREFIX + token)
-    token_create_time, owner = json.loads(create_info)
-    token_create_time = datetime.fromisoformat(token_create_time)
+    token_create_time, owner = token_create_info
 
     # check if coin is older than 4h if yes exit
     if (datetime.utcnow() - token_create_time).total_seconds() > 120 * 60:
@@ -127,11 +130,11 @@ async def watch_token(token) -> bool:
     r = get_async_redis()
 
     logger.info("Check if token already traded", extra={"token": str(token)})
-    if await check_if_token_done(token, r):
+    if check_if_token_done(token):
         return False
 
     queue = Queue(TRADE_QUEUE, connection=get_sync_redis(), default_timeout=9000)
-    await r.incr(CURRENT_TOKEN_WATCH_KEY)
+    insert_token_watch(token, datetime.utcnow(), None)
 
     try:
         logger.info("Load model")
@@ -143,7 +146,8 @@ async def watch_token(token) -> bool:
         while True:
             try:
                 trading_minute = get_trading_minute()
-                if not await check_age_of_token(r, token):
+                if not check_age_of_token(token):
+                    logger.info("Token watch finished because of age", extra={"token": str(token)})
                     return False
 
                 if last_trading_minute is not None and (trading_minute - last_trading_minute).total_seconds() == 0:
@@ -158,7 +162,7 @@ async def watch_token(token) -> bool:
 
                 # get trades and prepare trader columns
                 logger.info("Get valid trades", extra={"token": str(token)})
-                valid_trades = await get_valid_trades_of_token(token, r, trading_minute)
+                valid_trades = get_valid_trades_of_token(token, trading_minute)
                 if len(valid_trades) == 0:
                     logger.info("No valid trades", extra={"token": str(token), "trading_minute": trading_minute})
                     await sleep(5)
@@ -167,7 +171,7 @@ async def watch_token(token) -> bool:
                 logger.info("Prepare dataset for prediction", extra={"token": str(token)})
                 df = await prepare_current_dataset(valid_trades, trading_minute, token, model.get_columns(), r)
                 save_dataset_for_debugging(df, token, trading_minute)
-                
+
                 # predict
                 logger.info("Prepare data for model prediction", extra={"token": str(token)})
                 prediction_data, _ = model.prepare_prediction_data(copy.deepcopy([df]), False)
@@ -177,7 +181,6 @@ async def watch_token(token) -> bool:
                 if prediction[0]:
                     logger.info("Start trader watcher", extra={"token": str(token), "trading_minute": trading_minute})
                     queue.enqueue(watch_trade, token)
-                    await r.set(token + "_done", str(True))
                     return True
                 else:
                     logger.info("No buy signal found by model", extra={"token": str(token)})
@@ -189,5 +192,5 @@ async def watch_token(token) -> bool:
     except Exception as e:
         logger.exception("Failed to get token", extra={"token": str(token)}, exc_info=True)
     finally:
-        await decrement_counter(CURRENT_TOKEN_WATCH_KEY, r)
+        set_end_time(token, datetime.utcnow())
         ensure_logging_flushed()

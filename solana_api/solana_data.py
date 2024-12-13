@@ -10,7 +10,7 @@ from solders.rpc.responses import GetTransactionResp, RpcConfirmedTransactionSta
 from solders.transaction_status import EncodedTransactionWithStatusMeta, EncodedConfirmedTransactionWithStatusMeta
 
 from constants import PUMP_DOT_FUN_ID
-from database.event_table import insert_event, signature_exists
+from database.event_table import signature_exists
 from dto.trade_model import Trade
 
 logger = logging.getLogger(__name__)

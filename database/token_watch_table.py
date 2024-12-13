@@ -1,10 +1,53 @@
 import logging
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Tuple
 
 from database.db_connection import get_db_connection
 
 logger = logging.getLogger(__name__)
+
+
+def set_end_time(token: str, end_time: datetime) -> bool:
+    """
+    Updates the end time for an existing token watch entry.
+
+    Args:
+        token (str): The token whose end time needs to be updated.
+        end_time (datetime): The new end time to set.
+
+    Returns:
+        bool: True if the update was successful, False otherwise.
+    """
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                # Prepare the SQL UPDATE statement
+                update_query = """
+                UPDATE token_watch
+                SET end_time = %s
+                WHERE token = %s
+                AND end_time IS NULL
+                RETURNING id
+                """
+
+                # Execute the UPDATE query
+                cursor.execute(update_query, (end_time, token))
+
+                # Check if a row was updated (id should be returned)
+                updated_row = cursor.fetchone()
+
+                if updated_row:
+                    # Commit the transaction if the row was updated
+                    conn.commit()
+                    logger.info(f"End time updated for token: {token}", extra={"token": token, "end_time": end_time})
+                    return True
+                else:
+                    logger.warning(f"No record found or already has an end time for token: {token}",
+                                   extra={"token": token})
+                    return False
+    except Exception as e:
+        logger.exception("Failed to update end time", extra={"token": token, "end_time": end_time})
+        return False
 
 
 def insert_token_watch(token: str, start_time: datetime, end_time: Optional[datetime]) -> int:
@@ -76,3 +119,37 @@ def token_watch_exists(token: str) -> bool:
     except Exception as e:
         logger.exception("Failed to check if token watch exists", extra={"token": token})
         return False
+
+
+def get_token_watch(token: str) -> Optional[Tuple[int, str, datetime, Optional[datetime]]]:
+    """
+    Retrieves all information for a token watch entry from the token_watch table.
+
+    Args:
+        token (str): The token whose watch entry to retrieve.
+
+    Returns:
+        Optional[Tuple[int, str, datetime, Optional[datetime]]]:
+            A tuple containing the id, token, start_time, and end_time if found,
+            or None if no entry is found for the given token.
+    """
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                # Prepare the SQL SELECT statement to fetch all data for the token
+                select_query = """
+                SELECT id, token, start_time, end_time
+                FROM token_watch
+                WHERE token = %s
+                LIMIT 1
+                """
+
+                # Execute the SELECT query with the provided token
+                cursor.execute(select_query, (token,))
+                result = cursor.fetchone()
+
+                # Return the result tuple or None if no record is found
+                return result
+    except Exception as e:
+        logger.exception("Failed to fetch token watch", extra={"token": token})
+        return None

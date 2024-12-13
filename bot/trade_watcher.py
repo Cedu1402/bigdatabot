@@ -4,8 +4,7 @@ from datetime import datetime
 
 from dotenv import load_dotenv
 
-from constants import DUMMY_INVESTMENT_AMOUNT, CURRENT_TRADE_WATCH_KEY
-from data.redis_helper import get_async_redis, handle_failed_trade, handle_successful_trade, decrement_counter
+from constants import DUMMY_INVESTMENT_AMOUNT
 from solana_api.jupiter_api import get_token_price
 from structure_log.logger_setup import setup_logger
 
@@ -23,10 +22,9 @@ async def watch_trade(token: str):
 
     logger.info("Simulate buy of token",
                 extra={"token": token, "start_price": start_price, "buy_time": buy_time.isoformat()})
-    r = get_async_redis()
 
-    await r.incr(CURRENT_TRADE_WATCH_KEY)
     await sleep(10)
+
     try:
         while True:
             try:
@@ -41,7 +39,7 @@ async def watch_trade(token: str):
                         "Failed token because of time",
                         extra={"start_price": start_price, "last_price": last_price, "token": token, "profit": profit}
                     )
-                    await handle_failed_trade(r, token, DUMMY_INVESTMENT_AMOUNT / 2)
+
                     return
 
                 if last_price >= start_price * 2.10:  # 110% of start price
@@ -50,7 +48,6 @@ async def watch_trade(token: str):
                         extra={"start_price": start_price, "last_price": last_price, "token": token, "profit": profit}
                     )
 
-                    await handle_successful_trade(r, token, DUMMY_INVESTMENT_AMOUNT)
                     return
 
                 if last_price <= start_price * 0.50:  # 50% of start price
@@ -58,7 +55,7 @@ async def watch_trade(token: str):
                         f"Price decreased by 50%: {last_price} < {start_price * 0.50}",
                         extra={"start_price": start_price, "last_price": last_price, "token": token, "profit": profit}
                     )
-                    await handle_failed_trade(r, token, DUMMY_INVESTMENT_AMOUNT / 2)
+
                     return
             except Exception as e:
                 logger.exception("Error in trade watch", extra={"token": token})

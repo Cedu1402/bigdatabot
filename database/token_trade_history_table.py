@@ -29,4 +29,4 @@ def insert_token_trade_history(token_trade_history: TokenTradeHistory):
                 conn.commit()
     except Exception as e:
         logger.exception("Failed to insert token trade history",
-                         extra={"token_trade_history": token_trade_history.to_dict()})
+                         extra={"token_trade_history": token_trade_history.token})

@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch, AsyncMock
 import pandas as pd
 
 from bot.token_watcher import watch_token
-from constants import CREATE_PREFIX, PRICE_COLUMN, TOTAL_VOLUME_COLUMN, TRADING_MINUTE_COLUMN, TOKEN_COlUMN
+from constants import PRICE_COLUMN, TOTAL_VOLUME_COLUMN, TRADING_MINUTE_COLUMN, TOKEN_COlUMN
 from dto.trade_model import Trade
 
 
@@ -17,7 +17,13 @@ class TestRunner(unittest.IsolatedAsyncioTestCase):
     @patch("bot.token_watcher.check_if_token_done")
     @patch("bot.token_watcher.redis.asyncio.Redis")
     @patch("bot.token_watcher.Queue")
+    @patch("bot.token_watcher.insert_token_watch")
+    @patch("bot.token_watcher.set_end_time")
+    @patch("bot.token_watcher.select_token_creation_info")
     async def test_watch_token(self,
+                               mock_select_token_creation_info,
+                               mock_set_end_time,
+                               mock_insert_token_watch,
                                mock_queue,
                                mock_async_redis,
                                token_done,
@@ -27,7 +33,7 @@ class TestRunner(unittest.IsolatedAsyncioTestCase):
         # Mock Redis
         mock_redis_instance = AsyncMock()
         mock_async_redis.return_value = mock_redis_instance
-        mock_redis_instance.get.return_value = ((datetime.utcnow() - timedelta(hours=1)).isoformat(), "test")
+        mock_select_token_creation_info.return_value = ((datetime.utcnow() - timedelta(hours=1)), "test")
         mock_redis_instance.incr.return_value = None  # Simulate successful increment
         mock_redis_instance.set.return_value = None
 
@@ -40,7 +46,7 @@ class TestRunner(unittest.IsolatedAsyncioTestCase):
 
         # Mock get_valid_trades_of_token
         mock_get_valid_trades.return_value = [
-            Trade("1", "2", 1, 1, True, 1, (datetime.utcnow() - timedelta(hours=1)).isoformat())]
+            Trade("1", "2", 1, 1, True, 1, (datetime.utcnow() - timedelta(hours=1)).isoformat(), "")]
 
         # Mock get_base_data
         mock_get_base_data.return_value = pd.DataFrame(
@@ -61,16 +67,16 @@ class TestRunner(unittest.IsolatedAsyncioTestCase):
         result = await watch_token("SOL")
 
         # Assertions
-        self.assertTrue(result)  # Expect True because of a buy signal
-        mock_redis_instance.get.assert_called_with(CREATE_PREFIX + "SOL")
+        self.assertTrue(result)
         mock_get_valid_trades.assert_called_once()
         mock_get_base_data.assert_called_once()
         mock_get_sol_price.assert_called_once()
+        mock_insert_token_watch.assert_called_once()
+        mock_set_end_time.assert_called_once()
 
-    @patch("bot.token_watcher.get_valid_trades_of_token")
     @patch("bot.token_watcher.check_if_token_done")
     @patch("bot.token_watcher.redis.asyncio.Redis")
-    async def test_token_done(self, mock_async_redis, mock_token_done, mock_get_valid_trades):
+    async def test_token_done(self, mock_async_redis, mock_token_done):
         # Mock Redis
         mock_redis_instance = AsyncMock()
         mock_async_redis.return_value = mock_redis_instance
@@ -85,15 +91,18 @@ class TestRunner(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(result)  # Expect False because token is already done
         mock_token_done.assert_called_once()
 
-    @patch("bot.token_watcher.get_valid_trades_of_token")
     @patch("bot.token_watcher.check_if_token_done")
     @patch("bot.token_watcher.check_age_of_token")
     @patch("bot.token_watcher.redis.asyncio.Redis")
-    async def test_token_age(self, mock_async_redis, mock_token_done, mock_check_age, mock_get_valid_trades):
+    @patch("bot.token_watcher.select_token_creation_info")
+    @patch("bot.token_watcher.insert_token_watch")
+    @patch("bot.token_watcher.set_end_time")
+    async def test_token_age(self, mock_set_end_time, mock_insert_token_watch, mock_select_token_creation_info,
+                             mock_async_redis, mock_token_done, mock_check_age):
         # Mock Redis
         mock_redis_instance = AsyncMock()
         mock_async_redis.return_value = mock_redis_instance
-        mock_redis_instance.get.return_value = ((datetime.utcnow() - timedelta(hours=1)).isoformat(), "test")
+        mock_select_token_creation_info.return_value = ((datetime.utcnow() - timedelta(hours=1)), "test")
 
         # Token done check
         mock_token_done.return_value = False
@@ -107,6 +116,9 @@ class TestRunner(unittest.IsolatedAsyncioTestCase):
         # Assertions
         self.assertFalse(result)  # Expect False because token is too old
         mock_check_age.assert_called_once()
+        mock_set_end_time.assert_called_once()
+        mock_insert_token_watch.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()

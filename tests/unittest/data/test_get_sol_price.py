@@ -1,7 +1,6 @@
 import unittest
 from unittest.mock import AsyncMock
 
-import redis
 from redis.asyncio import Redis
 
 from data.data_format import get_sol_price

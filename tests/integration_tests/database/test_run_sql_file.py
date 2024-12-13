@@ -1,13 +1,11 @@
 import os
 import re
-from unittest.mock import patch
 
 from constants import ROOT_DIR
 from tests.integration_tests.database.base_testdb import BaseTestDatabase
 
 
 class TestRunner(BaseTestDatabase):
-
 
     def test_run_sql_file_should_create_tables(self):
         tables_file = os.path.join(ROOT_DIR, "database/tables.sql")
