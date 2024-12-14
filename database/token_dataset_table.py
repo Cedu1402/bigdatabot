@@ -1,4 +1,5 @@
 import logging
+import pickle
 
 from database.db_connection import get_db_connection
 from dto.token_dataset_model import TokenDataset
@@ -20,7 +21,7 @@ def insert_token_dataset(token_dataset: TokenDataset):
                 cursor.execute(insert_query, (
                     token_dataset.token,
                     token_dataset.trading_minute,
-                    token_dataset.raw_data
+                    pickle.dumps(token_dataset.raw_data)
                 ))
 
                 # Commit the transaction

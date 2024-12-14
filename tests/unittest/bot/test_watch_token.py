@@ -20,7 +20,9 @@ class TestRunner(unittest.IsolatedAsyncioTestCase):
     @patch("bot.token_watcher.insert_token_watch")
     @patch("bot.token_watcher.set_end_time")
     @patch("bot.token_watcher.select_token_creation_info")
+    @patch("bot.token_watcher.insert_token_dataset")
     async def test_watch_token(self,
+                               mock_insert_token_dataset,
                                mock_select_token_creation_info,
                                mock_set_end_time,
                                mock_insert_token_watch,

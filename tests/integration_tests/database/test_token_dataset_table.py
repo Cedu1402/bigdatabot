@@ -12,7 +12,7 @@ class TestRunner(BaseTestDatabase):
         # Arrange
         token = "test_token"
         trading_minute = datetime.now()
-        raw_data = pickle.dumps({"key": "value"})  # Pickle the Python object
+        raw_data = {"key": "value"}  # Pickle the Python object
 
         token_dataset = TokenDataset(
             token=token,

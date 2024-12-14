@@ -1,6 +1,5 @@
 import copy
 import logging
-import os
 from asyncio import sleep
 from datetime import datetime
 from typing import List
@@ -18,12 +17,13 @@ from data.data_format import get_sol_price, transform_price_to_tokens_per_sol
 from data.data_type import convert_columns
 from data.dataset import add_inactive_traders
 from data.feature_engineering import add_features
-from data.pickle_files import save_to_pickle
 from data.redis_helper import get_async_redis, get_sync_redis
 from data.trade_data import get_valid_trades, add_trader_actions_to_dataframe, get_traders
 from database.token_creation_info_table import select_token_creation_info
+from database.token_dataset_table import insert_token_dataset
 from database.token_watch_table import get_token_watch, insert_token_watch, set_end_time
 from database.trade_table import get_trades_by_token
+from dto.token_dataset_model import TokenDataset
 from dto.trade_model import Trade
 from ml_model.decision_tree_model import DecisionTreeModel
 from structure_log.logger_setup import setup_logger, ensure_logging_flushed
@@ -37,20 +37,6 @@ def get_valid_trades_of_token(token: str, trading_minute: datetime) -> List[Trad
     valid_trades = get_valid_trades(trades, trading_minute)
 
     return valid_trades
-
-
-def save_dataset_for_debugging(data: pd.DataFrame, token: str, trading_minute: datetime):
-    try:
-        # Define the directory path using token and trading minute
-        folder_path = f'/data/{token}'  # Path in the container's volume
-        file_name = trading_minute.strftime('%Y-%m-%d_%H-%M-%S') + '.pkl'  # Format trading minute to a valid file name
-        file_path = os.path.join(folder_path, file_name)
-
-        # Save the data (DataFrame) to pickle file
-        save_to_pickle(data, file_path)
-        logger.info(f"Dataset saved", extra={"path": file_path})
-    except Exception as e:
-        logger.exception("Failed to save dataset for debugging")
 
 
 async def get_base_data(valid_trades: List[Trade], trading_minute: datetime, token: str) -> pd.DataFrame:
@@ -170,7 +156,7 @@ async def watch_token(token) -> bool:
 
                 logger.info("Prepare dataset for prediction", extra={"token": str(token)})
                 df = await prepare_current_dataset(valid_trades, trading_minute, token, model.get_columns(), r)
-                save_dataset_for_debugging(df, token, trading_minute)
+                insert_token_dataset(TokenDataset(token, trading_minute, df))
 
                 # predict
                 logger.info("Prepare data for model prediction", extra={"token": str(token)})
