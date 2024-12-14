@@ -9,7 +9,7 @@ class TestRunner(unittest.TestCase):
 
     def test_trade_serialization(self):
 
-        trade = Trade("test", "testpump", 100, 1, True, 10, "2")
+        trade = Trade("test", "testpump", 100, 1, True, 10, "2", "")
         try:
             json.dumps(trade.to_dict())
         except TypeError as e:
@@ -17,7 +17,7 @@ class TestRunner(unittest.TestCase):
 
     def test_trade_deserialization(self):
         # Original Trade object
-        trade = Trade("test", "testpump", 100, 1, True, 10, "2024-12-06T12:00:00")
+        trade = Trade("test", "testpump", 100, 1, True, 10, "2024-12-06T12:00:00", "")
 
         # Serialize the object
         trade_dict = trade.to_dict()

@@ -17,6 +17,7 @@ class TestRunner(unittest.TestCase):
             buy=True,
             token_holding_after=5,
             trade_time=datetime(2024, 11, 30, 15, 30).isoformat(),
+            tx_signature=""
         )
         result = get_trade_state_no_trade_in_minute(last_trade_state, last_trade)
         self.assertEqual(result, TraderState.STILL_HOLDS)
@@ -31,6 +32,7 @@ class TestRunner(unittest.TestCase):
             buy=False,
             token_holding_after=2,
             trade_time=datetime(2024, 11, 30, 15, 31).isoformat(),
+            tx_signature=""
         )
         result = get_trade_state_no_trade_in_minute(last_trade_state, last_trade)
         self.assertEqual(result, TraderState.STILL_HOLDS)
@@ -45,6 +47,7 @@ class TestRunner(unittest.TestCase):
             buy=False,
             token_holding_after=0,
             trade_time=datetime(2024, 11, 30, 15, 32).isoformat(),
+            tx_signature=""
         )
         result = get_trade_state_no_trade_in_minute(last_trade_state, last_trade)
         self.assertEqual(result, TraderState.STILL_HOLDS)
@@ -59,6 +62,7 @@ class TestRunner(unittest.TestCase):
             buy=False,
             token_holding_after=0,
             trade_time=datetime(2024, 11, 30, 15, 33).isoformat(),
+            tx_signature=""
         )
         result = get_trade_state_no_trade_in_minute(last_trade_state, last_trade)
         self.assertEqual(result, TraderState.SOLD_ALL)
@@ -73,6 +77,7 @@ class TestRunner(unittest.TestCase):
             buy=False,
             token_holding_after=0,
             trade_time=datetime(2024, 11, 30, 15, 34).isoformat(),
+            tx_signature=""
         )
         result = get_trade_state_no_trade_in_minute(last_trade_state, last_trade)
         self.assertEqual(result, TraderState.NO_ACTION)
