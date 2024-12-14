@@ -1,9 +1,14 @@
+import logging
 import os
 
 from flask import Flask, render_template
 
 from database.token_trade_history_table import get_trade_stats
 from database.token_watch_table import get_current_token_watch_stats
+from structure_log.logger_setup import setup_logger
+
+setup_logger("bot_stats")
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__, template_folder=os.path.join(os.path.dirname(__file__), 'templates'))
 
