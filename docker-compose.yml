@@ -142,7 +142,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: gunicorn --bind "0.0.0.0:4359" bot_stats:app
+    command: gunicorn --bind "0.0.0.0:4359" bot.bot_stats:app
     container_name: bot-stats
     environment:
       - FLASK_APP=bot/bot_stats.py
