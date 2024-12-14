@@ -50,6 +50,7 @@ services:
   # Redis service for queue management
   redis:
     image: redis:alpine
+    container_name: redis
     ports:
       - "6379:6379"
     networks:
@@ -142,6 +143,7 @@ services:
       context: .
       dockerfile: Dockerfile
     command: gunicorn --bind "0.0.0.0:4359" bot_stats:app
+    container_name: bot_stats
     environment:
       - FLASK_APP=bot/bot_stats.py
       - FLASK_ENV=development
