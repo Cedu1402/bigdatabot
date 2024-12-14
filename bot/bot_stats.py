@@ -18,6 +18,7 @@ app = Flask(__name__, template_folder=os.path.join(os.path.dirname(__file__), 't
 @app.route('/')
 def home():
     try:
+        load_dotenv()
         token_watch_stats = get_current_token_watch_stats()
         trade_stats = get_trade_stats()
 
