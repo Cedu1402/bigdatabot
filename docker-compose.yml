@@ -165,7 +165,7 @@ services:
     networks:
       - app_network
     depends_on:
-      - flask_app
+      - bot_stats
     restart: always
 
   postgres:
