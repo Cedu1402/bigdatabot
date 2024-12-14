@@ -18,3 +18,4 @@ dune-client
 python-logstash-async~=3.0.0
 psycopg2-binary
 flask
+gunicorn
