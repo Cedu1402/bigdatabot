@@ -160,6 +160,11 @@ def get_token_change(tx: EncodedTransactionWithStatusMeta, user: Pubkey) -> Opti
 
     # more than one token involved.
     if len(user_pre_balances) > 1 or len(user_post_balances) > 1:
+        logger.info(f"Multihop token swap skipped", extra={"tx": str(tx.transaction.signatures[0])})
+        return None
+
+    if len(user_post_balances) == 0 and len(user_pre_balances) == 0:
+        logger.info(f"No tokens found", extra={"tx": str(tx.transaction.signatures[0])})
         return None
 
     post_balance = user_post_balances[0].ui_token_amount.amount if len(user_post_balances) == 1 else 0
