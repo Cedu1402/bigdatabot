@@ -1,6 +1,7 @@
 import logging
 import os
 
+from dotenv import load_dotenv
 from flask import Flask, render_template
 
 from database.token_trade_history_table import get_trade_stats
@@ -30,4 +31,5 @@ def home():
 
 
 if __name__ == '__main__':
+    load_dotenv()
     app.run(debug=False, port=4359)
