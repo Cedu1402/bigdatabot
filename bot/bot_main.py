@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import os.path
 from typing import List
 
 import websockets
@@ -8,8 +9,9 @@ from dotenv import load_dotenv
 from rq import Queue
 
 from bot.event_worker import handle_user_event
-from constants import SOLANA_WS, EVENT_QUEUE, BIN_AMOUNT_KEY, SUBSCRIPTION_MAP
+from constants import SOLANA_WS, EVENT_QUEUE, BIN_AMOUNT_KEY, SUBSCRIPTION_MAP, ROOT_DIR
 from data.redis_helper import get_sync_redis, get_async_redis
+from database.raw_sql import run_sql_file
 from env_data.get_env_value import get_env_value
 from ml_model.decision_tree_model import DecisionTreeModel
 from structure_log.logger_setup import setup_logger
@@ -84,6 +86,7 @@ async def main():
 
 if __name__ == '__main__':
     load_dotenv()
+    run_sql_file(os.path.join(ROOT_DIR, "database/tables.sql"))
     setup_logger("bot_main")
     # Run the event loop
     asyncio.run(main())

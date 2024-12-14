@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict
 
 from database.db_connection import get_db_connection
 
@@ -153,3 +153,37 @@ def get_token_watch(token: str) -> Optional[Tuple[int, str, datetime, Optional[d
     except Exception as e:
         logger.exception("Failed to fetch token watch", extra={"token": token})
         return None
+
+
+def get_current_token_watch_stats() -> Dict[str, int]:
+    """
+    Fetches the total watched tokens and currently watched tokens from the database.
+
+    Returns:
+        Dict[str, int]: A dictionary containing 'total_watched' and 'currently_watched'.
+    """
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                # Prepare the SQL SELECT statement for the aggregations
+                query = """
+                SELECT
+                    COUNT(*) AS total_watched,
+                    COUNT(*) FILTER (WHERE end_time IS NULL) AS currently_watched
+                FROM token_watch;
+                """
+
+                # Execute the query
+                cursor.execute(query)
+                result = cursor.fetchone()
+
+                # Extract and return the statistics
+                stats = {
+                    "total_watched": result[0],
+                    "currently_watched": result[1]
+                }
+                logger.info("Fetched token watch statistics", extra=stats)
+                return stats
+    except Exception as e:
+        logger.exception("Failed to fetch token watch statistics")
+        return {"total_watched": 0, "currently_watched": 0}

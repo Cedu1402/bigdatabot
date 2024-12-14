@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bigdatabot stats</title>
+</head>
+<body>
+<h1>Token Watch and Trade Statistics</h1>
+<table border="1">
+    <thead>
+    <tr>
+        <th>Statistic</th>
+        <th>Value</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td>Total Watched Tokens</td>
+        <td>{{ data.total_watched }}</td>
+    </tr>
+    <tr>
+        <td>Currently Watched Tokens</td>
+        <td>{{ data.currently_watched }}</td>
+    </tr>
+    <tr>
+        <td>Total Trades</td>
+        <td>{{ data.total_trades }}</td>
+    </tr>
+    <tr>
+        <td>Total Return</td>
+        <td>{{ data.total_return | round(2) }}%</td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>

@@ -11,5 +11,8 @@ def get_db_connection() -> connection:
         dbname=DATABASE_NAME,
         user=get_env_value(POSTGRES_USER),
         password=get_env_value(POSTGRES_PASSWORD),
-        host='postgres' if is_docker_container() else 'localhost'
+        host=get_pg_url()
     )
+
+def get_pg_url() -> str:
+    return 'postgres' if is_docker_container() else 'localhost'
