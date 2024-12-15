@@ -49,13 +49,12 @@ services:
 
   # Redis service for queue management
   redis:
-    image: redis:alpine
+    image: redis:latest
     container_name: redis
     ports:
       - "6379:6379"
     networks:
       - app_network
-    restart: always
 
   event_queue:
     build:
