@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import os.path
+from asyncio import sleep
 from typing import List
 
 import websockets
@@ -38,6 +39,7 @@ async def on_message(websocket):
 # Function to subscribe to account changes via WebSocket
 async def subscribe_to_accounts(websocket, traders: List[str]):
     for address in traders:
+        await sleep(0.2)
         subscription_message = {
             "jsonrpc": "2.0",
             "method": "accountSubscribe",
