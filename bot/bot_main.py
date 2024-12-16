@@ -54,7 +54,7 @@ async def subscribe_to_accounts(websocket, traders: List[str]):
                 logger.info("Subscription mapped", extra={"subscription_id": subscription_id, "address": address})
                 break
             else:
-                logger.warning("Subscription unexpected result", extra={"address": address, "result": response_data})
+                logger.info(f"Subscription unexpected result {json.dumps(response_data)}", extra={"address": address, "result": response_data})
 
 
 # Main function to handle WebSocket and Solana queries
