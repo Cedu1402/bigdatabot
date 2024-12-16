@@ -2,7 +2,7 @@ import copy
 import logging
 from asyncio import sleep
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 import pandas as pd
 import redis
@@ -39,10 +39,12 @@ def get_valid_trades_of_token(token: str, trading_minute: datetime) -> List[Trad
     return valid_trades
 
 
-async def get_base_data(valid_trades: List[Trade], trading_minute: datetime, token: str) -> pd.DataFrame:
+async def get_base_data(valid_trades: List[Trade], trading_minute: datetime, token: str) -> Optional[pd.DataFrame]:
     df = add_trader_actions_to_dataframe(valid_trades, trading_minute)
     # get close and volume data
     price_df = await get_time_frame_ohlcv(token, trading_minute, 11, "1m")
+    if price_df is None:
+        return None
 
     df = pd.merge(
         df,
@@ -86,9 +88,11 @@ def check_age_of_token(token: str) -> bool:
 
 
 async def prepare_current_dataset(valid_trades: List[Trade], trading_minute: datetime, token: str,
-                                  columns: List[str], r: redis.asyncio.Redis) -> pd.DataFrame:
+                                  columns: List[str], r: redis.asyncio.Redis) -> Optional[pd.DataFrame]:
     logger.info("Get base dataset")
     df = await get_base_data(valid_trades, trading_minute, token)
+    if df is None:
+        return None
 
     # run data preparation
     logger.info("Adjust type of columns", extra={"token": str(token), "trading_minute": trading_minute})
@@ -156,6 +160,12 @@ async def watch_token(token) -> bool:
 
                 logger.info("Prepare dataset for prediction", extra={"token": str(token)})
                 df = await prepare_current_dataset(valid_trades, trading_minute, token, model.get_columns(), r)
+                if df is None:
+                    logger.error("Issue in creating dataset",
+                                 extra={'token': token, 'trading_minute': trading_minute})
+                    await sleep(30)
+                    continue
+
                 insert_token_dataset(TokenDataset(token, trading_minute, df))
 
                 # predict

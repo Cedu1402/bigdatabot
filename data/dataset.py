@@ -1,3 +1,4 @@
+import logging
 from typing import List
 
 import pandas as pd
@@ -13,7 +14,7 @@ from data.label_data import label_dataset
 from data.sliding_window import create_sliding_windows
 from data.solana_trader import get_trader_from_trades
 from dune.data_collection import collect_all_data, collect_validation_data
-import logging
+
 logger = logging.getLogger(__name__)
 
 

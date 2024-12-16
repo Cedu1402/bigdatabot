@@ -8,6 +8,9 @@ from dune.top_trader_queries import get_list_of_trades, \
 
 def collect_all_data(use_cache: bool) -> Tuple[pd.DataFrame, pd.DataFrame]:
     top_trader_trades = get_list_of_trades(use_cache)
+
+    tokens = top_trader_trades['token'].unique().tolist()
+
     volume_close_1m = get_close_volume_1m(use_cache)
 
     return volume_close_1m, top_trader_trades
@@ -15,6 +18,7 @@ def collect_all_data(use_cache: bool) -> Tuple[pd.DataFrame, pd.DataFrame]:
 
 def collect_validation_data(use_cache: bool) -> Tuple[pd.DataFrame, pd.DataFrame]:
     top_trader_trades = get_current_trade_list_query(use_cache)
+
     volume_close_1m = get_current_close_volume_1m_query(use_cache)
 
     return volume_close_1m, top_trader_trades

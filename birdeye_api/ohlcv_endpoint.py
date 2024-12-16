@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime, timedelta
+from typing import Optional
 
 import aiohttp
 import pandas as pd
@@ -34,7 +35,8 @@ def ohlcv_to_dataframe(result: dict) -> pd.DataFrame:
     return df[[TOKEN_COlUMN, TRADING_MINUTE_COLUMN, TOTAL_VOLUME_COLUMN, PRICE_COLUMN]]
 
 
-async def get_time_frame_ohlcv(token: str, trading_minute: datetime, window: int, interval: str) -> pd.DataFrame:
+async def get_time_frame_ohlcv(token: str, trading_minute: datetime, window: int, interval: str) -> Optional[
+    pd.DataFrame]:
     try:
         start = trading_minute - timedelta(minutes=window - 1)
         end = trading_minute
@@ -43,8 +45,8 @@ async def get_time_frame_ohlcv(token: str, trading_minute: datetime, window: int
 
         return ohlcv_to_dataframe(data)
     except Exception as e:
-        logger.error(e)
-        return pd.DataFrame()
+        logger.exception("Failed to load ohlcv dataset", extra={"token": token, "trading_minute": trading_minute})
+        return None
 
 
 async def get_ohlcv(token: str, start_date: datetime, end_date: datetime, interval: str):
@@ -67,6 +69,7 @@ async def get_ohlcv(token: str, start_date: datetime, end_date: datetime, interv
     if counter is None:
         counter = 1
     if int(counter) >= 50000:
+        logger.error("Brideye limit reached!!!")
         raise Exception("Brideye limit reached!!!")
 
     async with aiohttp.ClientSession() as session:
