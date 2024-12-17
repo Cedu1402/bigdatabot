@@ -13,7 +13,7 @@ from data.feature_engineering import add_features
 from data.label_data import label_dataset
 from data.sliding_window import create_sliding_windows
 from data.solana_trader import get_trader_from_trades
-from dune.data_collection import collect_all_data, collect_validation_data
+from dune.data_collection import collect_all_data, collect_validation_data, collect_test_data
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +61,23 @@ def prepare_validation_data(use_cache: bool, columns: List[str], config: dict):
 
     logger.info("Load volume/price data from dune")
     volume_close_1m, top_trader_trades = collect_validation_data(use_cache)
+    logger.info("Prepare validation data")
+    labeled_data = prepare_steps(top_trader_trades, volume_close_1m, config)
+    logger.info("Add inactive traders")
+    current_traders = get_trader_from_trades(top_trader_trades)
+    labeled_data = add_inactive_traders(current_traders["trader"].to_list(), columns, labeled_data)
+    logger.info("Split into windows")
+    # Split volume data into sliding window chunks of 10min
+    full_data_windows = create_sliding_windows(labeled_data, config["window_size"], config["step_size"])
+
+    logger.info("Cache prepared data")
+    save_cache_data_with_config(VALIDATION_FILE, config, full_data_windows)
+    return full_data_windows
+
+
+def prepare_test_data(token: str, use_cache: bool, columns: List[str], config: dict):
+    logger.info("Load volume/price data from dune")
+    volume_close_1m, top_trader_trades = collect_test_data(token, use_cache)
     logger.info("Prepare validation data")
     labeled_data = prepare_steps(top_trader_trades, volume_close_1m, config)
     logger.info("Add inactive traders")

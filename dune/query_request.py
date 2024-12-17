@@ -1,8 +1,9 @@
 import logging
+import time
 from typing import Optional, Dict, Any, Union
 
 import pandas as pd
-from dune_client.models import ResultsResponse
+from dune_client.models import ResultsResponse, ExecutionState
 from dune_client.query import QueryBase
 from dune_client.types import QueryParameter
 
@@ -119,6 +120,10 @@ def get_from_api_with_params(query_id: int, params: Optional[Dict[str, Any]]) ->
         )
 
         # Fetch results from the Dune API
+        execution_response = dune_client.execute_query(query)
+        if not wait_for_query_execution(dune_client, execution_response.execution_id):
+            return None
+
         query_result = dune_client.get_latest_result(query)
 
         cache_id = get_cache_id(query_id, params)
@@ -144,3 +149,21 @@ def serialize_params(params: Dict[str, Any]) -> list[QueryParameter]:
         else:
             logger.warning(f"Unsupported param type for {key}: {type(value)}")
     return dune_params
+
+
+def wait_for_query_execution(dune_client, execution_id: str) -> bool:
+    """
+    Polls the Dune API until the query execution is complete.
+    Returns True if completed successfully, otherwise False.
+    """
+    while True:
+        execution_status = dune_client.get_execution_status(execution_id)
+        state = execution_status.state
+        if state == ExecutionState.COMPLETED:
+            return True
+        elif state in {ExecutionState.FAILED, ExecutionState.CANCELLED}:
+            print(f"Execution failed with status: {state}")
+            return False
+        else:
+            print(f"Query execution in progress... Current state: {state}")
+            time.sleep(5)

@@ -76,7 +76,11 @@ async def get_latest_user_trade(user: Pubkey, rpc: str) -> Optional[Trade]:
             latest_signature = await get_recent_signature(client, user)
             logger.info("Check latest signature of trader", extra={"trader": str(user),
                                                                    "signature": str(latest_signature.signature)})
-
+            if latest_signature.err is not None:
+                logger.info("Skip failed transaction", extra={"trader": str(user),
+                                                              "signature": str(latest_signature.signature)})
+                return None
+            
             already_done = signature_exists(str(latest_signature.signature))
             if already_done == str(latest_signature.signature):
                 logger.info("Latest signature already checked", extra={"trader": str(user),

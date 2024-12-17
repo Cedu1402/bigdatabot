@@ -14,9 +14,9 @@ class TestRunner(unittest.IsolatedAsyncioTestCase):
     async def asyncTearDown(self):
         await self.client.close()
 
-    async def test_get_sol_change(self):
+    async def test_get_recent_signature(self):
         # Arrange
-        user = Pubkey.from_string("FRXA6YDW1Ufu6TQRbaySAQLtkbTLHqtLaAQkhHmJY9eS")
+        user = Pubkey.from_string("B5QzGuMknM2jTwUPzTBL4SbV6Zta6VAGMpTADCkbiwAq")
         # Act
         latest_tx = await get_recent_signature(self.client, user)
 
