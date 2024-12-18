@@ -14,8 +14,8 @@ def get_list_of_trades(use_cache: bool) -> pd.DataFrame:
 def get_list_of_traded_tokens(use_cache: bool) -> pd.DataFrame:
     return get_query_result(TRADED_TOKENS_QUERY, use_cache)
 
-def get_close_volume_1m(use_cache: bool) -> pd.DataFrame:
-    return get_query_result(TOKEN_CLOSE_VOLUME_1M_QUERY, use_cache)
+# def get_close_volume_1m(use_cache: bool) -> pd.DataFrame:
+#     return get_query_result(TOKEN_CLOSE_VOLUME_1M_QUERY, use_cache)
 
 def get_current_close_volume_1m_query(use_cache: bool) -> pd.DataFrame:
     return get_query_result(CURRENT_CLOSE_VOLUME_1M_QUERY, use_cache)

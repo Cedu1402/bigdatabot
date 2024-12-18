@@ -1,3 +1,5 @@
+import asyncio
+
 from dotenv import load_dotenv
 
 from config.config_reader import load_yaml_to_dict
@@ -7,9 +9,9 @@ from data.random_seed import set_random_seed
 from ml_model.decision_tree_model import DecisionTreeModel
 
 
-def train_model(use_cache: bool):
+async def train_model(use_cache: bool):
     data_config = load_yaml_to_dict(CONFIG_2_FILE)
-    train, val, test = prepare_dataset(use_cache, data_config)
+    train, val, test = await prepare_dataset(use_cache, data_config)
     config = dict()
     config[BIN_AMOUNT_KEY]  = 100
     model = DecisionTreeModel(config)
@@ -23,4 +25,4 @@ if __name__ == '__main__':
     load_dotenv()
     set_random_seed(RANDOM_SEED)
     use_cached_data = True
-    train_model(use_cached_data)
+    asyncio.run(train_model(use_cached_data))

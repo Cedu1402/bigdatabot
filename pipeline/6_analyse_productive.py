@@ -18,17 +18,32 @@ def main():
     model = DecisionTreeModel(config)
     model.load_model("simple_tree")
     data_config = load_yaml_to_dict(CONFIG_2_FILE)
-    test_data = prepare_test_data(token, True, model.get_columns(), data_config)
-    validation_x, _ = model.prepare_prediction_data(copy.deepcopy(test_data), False)
-    predictions = model.predict(validation_x)
-    print(np.any(predictions))
-
 
     prod_data = get_token_datasets_by_token(token)
+    prod_val_x = [item.raw_data for item in prod_data]
+    prod_validation_x, _ = model.prepare_prediction_data(copy.deepcopy(prod_val_x), False)
+    prod_predictions = model.predict(prod_validation_x)
+
+    # Extract unique trading minutes from prod_val_x
+    prod_trading_minutes = list()
+    for df in prod_val_x:
+        prod_trading_minutes.append(df['trading_minute'].iloc[0].strftime('%Y-%m-%d %H:%M:%S'))  # Standardize to string
+
+    # Filter test_data
+    test_data = prepare_test_data(token, True, model.get_columns(), data_config)
+    filtered_test_data = []
+    test_list = []
+    for df in test_data:
+        # Standardize trading_minute to string and check overlap
+        trading_minutes = df['trading_minute'].iloc[0].tz_localize(None).strftime('%Y-%m-%d %H:%M:%S')
+        test_list.append(trading_minutes)
+        if trading_minutes in prod_trading_minutes:
+            filtered_test_data.append(df)
+
+    validation_x, _ = model.prepare_prediction_data(copy.deepcopy(filtered_test_data), False)
+    predictions = model.predict(validation_x)
+    print(np.any(predictions))
     pass
-
-
-
 
 
 if __name__ == '__main__':

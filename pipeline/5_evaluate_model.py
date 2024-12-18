@@ -1,3 +1,4 @@
+import asyncio
 import copy
 
 from dotenv import load_dotenv
@@ -11,14 +12,14 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def evaluate_model(use_cache: bool):
+async def evaluate_model(use_cache: bool):
     config = dict()
     config[BIN_AMOUNT_KEY] = 10
     model = DecisionTreeModel(config)
     model.load_model("simple_tree")
     data_config = load_yaml_to_dict(CONFIG_2_FILE)
     # load current data
-    validation_data = prepare_validation_data(use_cache, model.get_columns(), data_config)
+    validation_data = await prepare_validation_data(use_cache, model.get_columns(), data_config)
     validation_x, validation_y = model.prepare_prediction_data(copy.deepcopy(validation_data), True)
 
     # predict
@@ -54,4 +55,4 @@ def evaluate_model(use_cache: bool):
 if __name__ == '__main__':
     load_dotenv()
     use_cached_data = True
-    evaluate_model(use_cache=use_cached_data)
+    asyncio.run(evaluate_model(use_cache=use_cached_data))

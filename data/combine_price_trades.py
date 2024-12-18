@@ -53,8 +53,8 @@ def filter_rows_before_first_action(result: pd.DataFrame) -> pd.DataFrame:
 def prepare_timestamps(price_data: pd.DataFrame, trades: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Prepare and standardize timestamp formats."""
 
-    price_data[TRADING_MINUTE_COLUMN] = pd.to_datetime(price_data[TRADING_MINUTE_COLUMN])
-    trades['block_time'] = pd.to_datetime(trades['block_time'])
+    price_data[TRADING_MINUTE_COLUMN] = pd.to_datetime(price_data[TRADING_MINUTE_COLUMN]).dt.tz_localize(None)
+    trades['block_time'] = pd.to_datetime(trades['block_time']).dt.tz_localize(None)
     trades[TRADING_MINUTE_COLUMN] = trades['block_time'].dt.floor('min')
 
     return price_data, trades

@@ -105,7 +105,7 @@ async def prepare_current_dataset(valid_trades: List[Trade], trading_minute: dat
 
     # Add features
     logger.info("Add features", extra={"token": str(token), "trading_minute": trading_minute})
-    df = add_features(df, has_total_volume=True)
+    df = add_features(df)
 
     logger.info("Add inactive traders", extra={"token": str(token), "trading_minute": trading_minute})
     df = add_inactive_traders(get_traders(valid_trades), columns, df)

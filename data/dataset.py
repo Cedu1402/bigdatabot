@@ -5,7 +5,6 @@ import pandas as pd
 
 from constants import TRAIN_VAL_TEST_FILE, VALIDATION_FILE, LABEL_COLUMN
 from data.cache_data import read_cache_data_with_config, save_cache_data_with_config
-from data.close_volume_data import add_missing_minutes
 from data.combine_price_trades import add_trader_info_to_price_data
 from data.data_split import balance_data, split_data
 from data.data_type import convert_columns
@@ -23,9 +22,9 @@ def prepare_steps(top_trader_trades: pd.DataFrame, volume_close_1m: pd.DataFrame
     # Get traders
     logger.info("Get trader")
     traders = get_trader_from_trades(top_trader_trades)
-    logger.info("Fill missing data")
-    # Finish volume data if tokens had no tx in some minutes
-    volume_close_1m = add_missing_minutes(volume_close_1m)
+    # logger.info("Fill missing data")
+    # # Finish volume data if tokens had no tx in some minutes
+    # volume_close_1m = add_missing_minutes(volume_close_1m)
     logger.info("Add trader labels")
     # Add trader info to volume data
     full_data = add_trader_info_to_price_data(volume_close_1m, traders, top_trader_trades)
@@ -58,13 +57,13 @@ def add_inactive_traders(existing_traders: List[str], columns: List[str],
     return labeled_data
 
 
-def prepare_validation_data(use_cache: bool, columns: List[str], config: dict):
+async def prepare_validation_data(use_cache: bool, columns: List[str], config: dict):
     cache_data = read_cache_data_with_config(VALIDATION_FILE, config) if use_cache else None
     if use_cache and cache_data is not None:
         return cache_data
 
     logger.info("Load volume/price data from dune")
-    volume_close_1m, top_trader_trades = collect_validation_data(use_cache)
+    volume_close_1m, top_trader_trades = await collect_validation_data(use_cache)
     logger.info("Prepare validation data")
     labeled_data = prepare_steps(top_trader_trades, volume_close_1m, config)
     logger.info("Add inactive traders")
@@ -116,13 +115,13 @@ def log_class_distribution(train, val, test, class_column='label'):
     class_distribution(test, 'Test')
 
 
-def prepare_dataset(use_cache: bool, config: dict):
+async def prepare_dataset(use_cache: bool, config: dict):
     cache_data = read_cache_data_with_config(TRAIN_VAL_TEST_FILE, config) if use_cache else None
     if use_cache and cache_data is not None:
         return cache_data
 
     logger.info("Load volume/price data from dune")
-    volume_close_1m, top_trader_trades = collect_all_data(use_cache)
+    volume_close_1m, top_trader_trades = await collect_all_data(use_cache)
     logger.info("Prepare data")
     labeled_data = prepare_steps(top_trader_trades, volume_close_1m, config)
     logger.info("Split into windows")

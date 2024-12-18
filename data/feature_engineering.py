@@ -1,12 +1,12 @@
-﻿from typing import List, Dict
+﻿import logging
+from typing import List, Dict
 
 import numpy as np
 import pandas as pd
 
 from constants import TOKEN_COlUMN, TRADING_MINUTE_COLUMN, PRICE_COLUMN, PRICE_PCT_CHANGE, \
-    SOL_PRICE, MARKET_CAP_USD, PERCENTAGE_OF_1_MILLION_MARKET_CAP, BUY_VOLUME_COLUMN, \
-    SELL_VOLUME_COLUMN, TOTAL_VOLUME_COLUMN, TOTAL_VOLUME_PCT_CHANGE
-import logging
+    SOL_PRICE, MARKET_CAP_USD, PERCENTAGE_OF_1_MILLION_MARKET_CAP, TOTAL_VOLUME_COLUMN, TOTAL_VOLUME_PCT_CHANGE
+
 logger = logging.getLogger(__name__)
 
 
@@ -101,7 +101,7 @@ def calculate_pct_change(data, column, token_mask):
     return pct_change.replace([np.inf, -np.inf], np.nan).fillna(0.0).astype('float64')
 
 
-def add_features(data: pd.DataFrame, has_total_volume: bool = False) -> pd.DataFrame:
+def add_features(data: pd.DataFrame) -> pd.DataFrame:
     data = data.sort_values(by=[TOKEN_COlUMN, TRADING_MINUTE_COLUMN])  # Sort by token and then by time
 
     data[MARKET_CAP_USD] = data.apply(
@@ -109,14 +109,9 @@ def add_features(data: pd.DataFrame, has_total_volume: bool = False) -> pd.DataF
         axis=1
     )
 
-    if not has_total_volume:
-        data[TOTAL_VOLUME_COLUMN] = data[BUY_VOLUME_COLUMN] + data[SELL_VOLUME_COLUMN]
-
     for token in data[TOKEN_COlUMN].unique():
         token_mask = (data[TOKEN_COlUMN] == token)
         data.loc[token_mask, PRICE_PCT_CHANGE] = calculate_pct_change(data, PRICE_COLUMN, token_mask)
-        # data.loc[token_mask, BUY_VOLUME_PCT_CHANGE] = calculate_pct_change(data, BUY_VOLUME_COLUMN, token_mask)
-        # data.loc[token_mask, SELL_VOLUME_PCT_CHANGE] = calculate_pct_change(data, SELL_VOLUME_COLUMN, token_mask)
         data.loc[token_mask, TOTAL_VOLUME_PCT_CHANGE] = calculate_pct_change(data, TOTAL_VOLUME_COLUMN, token_mask)
 
         data.loc[token_mask, PERCENTAGE_OF_1_MILLION_MARKET_CAP] = data[MARKET_CAP_USD] / 1_000_000

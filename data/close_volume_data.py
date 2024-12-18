@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 
-from constants import TOKEN_COlUMN, BUY_VOLUME_COLUMN, SELL_VOLUME_COLUMN, PRICE_COLUMN
+from constants import TOKEN_COlUMN, PRICE_COLUMN, TOTAL_VOLUME_COLUMN
 
 
 def get_trading_minute():
@@ -42,8 +42,8 @@ def add_missing_minutes(data: pd.DataFrame) -> pd.DataFrame:
         token_filled = token_filled.infer_objects()
         token_filled[TOKEN_COlUMN] = token_filled[TOKEN_COlUMN].ffill()
         token_filled[PRICE_COLUMN] = token_filled[PRICE_COLUMN].ffill()
-        token_filled[BUY_VOLUME_COLUMN] = token_filled[BUY_VOLUME_COLUMN].fillna(0)
-        token_filled[SELL_VOLUME_COLUMN] = token_filled[SELL_VOLUME_COLUMN].fillna(0)
+        token_filled[TOTAL_VOLUME_COLUMN] = token_filled[TOTAL_VOLUME_COLUMN].fillna(0)
+        # token_filled[SELL_VOLUME_COLUMN] = token_filled[SELL_VOLUME_COLUMN].fillna(0)
 
         # Reset index and add the token column back
         token_filled = token_filled.reset_index().rename(columns={'index': 'trading_minute'})
