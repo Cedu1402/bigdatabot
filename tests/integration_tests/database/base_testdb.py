@@ -24,7 +24,7 @@ class BaseTestDatabase(unittest.TestCase):
             dbname="bigdatabot",  # Connect to an administrative database
             user=get_env_value(POSTGRES_USER),
             password=get_env_value(POSTGRES_PASSWORD),
-            host="localhost"
+            host="194.164.77.162"
         )
 
         cls.conn.autocommit = True
@@ -47,7 +47,7 @@ class BaseTestDatabase(unittest.TestCase):
             dbname="testdb",
             user=get_env_value(POSTGRES_USER),
             password=get_env_value(POSTGRES_PASSWORD),
-            host="localhost"
+            host="194.164.77.162"
         )
         cls.cursor = cls.conn.cursor()
 

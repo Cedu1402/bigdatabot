@@ -14,5 +14,6 @@ def get_db_connection() -> connection:
         host=get_pg_url()
     )
 
+
 def get_pg_url() -> str:
-    return 'postgres' if is_docker_container() else 'localhost'
+    return 'postgres' if is_docker_container() else '194.164.77.162'

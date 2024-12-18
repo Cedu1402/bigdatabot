@@ -80,7 +80,7 @@ async def get_latest_user_trade(user: Pubkey, rpc: str) -> Optional[Trade]:
                 logger.info("Skip failed transaction", extra={"trader": str(user),
                                                               "signature": str(latest_signature.signature)})
                 return None
-            
+
             already_done = signature_exists(str(latest_signature.signature))
             if already_done == str(latest_signature.signature):
                 logger.info("Latest signature already checked", extra={"trader": str(user),
@@ -89,6 +89,9 @@ async def get_latest_user_trade(user: Pubkey, rpc: str) -> Optional[Trade]:
 
             logger.info("Get tx for signature", extra={"signature": str(latest_signature.signature)})
             tx = await get_transaction(client, latest_signature)
+            if tx is None:
+                logger.warning("Failed to load tx data", extra={"signature": str(latest_signature.signature)})
+                
             logger.info("Check tx for trades", extra={"signature": str(latest_signature.signature)})
             trade = get_user_trade(user, tx.transaction, tx.block_time)
 

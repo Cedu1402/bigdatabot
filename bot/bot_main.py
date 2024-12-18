@@ -38,6 +38,8 @@ async def on_message(websocket):
 
 # Function to subscribe to account changes via WebSocket
 async def subscribe_to_accounts(websocket, traders: List[str]):
+    r = get_async_redis()
+
     for address in traders:
         await sleep(0.2)
         subscription_message = {
@@ -53,6 +55,7 @@ async def subscribe_to_accounts(websocket, traders: List[str]):
             if "result" in response_data:
                 subscription_id = response_data["result"]
                 subscription_map[subscription_id] = address
+                await r.set(SUBSCRIPTION_MAP + str(subscription_id), address)
                 logger.info("Subscription mapped", extra={"subscription_id": subscription_id, "address": address})
                 break
             else:

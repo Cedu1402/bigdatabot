@@ -1,5 +1,6 @@
 import copy
 
+import numpy as np
 from dotenv import load_dotenv
 
 from config.config_reader import load_yaml_to_dict
@@ -10,7 +11,7 @@ from ml_model.decision_tree_model import DecisionTreeModel
 
 def main():
     load_dotenv()
-    token = "96bTXQUtjPYuJoU5vK3w63qXn8Csgzad7JSW1qmUpump"
+    token = "7woyyqRRSNr7gtqxY5iXg9mzEC7hAjiLtxSmkAUypump"
     config = dict()
     config[BIN_AMOUNT_KEY] = 10
     model = DecisionTreeModel(config)
@@ -18,7 +19,8 @@ def main():
     data_config = load_yaml_to_dict(CONFIG_2_FILE)
     test_data = prepare_test_data(token, True, model.get_columns(), data_config)
     validation_x, _ = model.prepare_prediction_data(copy.deepcopy(test_data), False)
-
+    predictions = model.predict(validation_x)
+    print(np.any(predictions))
 
 
 

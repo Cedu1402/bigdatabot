@@ -18,7 +18,8 @@ from dune.data_collection import collect_all_data, collect_validation_data, coll
 logger = logging.getLogger(__name__)
 
 
-def prepare_steps(top_trader_trades: pd.DataFrame, volume_close_1m: pd.DataFrame, config: dict) -> pd.DataFrame:
+def prepare_steps(top_trader_trades: pd.DataFrame, volume_close_1m: pd.DataFrame, config: dict,
+                  label_data: bool = True) -> pd.DataFrame:
     # Get traders
     logger.info("Get trader")
     traders = get_trader_from_trades(top_trader_trades)
@@ -33,12 +34,15 @@ def prepare_steps(top_trader_trades: pd.DataFrame, volume_close_1m: pd.DataFrame
     # Add features
     logger.info("Add features")
     full_data = add_features(full_data)
-    logger.info("Add labels")
-    # Add labels for trading info (good buy or not)
-    labeled_data = label_dataset(full_data,
-                                 config["win_percentage"],
-                                 config["draw_down_percentage"],
-                                 config["max_trading_time"])
+    if label_data:
+        logger.info("Add labels")
+        # Add labels for trading info (good buy or not)
+        labeled_data = label_dataset(full_data,
+                                     config["win_percentage"],
+                                     config["draw_down_percentage"],
+                                     config["max_trading_time"])
+    else:
+        return full_data
 
     return labeled_data
 
@@ -79,16 +83,13 @@ def prepare_test_data(token: str, use_cache: bool, columns: List[str], config: d
     logger.info("Load volume/price data from dune")
     volume_close_1m, top_trader_trades = collect_test_data(token, use_cache)
     logger.info("Prepare validation data")
-    labeled_data = prepare_steps(top_trader_trades, volume_close_1m, config)
+    labeled_data = prepare_steps(top_trader_trades, volume_close_1m, config, False)
     logger.info("Add inactive traders")
     current_traders = get_trader_from_trades(top_trader_trades)
     labeled_data = add_inactive_traders(current_traders["trader"].to_list(), columns, labeled_data)
     logger.info("Split into windows")
     # Split volume data into sliding window chunks of 10min
     full_data_windows = create_sliding_windows(labeled_data, config["window_size"], config["step_size"])
-
-    logger.info("Cache prepared data")
-    save_cache_data_with_config(VALIDATION_FILE, config, full_data_windows)
     return full_data_windows
 
 
