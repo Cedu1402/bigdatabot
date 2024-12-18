@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from config.config_reader import load_yaml_to_dict
 from constants import BIN_AMOUNT_KEY, CONFIG_2_FILE
 from data.dataset import prepare_test_data
+from database.token_dataset_table import get_token_datasets_by_token
 from ml_model.decision_tree_model import DecisionTreeModel
 
 
@@ -23,6 +24,8 @@ def main():
     print(np.any(predictions))
 
 
+    prod_data = get_token_datasets_by_token(token)
+    pass
 
 
 

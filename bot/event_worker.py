@@ -79,7 +79,7 @@ async def get_trader_form_event(event) -> Optional[str]:
     if trader is None:
         logger.error("Trader not found in map", extra={"sub_id": sub_id})
         return None
-
+    trader = json.loads(trader)
     logger.info(f"Received wallet action {trader}", extra={"data": data, "trader": trader})
     return trader
 
