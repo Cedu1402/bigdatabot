@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS token_trade_history
     buy_time   TIMESTAMP      NOT NULL,
     sell_time  TIMESTAMP      NOT NULL,
     buy_price  DECIMAL(18, 8) NOT NULL,
-    sell_price DECIMAL(18, 8) NOT NULL
+    sell_price DECIMAL(18, 8) NULL
 );
 
 CREATE TABLE IF NOT EXISTS event

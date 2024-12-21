@@ -4,7 +4,7 @@ import copy
 from dotenv import load_dotenv
 
 from config.config_reader import load_yaml_to_dict
-from constants import BIN_AMOUNT_KEY, CONFIG_2_FILE
+from constants import BIN_AMOUNT_KEY, CONFIG_2_FILE, INVESTMENT_AMOUNT
 from data.dataset import prepare_validation_data
 from ml_model.decision_tree_model import DecisionTreeModel
 from ml_model.model_evaluation import print_evaluation
@@ -29,7 +29,7 @@ async def evaluate_model(use_cache: bool):
     print_evaluation(validation_y, prediction)
 
     # calculate return 1 token only one trade
-    ape_amount = 50
+    ape_amount = INVESTMENT_AMOUNT
     total_return = 0
     token_bought = list()
     good_trades = 0

@@ -27,48 +27,53 @@ WITH filtered_traders AS (SELECT trader_id
                      FROM filtered_trades AS ft
                               JOIN filtered_calls AS fc
                                    ON ft.token_bought_mint_address = fc.account_mint AND fc.account_user != ft.trader_id
-    AND ft.block_time <= fc.call_block_time + INTERVAL '{{min_token_age_h}}' hour), interesting_traders AS (
-SELECT trader_id
-FROM joined_data
-GROUP BY trader_id),
-    filtered_sell_trades AS (
-SELECT trader_id, token_sold_amount, token_bought_amount, token_sold_mint_address
-FROM dex_solana.trades
-WHERE token_bought_mint_address = 'So11111111111111111111111111111111111111112'
-  AND block_time BETWEEN cast ('{{time_from}}' as timestamp)
-  AND cast ('{{time_to}}' as timestamp))
-    , sell_tx AS (
-SELECT fc.account_mint, fst.trader_id, fst.token_sold_amount, fst.token_bought_amount
-FROM filtered_sell_trades AS fst
-    JOIN interesting_traders AS it
-on it.trader_id = fst.trader_id
-    JOIN filtered_calls as fc on fc.account_mint = fst.token_sold_mint_address),
-    buy_summary as (
-SELECT account_mint, trader_id, SUM (token_sold_amount) AS sol_spent, SUM (token_bought_amount) as token_received, COUNT (*) as trades
-FROM joined_data
-GROUP BY account_mint,
-    trader_id),
-    sell_summary as (
-SELECT account_mint, trader_id, SUM (token_sold_amount) AS token_spent, SUM (token_bought_amount) as sol_received, COUNT (*) as trades
-FROM sell_tx
-GROUP BY account_mint,
-    trader_id
-    ),
-    filtered_last_price_transactions as (
-SELECT fc.account_mint, ft.token_bought_amount, ft.token_sold_amount, ROW_NUMBER() OVER (PARTITION BY ft.token_sold_mint_address ORDER BY ft.block_time ASC) AS rn
-FROM dex_solana.trades AS ft
-    JOIN filtered_calls AS fc
-ON ft.token_sold_mint_address = fc.account_mint
-WHERE ft.block_time
-    > fc.call_block_time + INTERVAL '{{min_token_age_h}}' hour
-  AND ft.block_time
-    < fc.call_block_time + INTERVAL '{{min_token_age_h}}' hour + INTERVAL '{{min_token_age_h}}' hour
-    )
-    , closest_transactions AS (
-SELECT account_mint, COALESCE (token_bought_amount / NULLIF (token_sold_amount, 0), 0) AS price
-FROM filtered_last_price_transactions
-WHERE rn = 1
-    )
+                                       AND ft.block_time <= fc.call_block_time + INTERVAL '{{min_token_age_h}}' hour),
+     interesting_traders AS (SELECT trader_id
+                             FROM joined_data
+                             GROUP BY trader_id),
+     filtered_sell_trades AS (SELECT trader_id, token_sold_amount, token_bought_amount, token_sold_mint_address
+                              FROM dex_solana.trades
+                              WHERE token_bought_mint_address = 'So11111111111111111111111111111111111111112'
+                                AND block_time BETWEEN cast('{{time_from}}' as timestamp)
+                                  AND cast('{{time_to}}' as timestamp)),
+     sell_tx AS (SELECT fc.account_mint, fst.trader_id, fst.token_sold_amount, fst.token_bought_amount
+                 FROM filtered_sell_trades AS fst
+                          JOIN interesting_traders AS it
+                               on it.trader_id = fst.trader_id
+                          JOIN filtered_calls as fc on fc.account_mint = fst.token_sold_mint_address),
+     buy_summary as (SELECT account_mint,
+                            trader_id,
+                            SUM(token_sold_amount)   AS sol_spent,
+                            SUM(token_bought_amount) as token_received,
+                            COUNT(*)                 as trades
+                     FROM joined_data
+                     GROUP BY account_mint,
+                              trader_id),
+     sell_summary as (SELECT account_mint,
+                             trader_id,
+                             SUM(token_sold_amount)   AS token_spent,
+                             SUM(token_bought_amount) as sol_received,
+                             COUNT(*)                 as trades
+                      FROM sell_tx
+                      GROUP BY account_mint,
+                               trader_id),
+     filtered_last_price_transactions as (SELECT fc.account_mint,
+                                                 ft.token_bought_amount,
+                                                 ft.token_sold_amount,
+                                                 ROW_NUMBER()
+                                                 OVER (PARTITION BY ft.token_sold_mint_address ORDER BY ft.block_time ASC) AS rn
+                                          FROM dex_solana.trades AS ft
+                                                   JOIN filtered_calls AS fc
+                                                        ON ft.token_sold_mint_address = fc.account_mint
+                                          WHERE ft.block_time
+                                              > fc.call_block_time + INTERVAL '{{min_token_age_h}}' hour
+                                            AND ft.block_time
+                                              < fc.call_block_time + INTERVAL '{{min_token_age_h}}' hour +
+                                                INTERVAL '{{min_token_age_h}}' hour),
+     closest_transactions AS (SELECT account_mint,
+                                     COALESCE(token_bought_amount / NULLIF(token_sold_amount, 0), 0) AS price
+                              FROM filtered_last_price_transactions
+                              WHERE rn = 1)
 
 SELECT bs.account_mint,
        bs.trader_id,

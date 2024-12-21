@@ -4,7 +4,7 @@ from typing import Tuple, List
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-from constants import LABEL_COLUMN
+from constants import LABEL_COLUMN, TOKEN_COlUMN
 
 
 def flatten_dataframe_list(data: List[pd.DataFrame]) -> pd.DataFrame:
@@ -68,11 +68,22 @@ def split_data(data: List[pd.DataFrame], train_ratio: float = 0.7, val_ratio: fl
     if abs(train_ratio + val_ratio + test_ratio - 1) > 1e-6:
         raise ValueError("The sum of train_ratio, val_ratio, and test_ratio must be 1.")
 
+    tokens = {df[TOKEN_COlUMN].iloc[0] for df in data}
+
     # Split into train + remaining (val + test)
-    train_data, remaining_data = train_test_split(data, train_size=train_ratio, shuffle=True)
+    train_tokens, remaining_tokens = train_test_split(list(tokens), train_size=train_ratio, shuffle=True)
 
     # Split remaining into validation and test
-    val_data, test_data = train_test_split(remaining_data, test_size=test_ratio / (val_ratio + test_ratio),
-                                           shuffle=True)
+    if test_ratio > 0:
+        val_tokens, test_tokens = train_test_split(remaining_tokens,
+                                                   test_size=test_ratio / (val_ratio + test_ratio),
+                                                   shuffle=True)
+    else:
+        val_tokens = remaining_tokens
+        test_tokens = []
+
+    train_data = [df for df in data if df[TOKEN_COlUMN].iloc[0] in train_tokens]
+    val_data = [df for df in data if df[TOKEN_COlUMN].iloc[0] in val_tokens]
+    test_data = [df for df in data if df[TOKEN_COlUMN].iloc[0] in test_tokens]
 
     return train_data, val_data, test_data

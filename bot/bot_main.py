@@ -26,10 +26,14 @@ logger = logging.getLogger(__name__)
 # Function to handle WebSocket messages
 async def on_message(websocket):
     queue = Queue(EVENT_QUEUE, connection=get_sync_redis())
+    r = get_async_redis()
 
     while True:
         try:
             message = await websocket.recv()
+            if not await r.exists(SUBSCRIPTION_MAP):
+                await r.set(SUBSCRIPTION_MAP, json.dumps(subscription_map))
+
             queue.enqueue(handle_user_event, message)
         except Exception as e:
             logger.exception("Failed to process message")
@@ -38,8 +42,6 @@ async def on_message(websocket):
 
 # Function to subscribe to account changes via WebSocket
 async def subscribe_to_accounts(websocket, traders: List[str]):
-    r = get_async_redis()
-
     for address in traders:
         await sleep(0.2)
         subscription_message = {
@@ -55,11 +57,11 @@ async def subscribe_to_accounts(websocket, traders: List[str]):
             if "result" in response_data:
                 subscription_id = response_data["result"]
                 subscription_map[subscription_id] = address
-                await r.set(SUBSCRIPTION_MAP + str(subscription_id), json.dumps(address))
                 logger.info("Subscription mapped", extra={"subscription_id": subscription_id, "address": address})
                 break
             else:
-                logger.info(f"Subscription unexpected result {json.dumps(response_data)}", extra={"address": address, "result": response_data})
+                logger.info(f"Subscription unexpected result {json.dumps(response_data)}",
+                            extra={"address": address, "result": response_data})
 
 
 # Main function to handle WebSocket and Solana queries
@@ -72,8 +74,6 @@ async def main():
     r = get_async_redis()
     traders = [column.replace("trader_", "").replace("_state", "") for column in model.get_columns() if
                "trader_" in column]
-    if "Ad3AvvE3Qj7xf8sLh8vA34X7fqydhpsPrvEF3EZTwaki" in traders:
-        traders.remove("Ad3AvvE3Qj7xf8sLh8vA34X7fqydhpsPrvEF3EZTwaki")
 
     retries = 0
     while True:

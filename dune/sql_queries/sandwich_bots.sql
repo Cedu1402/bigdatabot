@@ -1,8 +1,11 @@
 WITH tokens AS (SELECT account_mint
-                FROM pumpdotfun_solana.pump_call_create),
+                FROM pumpdotfun_solana.pump_call_create
+                WHERE call_block_time BETWEEN cast('{{time_from}}' as timestamp) AND cast('{{time_to}}' as timestamp)
+                  AND call_block_time <= NOW() - INTERVAL '{{min_token_age_h}}' hour),
      unique_traders as (SELECT t.trader_id
                         FROM dex_solana.trades as t
                         WHERE t.token_sold_mint_address IN (SELECT * FROM tokens)
+                          AND block_time BETWEEN cast('{{time_from}}' as timestamp) AND cast('{{time_to}}' as timestamp)
                         GROUP BY t.trader_id
 
                         UNION ALL
@@ -10,6 +13,7 @@ WITH tokens AS (SELECT account_mint
                         SELECT t.trader_id
                         FROM dex_solana.trades as t
                         WHERE t.token_bought_mint_address IN (SELECT * FROM tokens)
+                          AND block_time BETWEEN cast('{{time_from}}' as timestamp) AND cast('{{time_to}}' as timestamp)
                         GROUP BY t.trader_id),
      filtered_trades AS (SELECT t.trader_id,
                                 t.token_sold_mint_address AS token_address,
@@ -18,7 +22,7 @@ WITH tokens AS (SELECT account_mint
                          FROM dex_solana.trades AS t
                          WHERE t.trader_id IN (SELECT trader_id FROM unique_traders)
                            AND t.token_sold_mint_address IN (SELECT * FROM tokens)
-
+                           AND block_time BETWEEN cast('{{time_from}}' as timestamp) AND cast('{{time_to}}' as timestamp)
                          UNION ALL
 
                          SELECT t.trader_id,
@@ -27,7 +31,8 @@ WITH tokens AS (SELECT account_mint
                                 'buy'                       AS trade_type
                          FROM dex_solana.trades AS t
                          WHERE t.trader_id IN (SELECT trader_id FROM unique_traders)
-                           AND t.token_bought_mint_address IN (SELECT * FROM tokens)),
+                           AND t.token_bought_mint_address IN (SELECT * FROM tokens)
+                           AND block_time BETWEEN cast('{{time_from}}' as timestamp) AND cast('{{time_to}}' as timestamp)),
      paired_trades AS (SELECT ft1.trader_id,
                               ft1.token_address,
                               ft1.trade_time                                      AS buy_time,

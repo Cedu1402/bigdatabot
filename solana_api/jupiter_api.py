@@ -86,7 +86,8 @@ async def send_transaction_with_retry(client: AsyncClient, signed_tx: VersionedT
                 await asyncio.sleep(delay)
 
 
-async def swap_tokens(client: AsyncClient, wallet: Keypair, token: str, amount: int, buy: bool) -> bool:
+async def swap_tokens(client: AsyncClient, wallet: Keypair,
+                      token: str, amount: int, buy: bool) -> bool:
     try:
         # Step 1: Fetch quote
         logger.info("Fetching quote for token %s with amount %d", token, amount)

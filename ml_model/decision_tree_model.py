@@ -33,7 +33,7 @@ class DecisionTreeModel(BaseModel):
         return self.columns
     
     def build_model(self):
-        self.model = DecisionTreeClassifier(random_state=RANDOM_SEED)
+        self.model = DecisionTreeClassifier(random_state=RANDOM_SEED, max_depth=10, ccp_alpha=0.01)
 
     def prepare_train_data(self, train: List[pd.DataFrame], val: List[pd.DataFrame], test: List[pd.DataFrame]) -> (
             Tuple)[List[pd.DataFrame], List, List[pd.DataFrame], List, List[pd.DataFrame], List]:

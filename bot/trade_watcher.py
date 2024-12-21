@@ -4,7 +4,7 @@ from datetime import datetime
 
 from dotenv import load_dotenv
 
-from constants import DUMMY_INVESTMENT_AMOUNT
+from constants import INVESTMENT_AMOUNT
 from database.token_trade_history_table import insert_token_trade_history
 from dto.token_trade_history_model import TokenTradeHistory
 from solana_api.jupiter_api import get_token_price
@@ -34,7 +34,7 @@ async def watch_trade(token: str):
                 # Calculate profit/loss percentage
                 last_price = await get_token_price(token)
                 price_change_percentage = (last_price - start_price) / start_price * 100
-                profit = DUMMY_INVESTMENT_AMOUNT * (price_change_percentage / 100)
+                profit = INVESTMENT_AMOUNT * (price_change_percentage / 100)
 
                 if (datetime.now() - buy_time).total_seconds() >= 120 * 60:
                     logger.info(

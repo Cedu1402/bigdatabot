@@ -58,16 +58,21 @@ async def check_token_create_info(token: str) -> bool:
     return True
 
 
-async def get_subscription_map(r: redis.asyncio.Redis) -> Dict[int, str]:
-    subscription_map = await r.get(SUBSCRIPTION_MAP)
-    if subscription_map is None:
-        return dict()
-    logger.debug("Raw subscription_map", extra={"subscription_map": str(subscription_map)})
-    subscription_map = json.loads(subscription_map)
-    logger.debug("Parsed subscription_map", extra={"subscription_map": str(subscription_map)})
-    subscription_map = {int(key): value for key, value in subscription_map.items()}
-    logger.info("Loaded subscription map from redis")
-    return subscription_map
+async def get_subscription_map(r: redis.asyncio.Redis) -> Optional[Dict[int, str]]:
+    try:
+        subscription_map = await r.get(SUBSCRIPTION_MAP)
+        if subscription_map is None:
+            return None
+
+        logger.debug("Raw subscription_map", extra={"subscription_map": str(subscription_map)})
+        subscription_map = json.loads(subscription_map)
+        logger.debug("Parsed subscription_map", extra={"subscription_map": str(subscription_map)})
+        subscription_map = {int(key): value for key, value in subscription_map.items()}
+        logger.info("Loaded subscription map from redis")
+        return subscription_map
+    except Exception as e:
+        logger.exception(f"Failed to get subscription map")
+        return None
 
 
 async def get_trader_form_event(event) -> Optional[str]:
@@ -75,12 +80,18 @@ async def get_trader_form_event(event) -> Optional[str]:
     r = get_async_redis()
     sub_id = data["params"]["subscription"]
     logger.info("Trader id form event", extra={"sub_id": sub_id})
-    trader = await r.get(SUBSCRIPTION_MAP + str(sub_id))
-    if trader is None:
-        logger.error("Trader not found in map", extra={"sub_id": sub_id})
+
+    subscription_map = await get_subscription_map(r)
+    if subscription_map is None:
+        logger.error("Subscription map not found in redis", extra={"sub_id": sub_id})
         return None
-    trader = json.loads(trader)
+
+    if sub_id not in subscription_map:
+        logger.error("Id not found in map", extra={"sub_id": sub_id})
+
+    trader = subscription_map[sub_id]
     logger.info(f"Received wallet action {trader}", extra={"data": data, "trader": trader})
+    
     return trader
 
 

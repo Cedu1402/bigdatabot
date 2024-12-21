@@ -1,7 +1,7 @@
 import logging
 from typing import Dict
 
-from constants import DUMMY_INVESTMENT_AMOUNT
+from constants import INVESTMENT_AMOUNT
 from database.db_connection import get_db_connection
 from dto.token_trade_history_model import TokenTradeHistory
 
@@ -52,7 +52,7 @@ def get_trade_stats() -> Dict[str, float]:
                     SUM((sell_price - buy_price) / buy_price * %s) AS total_return
                 FROM token_trade_history
                 """
-                cursor.execute(query, (DUMMY_INVESTMENT_AMOUNT,))
+                cursor.execute(query, (INVESTMENT_AMOUNT,))
                 result = cursor.fetchone()
 
                 if result:
@@ -72,3 +72,34 @@ def get_trade_stats() -> Dict[str, float]:
             "total_trades": 0,
             "total_return": 0.0
         }
+
+
+def update_sell_price(token: str, sell_price: float):
+    """
+    Updates the sell price for a specific token in the token_trade_history table.
+
+    Args:
+        token (str): The token identifier for which the sell price needs to be updated.
+        sell_price (float): The new sell price to be updated.
+
+    Returns:
+        bool: True if the update was successful, False otherwise.
+    """
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                # Prepare the SQL UPDATE statement
+                update_query = """
+                UPDATE token_trade_history
+                SET sell_price = %s
+                WHERE token = %s
+                """
+
+                # Execute the UPDATE query
+                cursor.execute(update_query, (sell_price, token))
+
+                # Commit the transaction
+                conn.commit()
+    except Exception as e:
+        logger.exception("Failed to update sell price", extra={"token": token, "sell_price": sell_price})
+        return False
