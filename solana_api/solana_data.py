@@ -7,6 +7,7 @@ from solana.rpc.async_api import AsyncClient
 from solana.rpc.commitment import Finalized
 from solders.pubkey import Pubkey
 from solders.rpc.responses import GetTransactionResp, RpcConfirmedTransactionStatusWithSignature
+from solders.signature import Signature
 from solders.transaction_status import EncodedTransactionWithStatusMeta, EncodedConfirmedTransactionWithStatusMeta
 
 from constants import PUMP_DOT_FUN_ID
@@ -25,14 +26,14 @@ async def get_recent_signature(client: AsyncClient, account: Pubkey) -> RpcConfi
 
 
 async def get_transaction(client: AsyncClient,
-                          signature: RpcConfirmedTransactionStatusWithSignature) -> EncodedConfirmedTransactionWithStatusMeta:
+                          signature: Signature) -> EncodedConfirmedTransactionWithStatusMeta:
     try:
-        response = await client.get_transaction(signature.signature,
+        response = await client.get_transaction(signature,
                                                 max_supported_transaction_version=0,
                                                 commitment=Finalized)
         return response.value
     except Exception as e:
-        logger.exception("Failed to get recent signature", extra={"signature": str(signature.signature)})
+        logger.exception("Failed to get recent signature", extra={"signature": str(signature)})
 
 
 def block_time_stamp_to_datetime(timestamp: int) -> datetime:
@@ -88,10 +89,10 @@ async def get_latest_user_trade(user: Pubkey, rpc: str) -> Optional[Trade]:
                 return None
 
             logger.info("Get tx for signature", extra={"signature": str(latest_signature.signature)})
-            tx = await get_transaction(client, latest_signature)
+            tx = await get_transaction(client, latest_signature.signature)
             if tx is None:
                 logger.warning("Failed to load tx data", extra={"signature": str(latest_signature.signature)})
-                
+
             logger.info("Check tx for trades", extra={"signature": str(latest_signature.signature)})
             trade = get_user_trade(user, tx.transaction, tx.block_time)
 

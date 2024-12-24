@@ -52,7 +52,7 @@ async def get_quote(token: str, amount: int, buy: bool) -> Optional[Any]:
         'inputMint': SOL_MINT if buy else token,
         'outputMint': token if buy else SOL_MINT,
         'amount': amount,
-        'slippageBps': 2000,
+        'slippageBps': 1000,
     }
     return await make_http_request_with_retry(RETRY_HTTP, RETRY_DELAY, "GET", url, params=params)
 
@@ -63,6 +63,8 @@ async def prepare_tx(quote_response, wallet: Keypair) -> Optional[Any]:
         'quoteResponse': quote_response,
         'userPublicKey': str(wallet.pubkey()),
         'wrapAndUnwrapSol': True,
+        'dynamicComputeUnitLimit': True,
+        'prioritizationFeeLamports': 10000000
     }
     return await make_http_request_with_retry(RETRY_HTTP, RETRY_DELAY, "POST", swap_url, json=params)
 
@@ -77,7 +79,7 @@ async def send_transaction_with_retry(client: AsyncClient, signed_tx: VersionedT
             txid = await client.send_transaction(signed_tx, opts=TxOpts(skip_preflight=True))
             logger.info("Transaction sent successfully on attempt %d: %s", attempt, txid)
 
-            return txid.value.to_json()
+            return str(txid.value)
 
         except Exception as e:
             logger.warning("Attempt %d failed with error: %s", attempt, str(e))
@@ -86,44 +88,37 @@ async def send_transaction_with_retry(client: AsyncClient, signed_tx: VersionedT
                 await asyncio.sleep(delay)
 
 
-async def swap_tokens(client: AsyncClient, wallet: Keypair,
-                      token: str, amount: int, buy: bool) -> bool:
+async def swap_from_quote(client: AsyncClient, wallet: Keypair, quote_response) -> Optional[str]:
     try:
-        # Step 1: Fetch quote
-        logger.info("Fetching quote for token %s with amount %d", token, amount)
-        quote_response = await get_quote(token, amount, buy)
-        if quote_response is None:
-            logger.error("Failed to fetch quote.")
-            return False
-
-        # Step 2: Create swap transaction
+        # Step 1: Create swap transaction
         swap_data = await prepare_tx(quote_response, wallet)
         if swap_data is None:
             logger.error("Failed to get swap data")
-            return False
+            return None
 
         swap_transaction_b64 = swap_data.get('swapTransaction')
         if not swap_transaction_b64:
             logger.error("No transaction data in response.")
-            return False
+            return None
 
-        # Step 3: Decode and deserialize the base64 transaction
+        # Step 2: Decode and deserialize the base64 transaction
         swap_transaction_buf = b64decode(swap_transaction_b64)
         raw_tx = VersionedTransaction.from_bytes(bytes(swap_transaction_buf))
 
-        # Step 4: Sign the transaction
+        # Step 3: Sign the transaction
         signature = wallet.sign_message(to_bytes_versioned(raw_tx.message))
         signed_tx = VersionedTransaction.populate(raw_tx.message, [signature])
 
-        # Step 5: Send the transaction
+        # Step 4: Send the transaction
         logger.info("Sending transaction...")
         txid = await send_transaction_with_retry(client, signed_tx, RETRY_TX, RETRY_DELAY)
+
         logger.info("Transaction sent successfully: %s", txid)
-        return True
+        return txid
 
     except Exception as e:
         logger.error("An error occurred during token swap: %s", str(e))
-        return False
+        return None
 
 
 if __name__ == "__main__":

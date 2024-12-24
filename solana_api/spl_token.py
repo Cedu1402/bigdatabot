@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 
 import base58
@@ -8,19 +9,19 @@ from solana.rpc.commitment import Confirmed
 from solders.keypair import Keypair
 from solders.pubkey import Pubkey
 from solders.token.associated import get_associated_token_address
-import logging
+
 logger = logging.getLogger(__name__)
+
 
 async def get_token_balance(client: AsyncClient, wallet: Keypair, token_ca: str, retries: int = 5,
                             delay: int = 1) -> int:
-
     for attempt in range(retries):
         balance = 0
         try:
             token_mint_pubkey = Pubkey.from_string(token_ca)
             token_account = get_associated_token_address(wallet.pubkey(), token_mint_pubkey)
-
             response = await client.get_token_account_balance(token_account, commitment=Confirmed)
+
             if hasattr(response, "value"):
                 balance = int(response.value.amount)
 
@@ -29,12 +30,13 @@ async def get_token_balance(client: AsyncClient, wallet: Keypair, token_ca: str,
                 return balance
 
             logger.info("Attempt %d: Balance is 0, retrying in %d seconds...", attempt + 1, delay)
-        except Exception as e:
-            logger.exception("Failed to get token balance")
-        finally:
             await asyncio.sleep(delay)
 
-    print("Max retries reached. Balance remains 0.")
+        except Exception as e:
+            logger.exception("Failed to get token balance")
+            await asyncio.sleep(delay)
+
+    logger.error("Failed to get token balance", extra={"token": token_ca})
     return 0
 
 
