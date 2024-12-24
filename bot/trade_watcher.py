@@ -5,7 +5,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 
 from constants import INVESTMENT_AMOUNT, REAL_MONEY_MODE
-from database.token_trade_history_table import insert_token_trade_history
+from database.token_trade_history_table import insert_token_trade_history, update_sell_price
 from dto.token_trade_history_model import TokenTradeHistory
 from env_data.get_env_value import get_env_bool_value
 from solana_api.jupiter_api import get_token_price
@@ -25,7 +25,7 @@ async def watch_trade(token: str):
         buy_time = datetime.utcnow()
         buy_amount = None
         if real_money_mode:
-            logger.info("Buy token")
+            logger.info("Buy token", extra={"token": token})
             buy_amount = await buy_token(token, 120, 75)
 
         start_price = await get_token_price(token)
@@ -33,8 +33,11 @@ async def watch_trade(token: str):
         logger.info("Simulate buy of token",
                     extra={"token": token, "start_price": start_price, "buy_time": buy_time.isoformat()})
 
+        insert_token_trade_history(TokenTradeHistory(token=token, buy_time=buy_time,
+                                                     sell_time=None, buy_price=start_price,
+                                                     sell_price=None))
         await sleep(10)
-        
+
         while True:
             try:
                 # Calculate profit/loss percentage
@@ -50,9 +53,7 @@ async def watch_trade(token: str):
                         "Failed token because of time",
                         extra={"start_price": start_price, "last_price": last_price, "token": token, "profit": profit}
                     )
-                    insert_token_trade_history(TokenTradeHistory(token=token, buy_time=buy_time,
-                                                                 sell_time=datetime.utcnow(), buy_price=start_price,
-                                                                 sell_price=last_price))
+                    update_sell_price(token, last_price)
                     return
 
                 if last_price >= start_price * 2.10:  # 110% of start price
@@ -63,9 +64,7 @@ async def watch_trade(token: str):
                         f"Price increased by 110%",
                         extra={"start_price": start_price, "last_price": last_price, "token": token, "profit": profit}
                     )
-                    insert_token_trade_history(TokenTradeHistory(token=token, buy_time=buy_time,
-                                                                 sell_time=datetime.utcnow(), buy_price=start_price,
-                                                                 sell_price=last_price))
+                    update_sell_price(token, last_price)
                     return
 
                 if last_price <= start_price * 0.50:  # 50% of start price
@@ -76,9 +75,7 @@ async def watch_trade(token: str):
                         f"Price decreased by 50%: {last_price} < {start_price * 0.50}",
                         extra={"start_price": start_price, "last_price": last_price, "token": token, "profit": profit}
                     )
-                    insert_token_trade_history(TokenTradeHistory(token=token, buy_time=buy_time,
-                                                                 sell_time=datetime.utcnow(), buy_price=start_price,
-                                                                 sell_price=last_price))
+                    update_sell_price(token, last_price)
                     return
             except Exception as e:
                 logger.exception("Error in trade watch", extra={"token": token})

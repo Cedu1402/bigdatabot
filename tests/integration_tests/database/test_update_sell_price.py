@@ -41,6 +41,7 @@ class TestRunner(BaseTestDatabase):
         self.assertIsNotNone(result, "The token trade history should exist in the database")
         self.assertEqual(result[0], token, "The token should match the inserted value")
         self.assertEqual(result[1].isoformat(), buy_time.isoformat(), "The buy time should match the inserted value")
-        self.assertEqual(result[2].isoformat(), sell_time.isoformat(), "The sell time should match the inserted value")
+        self.assertNotEqual(result[2].isoformat(), sell_time.isoformat(),
+                            "The sell time should match the inserted value")
         self.assertEqual(result[3], buy_price, "The buy price should match the inserted value")
         self.assertEqual(result[4], new_sell_price, "The sell price should match the updated value")

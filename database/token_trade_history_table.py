@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from typing import Dict
 
 from constants import INVESTMENT_AMOUNT
@@ -50,7 +51,7 @@ def get_trade_stats() -> Dict[str, float]:
                 SELECT 
                     COUNT(*) AS total_trades,
                     SUM((sell_price - buy_price) / buy_price * %s) AS total_return
-                FROM token_trade_history
+                FROM token_trade_history WHERE buy_time > '2024-12-24 16:00:00' AND sell_price IS NOT NULL
                 """
                 cursor.execute(query, (INVESTMENT_AMOUNT,))
                 result = cursor.fetchone()
@@ -74,6 +75,34 @@ def get_trade_stats() -> Dict[str, float]:
         }
 
 
+def get_open_trades() -> int:
+    """
+    Retrieves the total number of open trades.
+
+    Returns:
+       int: Amount of open trades.
+    """
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                # Query to get the total number of trades and the total percentage return
+                query = """
+                SELECT 
+                    COUNT(*) AS open_trades
+                FROM token_trade_history WHERE buy_time > '2024-12-24 16:00:00' AND sell_price IS NULL
+                """
+                cursor.execute(query)
+                result = cursor.fetchone()
+
+                if result:
+                    return result[0]
+                else:
+                    return 0
+    except Exception as e:
+        logger.exception("Failed to retrieve trade stats")
+        return 0
+
+
 def update_sell_price(token: str, sell_price: float):
     """
     Updates the sell price for a specific token in the token_trade_history table.
@@ -81,7 +110,7 @@ def update_sell_price(token: str, sell_price: float):
     Args:
         token (str): The token identifier for which the sell price needs to be updated.
         sell_price (float): The new sell price to be updated.
-
+        sell_time (datetime): The new sell time to be updated.
     Returns:
         bool: True if the update was successful, False otherwise.
     """
@@ -91,12 +120,12 @@ def update_sell_price(token: str, sell_price: float):
                 # Prepare the SQL UPDATE statement
                 update_query = """
                 UPDATE token_trade_history
-                SET sell_price = %s
+                SET sell_price = %s, sell_time = %s
                 WHERE token = %s
                 """
 
                 # Execute the UPDATE query
-                cursor.execute(update_query, (sell_price, token))
+                cursor.execute(update_query, (sell_price, datetime.utcnow(), token))
 
                 # Commit the transaction
                 conn.commit()

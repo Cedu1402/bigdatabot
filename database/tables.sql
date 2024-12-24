@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS token_trade_history
     id         SERIAL PRIMARY KEY,
     token      VARCHAR(255)   NOT NULL,
     buy_time   TIMESTAMP      NOT NULL,
-    sell_time  TIMESTAMP      NOT NULL,
+    sell_time  TIMESTAMP      NULL,
     buy_price  DECIMAL(18, 8) NOT NULL,
     sell_price DECIMAL(18, 8) NULL
 );

@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 from flask import Flask, render_template
 
-from database.token_trade_history_table import get_trade_stats
+from database.token_trade_history_table import get_trade_stats, get_open_trades
 from database.token_watch_table import get_current_token_watch_stats
 from structure_log.logger_setup import setup_logger
 
@@ -21,8 +21,9 @@ def home():
         load_dotenv()
         token_watch_stats = get_current_token_watch_stats()
         trade_stats = get_trade_stats()
+        open_trades = get_open_trades()
 
-        combined_data = {**token_watch_stats, **trade_stats}
+        combined_data = {**token_watch_stats, **trade_stats, **{'open_trades': open_trades}}
 
         # Pass data to template
         return render_template('index.html', data=combined_data)
