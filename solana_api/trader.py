@@ -158,10 +158,12 @@ async def execute_sell(token: str, amount: int, sol_client: AsyncClient, wallet:
 
         tx_id = await swap_from_quote(sol_client, wallet, quote_response)
         if tx_id is None:
+            logger.error("Failed to send swap sell tx", extra={'token': token})
             return False
 
         tx_okay = await wait_for_tx_confirmed(sol_client, tx_id, 35)
         if not tx_okay:
+            logger.error("Transaction failed or skipped", extra={'token': token, 'tx_id': tx_id})
             return False
 
         return True
