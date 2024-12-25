@@ -1,7 +1,6 @@
 import unittest
 
-from solana_api.jupiter_api import get_quote
-from solana_api.trader import get_price_in_usd
+from solana_api.jupiter_api import get_quote, get_price_in_usd_sell, get_price_in_usd_buy
 
 
 class TestRunner(unittest.IsolatedAsyncioTestCase):
@@ -14,7 +13,7 @@ class TestRunner(unittest.IsolatedAsyncioTestCase):
                                 sol_amount_raw, True)
 
         # Act
-        price = get_price_in_usd(quote, sol_amount, 150)
+        price = get_price_in_usd_buy(quote, sol_amount, 150)
 
         # Assert
         self.assertIsNotNone(price)

@@ -5,10 +5,12 @@ from datetime import datetime
 from dotenv import load_dotenv
 
 from constants import INVESTMENT_AMOUNT, REAL_MONEY_MODE
+from data.data_format import get_sol_price
+from data.redis_helper import get_async_redis
 from database.token_trade_history_table import insert_token_trade_history, update_sell_price
 from dto.token_trade_history_model import TokenTradeHistory
 from env_data.get_env_value import get_env_bool_value
-from solana_api.jupiter_api import get_token_price
+from solana_api.jupiter_api import get_token_price_by_quote
 from solana_api.trader import buy_token, sell_token
 from structure_log.logger_setup import setup_logger
 
@@ -23,14 +25,14 @@ async def watch_trade(token: str):
         logger.info("Start trade watcher", extra={"token": token})
         real_money_mode = get_env_bool_value(REAL_MONEY_MODE)
         buy_time = datetime.utcnow()
-        buy_amount = None
-        if real_money_mode:
-            logger.info("Buy token", extra={"token": token})
-            buy_amount = await buy_token(token, 120, 75)
+        r = get_async_redis()
 
-        start_price = await get_token_price(token)
-
-        logger.info("Simulate buy of token",
+        buy_amount, start_price = await buy_token(token, 120, 15, real_money_mode)
+        if buy_amount is None or start_price is None:
+            logger.error("Failed to buy/simulate token", extra={"token": token})
+            return
+        
+        logger.info("Simulate buy of token/execute",
                     extra={"token": token, "start_price": start_price, "buy_time": buy_time.isoformat()})
 
         insert_token_trade_history(TokenTradeHistory(token=token, buy_time=buy_time,
@@ -41,7 +43,9 @@ async def watch_trade(token: str):
         while True:
             try:
                 # Calculate profit/loss percentage
-                last_price = await get_token_price(token)
+                sol_price = await get_sol_price(r)
+                last_price = await get_token_price_by_quote(token, buy_amount, False, sol_price)
+
                 price_change_percentage = (last_price - start_price) / start_price * 100
                 profit = INVESTMENT_AMOUNT * (price_change_percentage / 100)
 

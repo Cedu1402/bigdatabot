@@ -13,22 +13,11 @@ from constants import INVESTMENT_AMOUNT, SOL_RPC, PRIVATE_KEY
 from data.data_format import get_sol_price
 from data.redis_helper import get_async_redis
 from env_data.get_env_value import get_env_value
-from solana_api.jupiter_api import get_quote, get_token_price, swap_from_quote
+from solana_api.jupiter_api import get_quote, get_token_price, swap_from_quote, get_price_in_usd_buy
 from solana_api.solana_data import get_transaction
 from solana_api.spl_token import get_token_balance
 
 logger = logging.getLogger(__name__)
-
-
-def get_price_in_usd(quote: dict, sol_to_invest, current_sol_price) -> Optional[float]:
-    output_token_amount = quote.get('outAmount', 0)
-    if output_token_amount == 0:
-        return None
-
-    token_price_in_sol = sol_to_invest / (int(output_token_amount) / (10 ** 6))
-    token_price_in_usd = token_price_in_sol * current_sol_price
-
-    return token_price_in_usd
 
 
 async def wait_for_tx_confirmed(client: AsyncClient, tx_id: str, max_wait_time: int) -> bool:
@@ -77,7 +66,8 @@ async def execute_buy(start_time: datetime,
                       wallet: Keypair,
                       current_sol_price: float,
                       max_higher_price: int,
-                      start_price: Optional[int]) -> Tuple[Optional[int], Optional[int]]:
+                      start_price: Optional[int],
+                      real_money_mode: bool) -> Tuple[Optional[int], Optional[int]]:
     try:
         if (datetime.now() - start_time).seconds > max_retry_time:
             return -1, start_price
@@ -89,9 +79,12 @@ async def execute_buy(start_time: datetime,
             return None, start_price_api
 
         if start_price is None:
-            start_price = get_price_in_usd(quote_response, sol_to_invest, current_sol_price)
+            start_price = get_price_in_usd_buy(quote_response, sol_to_invest, current_sol_price)
 
-        current_price = get_price_in_usd(quote_response, sol_to_invest, current_sol_price)
+        current_price = get_price_in_usd_buy(quote_response, sol_to_invest, current_sol_price)
+        if not real_money_mode:
+            return int(quote_response.get('outAmount', 0)), current_price
+
         percentage_change = ((current_price - start_price) / start_price) * 100
 
         if percentage_change > max_higher_price:
@@ -120,7 +113,8 @@ async def execute_buy(start_time: datetime,
         return None, start_price
 
 
-async def buy_token(token: str, max_retry_time: int, max_higher_price: int) -> Optional[int]:
+async def buy_token(token: str, max_retry_time: int, max_higher_price: int, real_money_mode: bool) -> Tuple[
+    Optional[int], Optional[int]]:
     try:
         sol_client, wallet, r = setup_buy()
         start_time = datetime.now()
@@ -135,18 +129,20 @@ async def buy_token(token: str, max_retry_time: int, max_higher_price: int) -> O
         while True:
             buy_amount, start_price = await execute_buy(start_time, max_retry_time, token, sol_to_invest,
                                                         start_price_api * (10 ** 6), sol_client, wallet,
-                                                        current_sol_price, max_higher_price, start_price)
+                                                        current_sol_price, max_higher_price, start_price,
+                                                        real_money_mode)
             if buy_amount is None:
                 await sleep(5)
                 continue
 
             if buy_amount == -1:
-                return None
+                return None, None
 
-            return buy_amount
+            return buy_amount, start_price
 
     except Exception as e:
         logger.exception("Failed to buy token", extra={"token": token})
+        return None, None
 
 
 async def execute_sell(token: str, amount: int, sol_client: AsyncClient, wallet: Keypair) -> bool:

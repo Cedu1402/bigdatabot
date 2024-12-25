@@ -36,14 +36,36 @@ async def get_token_price(token_address: str, show_extra_info: bool = False) -> 
             return float(data["data"][token_address]["price"])
 
 
-async def buy_token(client: AsyncClient, wallet: Keypair, token: str, amount: int):
-    """Swaps SOL for the specified token."""
-    return await swap_tokens(client, wallet, token, amount, buy=True)
+async def get_token_price_by_quote(token: str, amount: int, buy: bool, sol_price: float) -> Optional[float]:
+    quote_response = await get_quote(token, amount, buy)
+
+    if buy:
+        return get_price_in_usd_buy(quote_response, amount, sol_price)
+    else:
+        return get_price_in_usd_sell(quote_response, amount, sol_price)
 
 
-async def sell_token(client: AsyncClient, wallet: Keypair, token: str, amount: int):
-    """Swaps the specified token for SOL."""
-    return await swap_tokens(client, wallet, token, amount, buy=False)
+def get_price_in_usd_buy(quote: dict, sol_amount, current_sol_price) -> Optional[float]:
+    output_token_amount = quote.get('outAmount', 0)
+    if output_token_amount == 0:
+        return None
+
+    token_price_in_sol = sol_amount / (int(output_token_amount) / (10 ** 6))
+    token_price_in_usd = token_price_in_sol * current_sol_price
+
+    return token_price_in_usd
+
+
+def get_price_in_usd_sell(quote: dict, token_amount, current_sol_price) -> Optional[float]:
+    output_amount = quote.get('outAmount', 0)
+    if output_amount == 0:
+        return None
+
+    token_price_in_sol = (int(output_amount) / (10 ** 9)) / token_amount
+    token_price_in_usd = token_price_in_sol * current_sol_price
+
+    return token_price_in_usd
+
 
 
 async def get_quote(token: str, amount: int, buy: bool) -> Optional[Any]:
