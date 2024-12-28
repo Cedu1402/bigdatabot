@@ -1,10 +1,23 @@
 import math
-from dataclasses import dataclass
-from typing import Tuple
+from dataclasses import dataclass, fields
+from typing import Tuple, List
 
 import pandas as pd
 
 from constants import TOKEN_COlUMN, TRADING_MINUTE_COLUMN
+
+
+def get_categories_from_dataclass(cls) -> List[int]:
+    """
+    Extract the list of categories (values) from a dataclass.
+
+    Args:
+        cls: The dataclass to extract categories from.
+
+    Returns:
+        List[int]: A list of unique category values.
+    """
+    return [getattr(cls, field.name) for field in fields(cls) if isinstance(getattr(cls, field.name), int)]
 
 
 @dataclass

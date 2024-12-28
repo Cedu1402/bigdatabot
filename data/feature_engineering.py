@@ -1,13 +1,44 @@
 ﻿import logging
-from typing import List, Dict
+from typing import List, Dict, Optional, Tuple
 
 import numpy as np
 import pandas as pd
+from sklearn.preprocessing import MinMaxScaler
 
 from constants import TOKEN_COlUMN, TRADING_MINUTE_COLUMN, PRICE_COLUMN, PRICE_PCT_CHANGE, \
     SOL_PRICE, MARKET_CAP_USD, PERCENTAGE_OF_1_MILLION_MARKET_CAP, TOTAL_VOLUME_COLUMN, TOTAL_VOLUME_PCT_CHANGE
+from data.combine_price_trades import get_categories_from_dataclass, TraderState
 
 logger = logging.getLogger(__name__)
+
+
+def normalize_columns(df: pd.DataFrame, columns: List[str],
+                      fit: bool, scaler: Optional[MinMaxScaler], trader_cols: bool) -> Tuple[
+    pd.DataFrame, Optional[MinMaxScaler]]:
+    if trader_cols:
+        trader_columns = [col for col in df.columns if col.startswith("trader_")]
+        columns.extend(trader_columns)
+
+    if fit:
+        scaler = MinMaxScaler(clip=True)
+        df[columns] = scaler.fit_transform(df[columns])
+        return df, scaler
+    else:
+        df[columns] = scaler.transform(df[columns])
+        return df, None
+
+
+def one_hot_encode_trader_columns(df: pd.DataFrame) -> pd.DataFrame:
+    trader_columns = [col for col in df.columns if col.startswith("trader_")]
+    categories = get_categories_from_dataclass(TraderState)
+
+    for col in trader_columns:
+        # Ensure the column has all possible categories defined
+        df[col] = pd.Categorical(df[col], categories=categories)
+
+    df_encoded = pd.get_dummies(df, columns=trader_columns)
+
+    return df_encoded
 
 
 def bin_data(data: List[pd.DataFrame], columns: List[str], bin_edges: Dict[str, List[float]]) -> List[pd.DataFrame]:

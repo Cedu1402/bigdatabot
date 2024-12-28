@@ -5,6 +5,47 @@ import pandas as pd
 from constants import TOKEN_COlUMN, TRADING_MINUTE_COLUMN
 
 
+def get_sizes_from_data(data: List[pd.DataFrame]) -> List[int]:
+    """
+    Returns the size of each original DataFrame in the list, assuming all DataFrames are the same size.
+
+    Parameters:
+    - data (List[pd.DataFrame]): The list of original DataFrames.
+
+    Returns:
+    - List[int]: A list of row counts for each original DataFrame.
+    """
+    # Assuming all DataFrames have the same number of rows, we take the size of the first DataFrame
+    num_rows = len(data[0])  # Number of rows in each DataFrame
+    sizes = [num_rows] * len(data)  # All DataFrames have the same size
+
+    return sizes
+
+
+def roll_back_data(df: pd.DataFrame, sizes: List[int]) -> List[pd.DataFrame]:
+    """
+    Reverses the unrolling of data by splitting a single DataFrame into a list of DataFrames.
+
+    Parameters:
+    - df (pd.DataFrame): The concatenated DataFrame to split.
+    - sizes (List[int]): List of row counts representing the size of each original DataFrame.
+
+    Returns:
+    - List[pd.DataFrame]: A list of DataFrames split according to the provided sizes.
+    """
+    # Initialize a list to hold the resulting DataFrames
+    dfs = []
+
+    # Split the DataFrame into chunks based on the sizes
+    start_idx = 0
+    for size in sizes:
+        end_idx = start_idx + size
+        dfs.append(df.iloc[start_idx:end_idx].reset_index(drop=True))
+        start_idx = end_idx
+
+    return dfs
+
+
 def unroll_data(data: List[pd.DataFrame]) -> pd.DataFrame:
     """
     Concatenates a list of DataFrames into a single DataFrame.

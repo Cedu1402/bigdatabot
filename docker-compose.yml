@@ -88,7 +88,7 @@ services:
       - redis
     restart: always
     deploy:
-      replicas: 5
+      replicas: 15
 
   trade_queue:
     build:
