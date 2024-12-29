@@ -1,4 +1,5 @@
-﻿import logging
+﻿import copy
+import logging
 from typing import List, Dict, Optional, Tuple
 
 import numpy as np
@@ -6,7 +7,7 @@ import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 
 from constants import TOKEN_COlUMN, TRADING_MINUTE_COLUMN, PRICE_COLUMN, PRICE_PCT_CHANGE, \
-    SOL_PRICE, MARKET_CAP_USD, PERCENTAGE_OF_1_MILLION_MARKET_CAP, TOTAL_VOLUME_COLUMN, TOTAL_VOLUME_PCT_CHANGE
+    MARKET_CAP_USD, PERCENTAGE_OF_1_MILLION_MARKET_CAP, TOTAL_VOLUME_COLUMN, TOTAL_VOLUME_PCT_CHANGE
 from data.combine_price_trades import get_categories_from_dataclass, TraderState
 
 logger = logging.getLogger(__name__)
@@ -15,6 +16,8 @@ logger = logging.getLogger(__name__)
 def normalize_columns(df: pd.DataFrame, columns: List[str],
                       fit: bool, scaler: Optional[MinMaxScaler], trader_cols: bool) -> Tuple[
     pd.DataFrame, Optional[MinMaxScaler]]:
+    columns = copy.deepcopy(columns)
+
     if trader_cols:
         trader_columns = [col for col in df.columns if col.startswith("trader_")]
         columns.extend(trader_columns)
@@ -136,7 +139,7 @@ def add_features(data: pd.DataFrame) -> pd.DataFrame:
     data = data.sort_values(by=[TOKEN_COlUMN, TRADING_MINUTE_COLUMN])  # Sort by token and then by time
 
     data[MARKET_CAP_USD] = data.apply(
-        lambda row: get_market_cap_from_tokens_per_sol_and_sol_price(float(row[PRICE_COLUMN]), SOL_PRICE),
+        lambda row: calculate_market_cap_in_usd(float(row[PRICE_COLUMN])),
         axis=1
     )
 

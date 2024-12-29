@@ -5,7 +5,6 @@ from datetime import datetime
 from typing import List, Optional
 
 import pandas as pd
-import redis
 from dotenv import load_dotenv
 from rq import Queue
 
@@ -13,7 +12,6 @@ from birdeye_api.ohlcv_endpoint import get_time_frame_ohlcv
 from bot.trade_watcher import watch_trade
 from constants import BIN_AMOUNT_KEY, TRADE_QUEUE
 from data.close_volume_data import get_trading_minute
-from data.data_format import get_sol_price, transform_price_to_tokens_per_sol
 from data.data_type import convert_columns
 from data.dataset import add_inactive_traders
 from data.feature_engineering import add_features
@@ -88,7 +86,7 @@ def check_age_of_token(token: str) -> bool:
 
 
 async def prepare_current_dataset(valid_trades: List[Trade], trading_minute: datetime, token: str,
-                                  columns: List[str], r: redis.asyncio.Redis) -> Optional[pd.DataFrame]:
+                                  columns: List[str]) -> Optional[pd.DataFrame]:
     logger.info("Get base dataset")
     df = await get_base_data(valid_trades, trading_minute, token)
     if df is None:
@@ -97,11 +95,6 @@ async def prepare_current_dataset(valid_trades: List[Trade], trading_minute: dat
     # run data preparation
     logger.info("Adjust type of columns", extra={"token": str(token), "trading_minute": trading_minute})
     df = convert_columns(df)
-
-    # transform to sol price
-    logger.info("Adjust prices based on current sol price")
-    solana_price = await get_sol_price(r)
-    df = transform_price_to_tokens_per_sol(df, solana_price)
 
     # Add features
     logger.info("Add features", extra={"token": str(token), "trading_minute": trading_minute})
@@ -159,7 +152,7 @@ async def watch_token(token) -> bool:
                     continue
 
                 logger.info("Prepare dataset for prediction", extra={"token": str(token)})
-                df = await prepare_current_dataset(valid_trades, trading_minute, token, model.get_columns(), r)
+                df = await prepare_current_dataset(valid_trades, trading_minute, token, model.get_columns())
                 if df is None:
                     logger.error("Issue in creating dataset",
                                  extra={'token': token, 'trading_minute': trading_minute})
