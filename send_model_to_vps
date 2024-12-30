@@ -1,0 +1,1 @@
+scp /mnt/c/Users/Cedric/PycharmProjects/MemeDotBotSniper/save_models/simple_tree.pkl root@194.164.77.162:/root/bigdatabot/save_models/simple_tree.pkl

@@ -31,9 +31,10 @@ async def watch_trade(token: str):
         if buy_amount is None or start_price is None:
             logger.error("Failed to buy/simulate token", extra={"token": token})
             return
-        
+
         logger.info("Simulate buy of token/execute",
-                    extra={"token": token, "start_price": start_price, "buy_time": buy_time.isoformat()})
+                    extra={"token": token, "start_price": str(start_price), "buy_time": buy_time.isoformat(),
+                           "buy_amount": str(buy_amount)})
 
         insert_token_trade_history(TokenTradeHistory(token=token, buy_time=buy_time,
                                                      sell_time=None, buy_price=start_price,
@@ -45,6 +46,7 @@ async def watch_trade(token: str):
                 # Calculate profit/loss percentage
                 sol_price = await get_sol_price(r)
                 last_price = await get_token_price_by_quote(token, buy_amount, False, sol_price)
+                logger.info("Current price of token", extra={"token": token, "price": str(last_price)})
 
                 price_change_percentage = (last_price - start_price) / start_price * 100
                 profit = INVESTMENT_AMOUNT * (price_change_percentage / 100)
