@@ -45,7 +45,9 @@ async def watch_trade(token: str):
             try:
                 # Calculate profit/loss percentage
                 sol_price = await get_sol_price(r)
-                last_price = await get_token_price_by_quote(token, buy_amount, False, sol_price)
+                token_amount = 500000
+                token_amount_raw = token_amount * (10 ** 6)
+                last_price = await get_token_price_by_quote(token, token_amount_raw, False, sol_price)
                 logger.info("Current price of token", extra={"token": token, "price": str(last_price)})
 
                 price_change_percentage = (last_price - start_price) / start_price * 100

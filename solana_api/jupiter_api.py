@@ -50,7 +50,7 @@ def get_price_in_usd_buy(quote: dict, sol_amount, current_sol_price) -> Optional
     if output_token_amount == 0:
         return None
 
-    token_price_in_sol = sol_amount / (int(output_token_amount) / (10 ** 6))
+    token_price_in_sol = (sol_amount / (10 ** 9)) / (int(output_token_amount) / (10 ** 6))
     token_price_in_usd = token_price_in_sol * current_sol_price
 
     return token_price_in_usd
@@ -61,11 +61,10 @@ def get_price_in_usd_sell(quote: dict, token_amount, current_sol_price) -> Optio
     if output_amount == 0:
         return None
 
-    token_price_in_sol = (int(output_amount) / (10 ** 9)) / token_amount
+    token_price_in_sol = (int(output_amount) / (10 ** 9)) / (token_amount / (10 ** 6))
     token_price_in_usd = token_price_in_sol * current_sol_price
 
     return token_price_in_usd
-
 
 
 async def get_quote(token: str, amount: int, buy: bool) -> Optional[Any]:

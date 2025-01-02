@@ -73,15 +73,16 @@ async def execute_buy(start_time: datetime,
             return -1, start_price
 
         logger.info("Fetching quote for token", extra={"token": token, "sol_to_invest": sol_to_invest})
-        quote_response = await get_quote(token, int(sol_to_invest * (10 ** 9)), True)
+        sol_to_invest_raw = int(sol_to_invest * (10 ** 9))
+        quote_response = await get_quote(token, sol_to_invest_raw, True)
         if quote_response is None:
             logger.error("Failed to fetch quote", extra={'token': token})
             return None, start_price_api
 
         if start_price is None:
-            start_price = get_price_in_usd_buy(quote_response, sol_to_invest, current_sol_price)
+            start_price = get_price_in_usd_buy(quote_response, sol_to_invest_raw, current_sol_price)
 
-        current_price = get_price_in_usd_buy(quote_response, sol_to_invest, current_sol_price)
+        current_price = get_price_in_usd_buy(quote_response, sol_to_invest_raw, current_sol_price)
         if not real_money_mode:
             return int(quote_response.get('outAmount', 0)), current_price
 

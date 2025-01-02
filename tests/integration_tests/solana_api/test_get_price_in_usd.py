@@ -7,13 +7,13 @@ class TestRunner(unittest.IsolatedAsyncioTestCase):
 
     async def test_get_price_in_usd_buy(self):
         # Arrange
-        sol_amount = 1
-        sol_amount_raw = sol_amount * (10 ** 9)
-        quote = await get_quote("8FwucaJUNtw9fQmpbmT7HSXMm8mKAi3sLnUSKaq4pump",
+        sol_amount = 0.2631578947368421
+        sol_amount_raw = int(sol_amount * (10 ** 9))
+        quote = await get_quote("9UTQN4PXGdpe9jd61the92M93nh3f5jUBq5kQiJypump",
                                 sol_amount_raw, True)
 
         # Act
-        price = get_price_in_usd_buy(quote, sol_amount, 193)
+        price = get_price_in_usd_buy(quote, sol_amount_raw, 193)
 
         # Assert
         self.assertIsNotNone(price)
@@ -22,11 +22,11 @@ class TestRunner(unittest.IsolatedAsyncioTestCase):
         # Arrange
         token_amount = 500000
         token_amount_raw = token_amount * (10 ** 6)
-        quote = await get_quote("8FwucaJUNtw9fQmpbmT7HSXMm8mKAi3sLnUSKaq4pump",
+        quote = await get_quote("9UTQN4PXGdpe9jd61the92M93nh3f5jUBq5kQiJypump",
                                 token_amount_raw, False)
 
         # Act
-        price = get_price_in_usd_sell(quote, token_amount, 193)
+        price = get_price_in_usd_sell(quote, token_amount_raw, 193)
 
         # Assert
         self.assertIsNotNone(price)
