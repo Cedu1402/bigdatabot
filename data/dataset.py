@@ -3,7 +3,7 @@ from typing import List
 
 import pandas as pd
 
-from constants import TRAIN_VAL_TEST_FILE, VALIDATION_FILE, LABEL_COLUMN
+from constants import TRAIN_VAL_TEST_FILE, VALIDATION_FILE, LABEL_COLUMN, PRE_SPLIT_DATA
 from data.cache_data import read_cache_data_with_config, save_cache_data_with_config
 from data.combine_price_trades import add_trader_info_to_price_data
 from data.data_split import balance_data, split_data
@@ -78,9 +78,9 @@ async def prepare_validation_data(use_cache: bool, columns: List[str], config: d
     return full_data_windows
 
 
-def prepare_test_data(token: str, use_cache: bool, columns: List[str], config: dict):
+async def prepare_test_data(token: str, use_cache: bool, columns: List[str], config: dict):
     logger.info("Load volume/price data from dune")
-    volume_close_1m, top_trader_trades = collect_test_data(token, use_cache)
+    volume_close_1m, top_trader_trades = await collect_test_data(token, use_cache)
     logger.info("Prepare validation data")
     labeled_data = prepare_steps(top_trader_trades, volume_close_1m, config, False)
     logger.info("Add inactive traders")
@@ -125,6 +125,9 @@ async def prepare_dataset(use_cache: bool, config: dict):
     logger.info("Prepare data")
     labeled_data = prepare_steps(top_trader_trades, volume_close_1m, config)
     logger.info("Split into windows")
+
+    save_cache_data_with_config(PRE_SPLIT_DATA, config, labeled_data)
+
     # Split volume data into sliding window chunks of 10min
     labeled_data = create_sliding_windows(labeled_data, config["window_size"], config["step_size"])
 

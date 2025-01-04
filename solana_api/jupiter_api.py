@@ -85,7 +85,7 @@ async def prepare_tx(quote_response, wallet: Keypair) -> Optional[Any]:
         'userPublicKey': str(wallet.pubkey()),
         'wrapAndUnwrapSol': True,
         'dynamicComputeUnitLimit': True,
-        'prioritizationFeeLamports': 10000000
+        'prioritizationFeeLamports': 'auto'
     }
     return await make_http_request_with_retry(RETRY_HTTP, RETRY_DELAY, "POST", swap_url, json=params)
 

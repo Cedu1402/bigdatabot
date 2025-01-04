@@ -4,11 +4,11 @@ from typing import Tuple, List, Optional, Union, Dict
 import pandas as pd
 
 from birdeye_api.ohlcv_endpoint import get_ohlcv, ohlcv_to_dataframe
+from birdeye_api.token_creation_endpoint import get_token_create_info
 from cache_helper import cache_exists, get_cache_data, write_data_to_cache
 from constants import PRODUCTION_TEST_TRADES, PRODUCTION_TEST_PRICE, TOKEN_CLOSE_VOLUME_1M_QUERY, \
     CURRENT_CLOSE_VOLUME_1M_QUERY
-from dune.dune_queries import get_list_of_trades, get_current_trade_list_query, \
-    get_current_close_volume_1m_query
+from dune.dune_queries import get_list_of_trades, get_current_trade_list_query
 from dune.query_request import get_query_result_with_params
 
 
@@ -17,11 +17,11 @@ async def collect_test_data(token: str, use_cache: bool) -> Tuple[pd.DataFrame, 
                                                      {"min_token_age_h": 2,
                                                       "token": token},
                                                      use_cache)
-
-    volume_close_1m = get_query_result_with_params(PRODUCTION_TEST_PRICE,
-                                                   {"min_token_age_h": 2,
-                                                    "token": token},
-                                                   use_cache)
+    launch_time, _ = await get_token_create_info(token, skip_counter=True)
+    volume_close_1m = await get_close_volume_1m([token],
+                                                {token: launch_time},
+                                                use_cache,
+                                                PRODUCTION_TEST_PRICE)
 
     return volume_close_1m, top_trader_trades
 
@@ -44,7 +44,8 @@ async def load_volume_1m_data_form_brideye(tokens: List[str], launch_times: Dict
     return volume_close_1m
 
 
-async def get_close_volume_1m(tokens: List[str], launch_times: Dict[str, datetime], use_cache: bool, query_name: str) -> pd.DataFrame:
+async def get_close_volume_1m(tokens: List[str], launch_times: Dict[str, datetime], use_cache: bool,
+                              query_name: str) -> pd.DataFrame:
     if use_cache:
         result_data = get_cache_file_data(query_name)
         if result_data is not None:

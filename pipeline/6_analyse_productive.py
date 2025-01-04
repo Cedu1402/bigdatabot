@@ -1,6 +1,6 @@
+import asyncio
 import copy
 
-import numpy as np
 from dotenv import load_dotenv
 
 from config.config_reader import load_yaml_to_dict
@@ -10,9 +10,9 @@ from database.token_dataset_table import get_token_datasets_by_token
 from ml_model.decision_tree_model import DecisionTreeModel
 
 
-def main():
+async def main():
     load_dotenv()
-    token = "7woyyqRRSNr7gtqxY5iXg9mzEC7hAjiLtxSmkAUypump"
+    token = "DmSjq2BGBWgwucXqpNpJSvVWhas9fZSt6YpP2n82pump"
     config = dict()
     config[BIN_AMOUNT_KEY] = 10
     model = DecisionTreeModel(config)
@@ -27,24 +27,25 @@ def main():
     # Extract unique trading minutes from prod_val_x
     prod_trading_minutes = list()
     for df in prod_val_x:
-        prod_trading_minutes.append(df['trading_minute'].iloc[0].strftime('%Y-%m-%d %H:%M:%S'))  # Standardize to string
+        prod_trading_minutes.append(
+            df['trading_minute'].iloc[-1].strftime('%Y-%m-%d %H:%M:%S'))  # Standardize to string
 
     # Filter test_data
-    test_data = prepare_test_data(token, True, model.get_columns(), data_config)
+    test_data = await prepare_test_data(token, True, model.get_columns(), data_config)
     filtered_test_data = []
     test_list = []
     for df in test_data:
         # Standardize trading_minute to string and check overlap
-        trading_minutes = df['trading_minute'].iloc[0].tz_localize(None).strftime('%Y-%m-%d %H:%M:%S')
+        trading_minutes = df['trading_minute'].iloc[-1].tz_localize(None).strftime('%Y-%m-%d %H:%M:%S')
         test_list.append(trading_minutes)
         if trading_minutes in prod_trading_minutes:
             filtered_test_data.append(df)
 
     validation_x, _ = model.prepare_prediction_data(copy.deepcopy(filtered_test_data), False)
     predictions = model.predict(validation_x)
-    print(np.any(predictions))
-    pass
+
+    assert prod_predictions == predictions
 
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())

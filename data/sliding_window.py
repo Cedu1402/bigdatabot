@@ -93,13 +93,21 @@ def create_sliding_windows(data: pd.DataFrame, window_size: int = 10, step_size:
         # Filter data for this token
         token_data = data[data[TOKEN_COlUMN] == token].sort_values(TRADING_MINUTE_COLUMN).reset_index(drop=True)
 
+        # Add padding rows with 0 values
+        padding = pd.DataFrame(
+            {col: [None] * (window_size - 1) for col in token_data.columns}
+        )
+        token_data = pd.concat([padding, token_data], ignore_index=True)
+
         # Create sliding windows
         for start in range(0, len(token_data) - window_size + 1, step_size):
             end = start + window_size
-            window = token_data.iloc[start:end]
+            window = token_data.iloc[start:end].copy()
+
+            window = window.dropna()
 
             # Only add the window if it has the full desired size (to avoid partial windows at the end)
-            if len(window) == window_size and contains_non_zero_trade_state(window):
+            if contains_non_zero_trade_state(window):
                 sliding_windows.append(window)
 
     return sliding_windows
