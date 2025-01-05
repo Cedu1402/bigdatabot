@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from base64 import b64decode
-from typing import Optional, Any
+from typing import Optional, Any, Tuple
 
 import aiohttp
 from solana.rpc.async_api import AsyncClient
@@ -36,13 +36,14 @@ async def get_token_price(token_address: str, show_extra_info: bool = False) -> 
             return float(data["data"][token_address]["price"])
 
 
-async def get_token_price_by_quote(token: str, amount: int, buy: bool, sol_price: float) -> Optional[float]:
+async def get_token_price_by_quote(token: str, amount: int, buy: bool, sol_price: float) -> Optional[
+    Tuple[float, dict]]:
     quote_response = await get_quote(token, amount, buy)
 
     if buy:
-        return get_price_in_usd_buy(quote_response, amount, sol_price)
+        return get_price_in_usd_buy(quote_response, amount, sol_price), quote_response
     else:
-        return get_price_in_usd_sell(quote_response, amount, sol_price)
+        return get_price_in_usd_sell(quote_response, amount, sol_price), quote_response
 
 
 def get_price_in_usd_buy(quote: dict, sol_amount, current_sol_price) -> Optional[float]:

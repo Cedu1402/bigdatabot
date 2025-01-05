@@ -15,11 +15,11 @@ from data.close_volume_data import get_trading_minute
 from data.data_type import convert_columns
 from data.dataset import add_inactive_traders
 from data.feature_engineering import add_features
-from data.redis_helper import get_async_redis, get_sync_redis
+from data.redis_helper import get_sync_redis
 from data.trade_data import get_valid_trades, add_trader_actions_to_dataframe, get_traders
 from database.token_creation_info_table import select_token_creation_info
 from database.token_dataset_table import insert_token_dataset
-from database.token_watch_table import get_token_watch, insert_token_watch, set_end_time
+from database.token_watch_table import get_token_watch, set_end_time
 from database.trade_table import get_trades_by_token
 from dto.token_dataset_model import TokenDataset
 from dto.trade_model import Trade
@@ -110,14 +110,11 @@ async def watch_token(token) -> bool:
     # every minute check if we should buy
     load_dotenv()
     logger.info("Start token watch", extra={"token": str(token)})
-    r = get_async_redis()
-
     logger.info("Check if token already traded", extra={"token": str(token)})
     if check_if_token_done(token):
         return False
-
+    
     queue = Queue(TRADE_QUEUE, connection=get_sync_redis(), default_timeout=9000)
-    insert_token_watch(token, datetime.utcnow(), None)
 
     try:
         logger.info("Load model")

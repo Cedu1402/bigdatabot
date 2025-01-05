@@ -146,12 +146,14 @@ async def buy_token(token: str, max_retry_time: int, max_higher_price: int, real
         return None, None
 
 
-async def execute_sell(token: str, amount: int, sol_client: AsyncClient, wallet: Keypair) -> bool:
+async def execute_sell(token: str, amount: int, sol_client: AsyncClient, wallet: Keypair,
+                       quote_response: Optional[dict]) -> bool:
     try:
-        quote_response = await get_quote(token, amount, False)
         if quote_response is None:
-            logger.error("Failed to fetch quote", extra={'token': token})
-            return False
+            quote_response = await get_quote(token, amount, False)
+            if quote_response is None:
+                logger.error("Failed to fetch quote", extra={'token': token})
+                return False
 
         tx_id = await swap_from_quote(sol_client, wallet, quote_response)
         if tx_id is None:
@@ -170,7 +172,7 @@ async def execute_sell(token: str, amount: int, sol_client: AsyncClient, wallet:
         return False
 
 
-async def sell_token(token: str, amount: int, max_retry_time: int) -> bool:
+async def sell_token(token: str, amount: int, max_retry_time: int, quote: dict, is_profit: bool) -> bool:
     sol_client, wallet, _ = setup_buy()
     start_time = datetime.now()
     while True:
@@ -178,8 +180,10 @@ async def sell_token(token: str, amount: int, max_retry_time: int) -> bool:
             logger.error("Failed to sell token in time", extra={'token': token, 'time': max_retry_time})
             return False
 
-        sell_success = await execute_sell(token, amount, sol_client, wallet)
+        sell_success = await execute_sell(token, amount, sol_client, wallet, quote)
         if not sell_success:
+            if is_profit:
+                return False
             await sleep(5)
         else:
             logger.info("Sold token in time", extra={'token': token})

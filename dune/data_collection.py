@@ -21,7 +21,7 @@ async def collect_test_data(token: str, use_cache: bool) -> Tuple[pd.DataFrame, 
     volume_close_1m = await get_close_volume_1m([token],
                                                 {token: launch_time},
                                                 use_cache,
-                                                PRODUCTION_TEST_PRICE)
+                                                str(PRODUCTION_TEST_PRICE) + token)
 
     return volume_close_1m, top_trader_trades
 

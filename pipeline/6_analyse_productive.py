@@ -12,7 +12,7 @@ from ml_model.decision_tree_model import DecisionTreeModel
 
 async def main():
     load_dotenv()
-    token = "DmSjq2BGBWgwucXqpNpJSvVWhas9fZSt6YpP2n82pump"
+    token = "D3dPC3zsj6XvfoNDRd61vwJmad8TMRwYDmRhS2Vpump"
     config = dict()
     config[BIN_AMOUNT_KEY] = 10
     model = DecisionTreeModel(config)
