@@ -2,6 +2,7 @@ import os.path
 from typing import List, Dict, Tuple, Optional
 
 import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
 
 from constants import BIN_AMOUNT_KEY, PRICE_PCT_CHANGE, BUY_VOLUME_PCT_CHANGE, SELL_VOLUME_PCT_CHANGE, \
@@ -33,7 +34,13 @@ class DecisionTreeModel(BaseModel):
         return self.columns
     
     def build_model(self):
-        self.model = DecisionTreeClassifier(random_state=RANDOM_SEED, max_depth=10, ccp_alpha=0.01)
+        # self.model = DecisionTreeClassifier(random_state=RANDOM_SEED, max_depth=10, ccp_alpha=0.01)
+        self.model = RandomForestClassifier(
+            random_state=RANDOM_SEED,
+            n_estimators=500,  # Number of trees in the forest
+            max_depth=50,  # Maximum depth of the trees
+            ccp_alpha=0.001  # Complexity parameter for pruning
+        )
 
     def prepare_train_data(self, train: List[pd.DataFrame], val: List[pd.DataFrame], test: List[pd.DataFrame]) -> (
             Tuple)[List[pd.DataFrame], List, List[pd.DataFrame], List, List[pd.DataFrame], List]:

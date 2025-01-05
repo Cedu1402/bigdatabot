@@ -51,7 +51,7 @@ def get_trade_stats() -> Dict[str, float]:
                 SELECT 
                     COUNT(*) AS total_trades,
                     SUM((sell_price - buy_price) / buy_price * %s) AS total_return
-                FROM token_trade_history WHERE buy_time > '2025-01-02 06:40:00' AND sell_price IS NOT NULL
+                FROM token_trade_history WHERE buy_time > '2025-01-05 11:40:00' AND sell_price IS NOT NULL
                 """
                 cursor.execute(query, (INVESTMENT_AMOUNT,))
                 result = cursor.fetchone()
