@@ -147,10 +147,10 @@ async def buy_token(token: str, max_retry_time: int, max_higher_price: int, real
 
 
 async def execute_sell(token: str, amount: int, sol_client: AsyncClient, wallet: Keypair,
-                       quote_response: Optional[dict]) -> bool:
+                       quote_response: Optional[dict], slippage: Optional[int]) -> bool:
     try:
         if quote_response is None:
-            quote_response = await get_quote(token, amount, False)
+            quote_response = await get_quote(token, amount, False, slippage)
             if quote_response is None:
                 logger.error("Failed to fetch quote", extra={'token': token})
                 return False
@@ -175,15 +175,21 @@ async def execute_sell(token: str, amount: int, sol_client: AsyncClient, wallet:
 async def sell_token(token: str, amount: int, max_retry_time: int, quote: dict, is_profit: bool) -> bool:
     sol_client, wallet, _ = setup_buy()
     start_time = datetime.now()
+    slippage = 1000
     while True:
         if (start_time - datetime.now()).total_seconds() > max_retry_time:
             logger.error("Failed to sell token in time", extra={'token': token, 'time': max_retry_time})
             return False
 
-        sell_success = await execute_sell(token, amount, sol_client, wallet, quote)
+        sell_success = await execute_sell(token, amount, sol_client, wallet, quote, slippage)
         if not sell_success:
+            logger.info("Failed to sell token", extra={'token': token})
+            
             if is_profit:
                 return False
+            else:
+                slippage = 1000 * 2 if slippage < 6000 else 6000  # higher slippage when selling to 60% avoiding issue when coin nukes hard to not be able to sell anymore.
+
             await sleep(5)
         else:
             logger.info("Sold token in time", extra={'token': token})

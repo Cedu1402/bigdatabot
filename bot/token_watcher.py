@@ -19,7 +19,7 @@ from data.redis_helper import get_sync_redis
 from data.trade_data import get_valid_trades, add_trader_actions_to_dataframe, get_traders
 from database.token_creation_info_table import select_token_creation_info
 from database.token_dataset_table import insert_token_dataset
-from database.token_watch_table import get_token_watch, set_end_time
+from database.token_watch_table import get_token_watch, set_end_time, insert_token_watch
 from database.trade_table import get_trades_by_token
 from dto.token_dataset_model import TokenDataset
 from dto.trade_model import Trade
@@ -110,10 +110,14 @@ async def watch_token(token) -> bool:
     # every minute check if we should buy
     load_dotenv()
     logger.info("Start token watch", extra={"token": str(token)})
-    logger.info("Check if token already traded", extra={"token": str(token)})
+    logger.info("Check if token already watched", extra={"token": str(token)})
+
     if check_if_token_done(token):
         return False
-    
+
+    logger.info("Mark token for watch", extra={"token": str(token)})
+    insert_token_watch(token, datetime.utcnow(), None)
+
     queue = Queue(TRADE_QUEUE, connection=get_sync_redis(), default_timeout=9000)
 
     try:
@@ -161,12 +165,15 @@ async def watch_token(token) -> bool:
                 # predict
                 logger.info("Prepare data for model prediction", extra={"token": str(token)})
                 prediction_data, _ = model.prepare_prediction_data(copy.deepcopy([df]), False)
+                logger.info("Make prediction for tradeing minute")
                 prediction = model.predict(prediction_data)
+                logger.info("Prediction for trading minute done")
 
                 # start trading task and exit
                 if prediction[0]:
                     logger.info("Start trader watcher", extra={"token": str(token), "trading_minute": trading_minute})
                     queue.enqueue(watch_trade, token)
+                    logger.info("Added trade watcher", extra={"token": str(token)})
                     return True
                 else:
                     logger.info("No buy signal found by model", extra={"token": str(token)})

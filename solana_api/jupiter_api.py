@@ -68,13 +68,13 @@ def get_price_in_usd_sell(quote: dict, token_amount, current_sol_price) -> Optio
     return token_price_in_usd
 
 
-async def get_quote(token: str, amount: int, buy: bool) -> Optional[Any]:
+async def get_quote(token: str, amount: int, buy: bool, slippage: Optional[int] = 1000) -> Optional[Any]:
     url = 'https://quote-api.jup.ag/v6/quote'
     params = {
         'inputMint': SOL_MINT if buy else token,
         'outputMint': token if buy else SOL_MINT,
         'amount': amount,
-        'slippageBps': 1000,
+        'slippageBps': 1000 if slippage is None else slippage,
     }
     return await make_http_request_with_retry(RETRY_HTTP, RETRY_DELAY, "GET", url, params=params)
 

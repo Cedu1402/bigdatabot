@@ -15,7 +15,7 @@ from constants import TOKEN_QUEUE, SOL_RPC, SUBSCRIPTION_MAP, \
 from data.redis_helper import get_async_redis, get_sync_redis
 from database.event_table import insert_event
 from database.token_creation_info_table import select_token_creation_info, insert_token_creation_info
-from database.token_watch_table import token_watch_exists, insert_token_watch
+from database.token_watch_table import token_watch_exists
 from database.trade_table import insert_trade
 from env_data.get_env_value import get_env_value
 from solana_api.solana_data import get_latest_user_trade
@@ -91,7 +91,7 @@ async def get_trader_form_event(event) -> Optional[str]:
 
     trader = subscription_map[sub_id]
     logger.info(f"Received wallet action {trader}", extra={"data": data, "trader": trader})
-    
+
     return trader
 
 
@@ -140,7 +140,6 @@ async def handle_user_event(event):
             # Enqueue a task with some data
             logger.info("Add token to token watch", extra={"trade": trade.to_dict()})
             queue.enqueue(watch_token, trade.token)
-            insert_token_watch(trade.token, datetime.utcnow(), None)
 
     except Exception as e:
         logger.exception("Failed to process message")
