@@ -7,12 +7,27 @@ import aiohttp
 from birdeye_api.api_limit import check_api_limit
 from constants import BIRDEYE_KEY
 from env_data.get_env_value import get_env_value
+from solana_api.jupiter_api import SOL_MINT
 
 logger = logging.getLogger(__name__)
 
 
-async def get_traded_tokens_of_trader(trader: str, start_date: datetime, end_date: datetime):
-    pass
+async def get_traded_tokens_of_trader(trader: str, start_date: datetime, end_date: datetime, api_limit: bool = False) -> \
+        List[str]:
+    trades = await get_trader_trades(trader, start_date, end_date, api_limit)
+    tokens = set()
+
+    for trade in trades:
+        buy_token = trade['quote']["symbol"]
+        sell_token = trade['base']['symbol']
+
+        if buy_token != SOL_MINT:
+            tokens.add(buy_token)
+
+        if sell_token != SOL_MINT:
+            tokens.add(sell_token)
+
+    return list(tokens)
 
 
 def validate_response(data: dict, trader: str) -> Tuple[bool, Optional[Dict]]:
