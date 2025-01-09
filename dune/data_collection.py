@@ -17,7 +17,7 @@ async def collect_test_data(token: str, use_cache: bool) -> Tuple[pd.DataFrame, 
                                                      {"min_token_age_h": 2,
                                                       "token": token},
                                                      use_cache)
-    launch_time, _ = await get_token_create_info(token, skip_counter=True)
+    launch_time, _ = await get_token_create_info(token, api_limit=True)
     volume_close_1m = await get_close_volume_1m([token],
                                                 {token: launch_time},
                                                 use_cache,
@@ -36,7 +36,7 @@ async def load_volume_1m_data_form_brideye(tokens: List[str], launch_times: Dict
     all_volume_data = []
     for token in tokens:
         end_time = launch_times[token] + timedelta(hours=4)
-        ohlcv_data = await get_ohlcv(token, launch_times[token], end_time, "1m", check_counter=False)
+        ohlcv_data = await get_ohlcv(token, launch_times[token], end_time, "1m", api_limit=False)
         volume_data = ohlcv_to_dataframe(ohlcv_data)
         all_volume_data.append(volume_data)
 

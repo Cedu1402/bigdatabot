@@ -5,9 +5,9 @@ from typing import Optional
 import aiohttp
 import pandas as pd
 
+from birdeye_api.api_limit import check_api_limit
 from constants import BIRDEYE_KEY, TRADING_MINUTE_COLUMN, TOKEN_COlUMN, TOTAL_VOLUME_COLUMN, \
-    PRICE_COLUMN, BIRD_EYE_COUNTER
-from data.redis_helper import get_async_redis
+    PRICE_COLUMN
 from env_data.get_env_value import get_env_value
 
 logger = logging.getLogger(__name__)
@@ -49,7 +49,8 @@ async def get_time_frame_ohlcv(token: str, trading_minute: datetime, window: int
         return None
 
 
-async def get_ohlcv(token: str, start_date: datetime, end_date: datetime, interval: str, check_counter: bool = True) -> pd.DataFrame:
+async def get_ohlcv(token: str, start_date: datetime, end_date: datetime, interval: str,
+                    api_limit: bool = True) -> pd.DataFrame:
     """
        Fetches OHLCV (Open, High, Low, Close, Volume) data for a specific token within a given time range
        from the BirdEye API.
@@ -59,7 +60,7 @@ async def get_ohlcv(token: str, start_date: datetime, end_date: datetime, interv
            start_date (datetime): The start date and time of the requested data range (UTC).
            end_date (datetime): The end date and time of the requested data range (UTC).
            interval (str): The interval type for the data (e.g., '1m', '5m', '1h', '1d').
-           check_counter (bool): Checks if birdeye limit is reached or not.
+           api_limit (bool): Checks if birdeye limit is reached or not.
 
        Returns:
            dict: The JSON response from the BirdEye API containing OHLCV data.
@@ -76,7 +77,7 @@ async def get_ohlcv(token: str, start_date: datetime, end_date: datetime, interv
        """
 
     url = "https://public-api.birdeye.so/defi/ohlcv"
-    r = get_async_redis()
+
     key = get_env_value(BIRDEYE_KEY)
     headers = {
         "accept": "application/json",
@@ -90,16 +91,7 @@ async def get_ohlcv(token: str, start_date: datetime, end_date: datetime, interv
         "time_to": int(end_date.timestamp())
     }
 
-    if check_counter:
-        await r.incr(BIRD_EYE_COUNTER)
-        counter = await r.get(BIRD_EYE_COUNTER)
-
-        if counter is None:
-            counter = 1
-
-        if int(counter) >= 50000:
-            logger.error("Brideye limit reached!!!")
-            raise Exception("Brideye limit reached!!!")
+    await check_api_limit(api_limit)
 
     async with aiohttp.ClientSession() as session:
         async with session.get(url, headers=headers, params=params) as response:

@@ -1,5 +1,7 @@
 import asyncio
 import copy
+from datetime import datetime
+from typing import Optional
 
 from dotenv import load_dotenv
 
@@ -10,9 +12,7 @@ from database.token_dataset_table import get_token_datasets_by_token
 from ml_model.decision_tree_model import DecisionTreeModel
 
 
-async def main():
-    load_dotenv()
-    token = "D3dPC3zsj6XvfoNDRd61vwJmad8TMRwYDmRhS2Vpump"
+def check_token(token: str):
     config = dict()
     config[BIN_AMOUNT_KEY] = 10
     model = DecisionTreeModel(config)
@@ -45,6 +45,18 @@ async def main():
     predictions = model.predict(validation_x)
 
     assert prod_predictions == predictions
+
+
+def check_time_frame(date_from, date_to):
+    pass
+
+
+async def main(token: Optional[str], date_form: Optional[datetime], date_to: Optional[datetime]):
+    load_dotenv()
+    if token is not None:
+        check_token(token)
+    else:
+        check_time_frame(date_form, date_to)
 
 
 if __name__ == '__main__':
