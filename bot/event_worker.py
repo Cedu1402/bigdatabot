@@ -8,13 +8,11 @@ from dotenv import load_dotenv
 from rq import Queue
 from solders.pubkey import Pubkey
 
-from birdeye_api.token_creation_endpoint import get_token_create_info
+from blockchain_token.token_creation import check_token_create_info_age_now
 from bot.token_watcher import watch_token
-from constants import TOKEN_QUEUE, SOL_RPC, SUBSCRIPTION_MAP, \
-    PUMP_DOT_FUN_AUTHORITY
+from constants import TOKEN_QUEUE, SOL_RPC, SUBSCRIPTION_MAP
 from data.redis_helper import get_async_redis, get_sync_redis
 from database.event_table import insert_event
-from database.token_creation_info_table import select_token_creation_info, insert_token_creation_info
 from database.token_watch_table import token_watch_exists
 from database.trade_table import insert_trade
 from env_data.get_env_value import get_env_value
@@ -23,39 +21,6 @@ from structure_log.logger_setup import setup_logger, ensure_logging_flushed
 
 setup_logger("event_worker")
 logger = logging.getLogger(__name__)
-
-
-async def load_token_create_info(token: str) -> Optional[Tuple[datetime, str]]:
-    try:
-        token_create_time, owner = await get_token_create_info(token)
-        return token_create_time, owner
-    except Exception as e:
-        logger.exception(f"Failed to get token create time")
-        return None
-
-
-async def check_token_create_info(token: str) -> bool:
-    token_create_info = select_token_creation_info(token)
-    if token_create_info is None:
-        token_create_info = await load_token_create_info(token)
-        if token_create_info is None:
-            logger.info("Failed to load token create info")
-            return False
-
-        token_create_time, owner = token_create_info
-        insert_token_creation_info(token, owner, token_create_time)
-
-    token_create_time, owner = token_create_info
-
-    if owner != PUMP_DOT_FUN_AUTHORITY:
-        logger.info("Not a pump fun token", extra={'token': token, 'owner': owner})
-        return False
-
-    if (datetime.utcnow() - token_create_time).total_seconds() > 120 * 60:
-        logger.info("Token older than two horus, skip", extra={'token': token})
-        return False
-
-    return True
 
 
 async def get_subscription_map(r: redis.asyncio.Redis) -> Optional[Dict[int, str]]:
@@ -126,7 +91,7 @@ async def handle_user_event(event):
         token_is_watched = token_watch_exists(trade.token)
         logger.info("Token already in list", extra={"token_exist": token_is_watched})
 
-        result = await check_token_create_info(trade.token)
+        result = await check_token_create_info_age_now(trade.token)
         logger.info(f"check_token_create_info returned", extra={"result": result})
         if not result:
             logger.info("Skip token create info check is false")

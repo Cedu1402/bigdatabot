@@ -95,18 +95,28 @@ WITH filtered_traders AS (SELECT trader_id
                                   LEFT JOIN
                               sell_summary AS ss ON ss.account_mint = bs.account_mint AND ss.trader_id = bs.trader_id
                                   LEFT JOIN
-                              closest_transactions AS ct ON ct.account_mint = bs.account_mint
+                              closest_transactions AS ct ON ct.account_mint = bs.account_mint),
+     proftiable_data as (SELECT *,
+                                CASE
+                                    WHEN profit_loss > 0 THEN 1
+                                    ELSE 0
+                                    END AS profitable,
+                                CASE
+                                    WHEN profit_loss >= (total_sol_spent * 2.1) THEN 1
+                                    ELSE 0
+                                    END as win_hit
+                         FROM full_pnl_result
+                         WHERE total_sol_spent > 0)
+SELECT trader_id,
+       SUM(total_sol_spent)                                                   AS total_sol_spent,
+       SUM(profit_loss)                                                       AS profit_loss,
+       SUM(profitable)                                                        AS profitable_tokens,
+       COUNT(*)                                                               AS total_tokens,
+       SUM(total_trades)                                                      AS total_trades,
+       CAST(SUM(profitable) AS DOUBLE) / COUNT(*)                             AS win_rate,
+       (SUM(profit_loss) - SUM(total_sol_spent)) / SUM(total_sol_spent) * 100 as win_percentage,
+       SUM(win_hit)                                                           as total_wins,
+       COALESCE(SUM(win_hit) * 1.0 / COUNT(*), 0)                             AS win_hit_percentage
+FROM proftiable_data
+GROUP BY trader_id
 
-)
-
-SELECT *,
-       CASE
-           WHEN profit_loss > 0 THEN 1
-           ELSE 0
-           END AS profitable,
-       CASE
-           WHEN profit_loss >= (total_sol_spent * 2.1) THEN 1
-           ELSE 0
-           END as win_hit
-FROM full_pnl_result
-WHERE total_sol_spent > 0

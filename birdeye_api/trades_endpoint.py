@@ -3,13 +3,48 @@ from datetime import datetime
 from typing import List, Dict, Tuple, Optional
 
 import aiohttp
+import pandas as pd
 
 from birdeye_api.api_limit import check_api_limit
+from blockchain_token.token_creation import check_token_create_info_date_range
 from constants import BIRDEYE_KEY
 from env_data.get_env_value import get_env_value
 from solana_api.jupiter_api import SOL_MINT
 
 logger = logging.getLogger(__name__)
+
+
+def extract_trade_data(trade: dict) -> Optional[dict]:
+    if trade["base"]["address"] != SOL_MINT and trade["quote"]["address"] != SOL_MINT:
+        return None
+
+    buy = trade["base"]["address"] == SOL_MINT
+
+    extracted_data = {
+        "trader_id": trade["owner"],
+        "token_sold_amount": trade["base"]["amount"],
+        "token_bought_amount": trade["quote"]["amount"],
+        "token": trade["quote"]["address"] if buy else trade["base"]["address"],
+        "block_time": datetime.utcfromtimestamp(trade["block_unix_time"]),
+        "buy": buy,
+        "launch_time": None,
+    }
+
+    return extracted_data
+
+
+async def get_top_trader_trades_from_birdeye(traders: List[str]) -> pd.DataFrame:
+    pass
+
+
+async def get_relevant_tokens(tokens: List[str], start_date: datetime, end_date: datetime) -> List[str]:
+    relevant_tokens = []
+    for token in tokens:
+        result = await check_token_create_info_date_range(token, start_date, end_date)
+        if result:
+            relevant_tokens.append(token)
+
+    return relevant_tokens
 
 
 async def get_traded_tokens_of_trader(trader: str, start_date: datetime, end_date: datetime, api_limit: bool = False) -> \
