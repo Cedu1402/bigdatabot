@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import List, Dict, Tuple, Optional
 
 import aiohttp
-import pandas as pd
 
 from birdeye_api.api_limit import check_api_limit
 from blockchain_token.token_creation import check_token_create_info_date_range
@@ -33,36 +32,94 @@ def extract_trade_data(trade: dict) -> Optional[dict]:
     return extracted_data
 
 
-async def get_top_trader_trades_from_birdeye(traders: List[str]) -> pd.DataFrame:
-    pass
+async def get_all_trader_trades(traders: List[str], start_date: datetime, end_date: datetime,
+                                api_limit: bool = False):
+    trader_trades = list()
+    for trader in traders:
+        trades = await get_trader_trades(trader, start_date, end_date, api_limit)
+        trader_trades.extend(trades)
+
+    return trader_trades
 
 
-async def get_relevant_tokens(tokens: List[str], start_date: datetime, end_date: datetime) -> List[str]:
+def get_structured_trade_list(trades: List[dict]) -> List[dict]:
+    structured_trader_trades = list()
+    for trade in trades:
+        trade_data = extract_trade_data(trade)
+        structured_trader_trades.append(trade_data)
+    return structured_trader_trades
+
+
+async def get_top_trader_trades_from_birdeye(traders: List[str], start_date: datetime, end_date: datetime,
+                                             api_limit: bool = False) -> pd.DataFrame:
+
+    logger.info("Starting to fetch top trader trades from Birdeye API")
+
+    # Step 1: Get trades for all traders
+    logger.info("Fetching trades for all traders...")
+    trader_trades = await get_all_trader_trades(traders, start_date, end_date, api_limit)
+    logger.info(f"Fetched {len(trader_trades)} trades from all traders.")
+
+    # Step 2: Structure the trade data
+    logger.info("Structuring trade data...")
+    structured_trader_trades = get_structured_trade_list(trader_trades)
+    logger.info(f"Structured {len(structured_trader_trades)} trades.")
+
+    # Step 3: Extract relevant tokens
+    logger.info("Extracting relevant tokens...")
+    tokens = get_tokens(structured_trader_trades)
+    relevant_tokens = await get_relevant_tokens(tokens, start_date=start_date, end_date=end_date)
+    logger.info(f"Identified {len(relevant_tokens)} relevant tokens.")
+
+    # Step 4: Filter out irrelevant trades
+    logger.info("Filtering out irrelevant trades...")
+    relevant_trades = filter_out_irrelevant_tokens(structured_trader_trades, relevant_tokens)
+    logger.info(f"Filtered down to {len(relevant_trades)} relevant trades.")
+
+    # Step 5: Add token launch date to trades
+    logger.info("Adding launch date to trades...")
+    enriched_trades = add_launch_date_to_trade(relevant_trades, relevant_tokens)
+    logger.info(f"Added launch dates to {len(enriched_trades)} trades.")
+
+    # Step 6: Create a DataFrame
+    logger.info("Creating DataFrame from trades...")
+    dataset = pd.DataFrame(enriched_trades)
+    logger.info(f"Created dataset with {len(dataset)} rows.")
+
+    # Step 7: Return the dataset
+    return dataset
+
+
+def add_launch_date_to_trade(trades: List[dict], token_data: List[dict]) -> List[dict]:
+    token_launch_data = {token["token"]: token["launch_date"] for token in token_data}
+    for trade in trades:
+        trade_data = extract_trade_data(trade)
+        trade_data["launch_date"] = token_launch_data[trade_data["token"]]
+
+    return trades
+
+
+def filter_out_irrelevant_tokens(trades: List[dict], tokens: List[dict]) -> List[dict]:
+    relevant_tokens = {token["token"]: True for token in tokens}
+    relevant_trades = list()
+    for trade in trades:
+        if trade["token"] in relevant_tokens:
+            relevant_trades.append(trade)
+    return relevant_trades
+
+
+def get_tokens(trades: List[dict]) -> List[str]:
+    return [token["token"] for token in trades]
+
+
+async def get_relevant_tokens(tokens: List[str], start_date: datetime, end_date: datetime) -> List[dict]:
     relevant_tokens = []
     for token in tokens:
-        result = await check_token_create_info_date_range(token, start_date, end_date)
+        result, launch_date = await check_token_create_info_date_range(token, start_date, end_date)
         if result:
-            relevant_tokens.append(token)
+            relevant_tokens.append({'token': token, 'launch_date': launch_date})
 
     return relevant_tokens
-
-
-async def get_traded_tokens_of_trader(trader: str, start_date: datetime, end_date: datetime, api_limit: bool = False) -> \
-        List[str]:
-    trades = await get_trader_trades(trader, start_date, end_date, api_limit)
-    tokens = set()
-
-    for trade in trades:
-        buy_token = trade['quote']["symbol"]
-        sell_token = trade['base']['symbol']
-
-        if buy_token != SOL_MINT:
-            tokens.add(buy_token)
-
-        if sell_token != SOL_MINT:
-            tokens.add(sell_token)
-
-    return list(tokens)
 
 
 def validate_response(data: dict, trader: str) -> Tuple[bool, Optional[Dict]]:

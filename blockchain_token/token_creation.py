@@ -54,19 +54,20 @@ def check_pump_fun_token(owner: str, token: str) -> bool:
     return True
 
 
-async def check_token_create_info_date_range(token: str, start_date: datetime, end_date: datetime) -> bool:
+async def check_token_create_info_date_range(token: str, start_date: datetime, end_date: datetime) -> Tuple[
+    bool, Optional[datetime]]:
     token_create_time, owner = await get_token_create_info(token)
     if token_create_time is None:
-        return False
+        return False, None
 
     if not check_pump_fun_token(owner, token):
-        return False
+        return False, None
 
     if not (start_date <= token_create_time <= end_date):
         logger.info(
             "Token creation time is outside the specified date range, skip",
             extra={'token': token, 'token_create_time': token_create_time}
         )
-        return False
+        return False, None
 
-    return True
+    return True, start_date
