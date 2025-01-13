@@ -3,10 +3,12 @@ from datetime import datetime
 from typing import List, Dict, Tuple, Optional
 
 import aiohttp
+import pandas as pd
 
 from birdeye_api.api_limit import check_api_limit
 from blockchain_token.token_creation import check_token_create_info_date_range
-from constants import BIRDEYE_KEY
+from cache_helper import get_cache_file_data, write_data_to_cache
+from constants import BIRDEYE_KEY, TOP_TRADER_TRADES_BIRDEYE
 from env_data.get_env_value import get_env_value
 from solana_api.jupiter_api import SOL_MINT
 
@@ -35,7 +37,8 @@ def extract_trade_data(trade: dict) -> Optional[dict]:
 async def get_all_trader_trades(traders: List[str], start_date: datetime, end_date: datetime,
                                 api_limit: bool = False):
     trader_trades = list()
-    for trader in traders:
+    for index, trader in enumerate(traders):
+        logger.info(f"Getting trades for {index + 1} of {len(traders)}")
         trades = await get_trader_trades(trader, start_date, end_date, api_limit)
         trader_trades.extend(trades)
 
@@ -51,9 +54,14 @@ def get_structured_trade_list(trades: List[dict]) -> List[dict]:
 
 
 async def get_top_trader_trades_from_birdeye(traders: List[str], start_date: datetime, end_date: datetime,
+                                             use_cache: bool = True,
                                              api_limit: bool = False) -> pd.DataFrame:
 
     logger.info("Starting to fetch top trader trades from Birdeye API")
+    if use_cache:
+        result_data = get_cache_file_data(TOP_TRADER_TRADES_BIRDEYE)
+        if result_data is not None:
+            return result_data
 
     # Step 1: Get trades for all traders
     logger.info("Fetching trades for all traders...")
@@ -85,6 +93,8 @@ async def get_top_trader_trades_from_birdeye(traders: List[str], start_date: dat
     logger.info("Creating DataFrame from trades...")
     dataset = pd.DataFrame(enriched_trades)
     logger.info(f"Created dataset with {len(dataset)} rows.")
+
+    write_data_to_cache(TOP_TRADER_TRADES_BIRDEYE, dataset)
 
     # Step 7: Return the dataset
     return dataset

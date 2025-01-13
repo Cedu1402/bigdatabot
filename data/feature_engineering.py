@@ -7,7 +7,8 @@ import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 
 from constants import TOKEN_COlUMN, TRADING_MINUTE_COLUMN, PRICE_COLUMN, PRICE_PCT_CHANGE, \
-    MARKET_CAP_USD, PERCENTAGE_OF_1_MILLION_MARKET_CAP, TOTAL_VOLUME_COLUMN, TOTAL_VOLUME_PCT_CHANGE
+    MARKET_CAP_USD, PERCENTAGE_OF_1_MILLION_MARKET_CAP, TOTAL_VOLUME_COLUMN, TOTAL_VOLUME_PCT_CHANGE, \
+    AGE_IN_MINUTES_COLUMN, LAUNCH_DATE_COLUMN, CUMULATIVE_VOLUME
 from data.combine_price_trades import get_categories_from_dataclass, TraderState
 
 logger = logging.getLogger(__name__)
@@ -135,6 +136,19 @@ def calculate_pct_change(data, column, token_mask):
     return pct_change.replace([np.inf, -np.inf], np.nan).fillna(0.0).astype('float64')
 
 
+def add_launch_date(trades: pd.DataFrame, price_data: pd.DataFrame) -> pd.DataFrame:
+    trades_unique = trades[[TOKEN_COlUMN, LAUNCH_DATE_COLUMN]].drop_duplicates()
+    price_data = pd.merge(price_data, trades_unique, on=TOKEN_COlUMN, how='left')
+    return price_data
+
+
+def add_cumulative_volume(data: pd.DataFrame) -> pd.DataFrame:
+    # Now calculate the cumulative sum of the volume for each token based on the timestep
+    data[CUMULATIVE_VOLUME] = data.groupby(TOKEN_COlUMN)[TOTAL_VOLUME_COLUMN].cumsum()
+
+    return data
+
+
 def add_features(data: pd.DataFrame) -> pd.DataFrame:
     data = data.sort_values(by=[TOKEN_COlUMN, TRADING_MINUTE_COLUMN])  # Sort by token and then by time
 
@@ -143,11 +157,15 @@ def add_features(data: pd.DataFrame) -> pd.DataFrame:
         axis=1
     )
 
+    data = add_cumulative_volume(data)
+
     for token in data[TOKEN_COlUMN].unique():
         token_mask = (data[TOKEN_COlUMN] == token)
         data.loc[token_mask, PRICE_PCT_CHANGE] = calculate_pct_change(data, PRICE_COLUMN, token_mask)
         data.loc[token_mask, TOTAL_VOLUME_PCT_CHANGE] = calculate_pct_change(data, TOTAL_VOLUME_COLUMN, token_mask)
-
-        data.loc[token_mask, PERCENTAGE_OF_1_MILLION_MARKET_CAP] = data[MARKET_CAP_USD] / 1_000_000
+        data.loc[token_mask, PERCENTAGE_OF_1_MILLION_MARKET_CAP] = data.loc[token_mask, MARKET_CAP_USD] / 1_000_000
+        data.loc[token_mask, AGE_IN_MINUTES_COLUMN] = (data.loc[token_mask, TRADING_MINUTE_COLUMN] - data.loc[
+            token_mask,
+            LAUNCH_DATE_COLUMN]).dt.total_seconds() / 60
 
     return data

@@ -1,14 +1,15 @@
 from datetime import timedelta, datetime
-from typing import Tuple, List, Optional, Union, Dict
+from typing import Tuple, List, Dict
 
 import pandas as pd
 
 from birdeye_api.ohlcv_endpoint import get_ohlcv, ohlcv_to_dataframe
 from birdeye_api.token_creation_endpoint import get_token_create_info
-from cache_helper import cache_exists, get_cache_data, write_data_to_cache
+from birdeye_api.trades_endpoint import get_top_trader_trades_from_birdeye
+from cache_helper import write_data_to_cache, get_cache_file_data
 from constants import PRODUCTION_TEST_TRADES, PRODUCTION_TEST_PRICE, TOKEN_CLOSE_VOLUME_1M_QUERY, \
     CURRENT_CLOSE_VOLUME_1M_QUERY
-from dune.dune_queries import get_list_of_trades, get_current_trade_list_query
+from dune.dune_queries import get_current_trade_list_query, get_top_traders
 from dune.query_request import get_query_result_with_params
 
 
@@ -24,12 +25,6 @@ async def collect_test_data(token: str, use_cache: bool) -> Tuple[pd.DataFrame, 
                                                 str(PRODUCTION_TEST_PRICE) + token)
 
     return volume_close_1m, top_trader_trades
-
-
-def get_cache_file_data(query_id: Union[int, str]) -> Optional[pd.DataFrame]:
-    if cache_exists(str(query_id)):
-        return get_cache_data(str(query_id))
-    return None
 
 
 async def load_volume_1m_data_form_brideye(tokens: List[str], launch_times: Dict[str, datetime]) -> pd.DataFrame:
@@ -64,7 +59,13 @@ def get_tokens_and_launch_dict(top_trader_trades: pd.DataFrame) -> Tuple[List[st
 
 
 async def collect_all_data(use_cache: bool) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    top_trader_trades = get_list_of_trades(use_cache)
+    end_date = datetime.utcnow() - timedelta(hours=10)
+    start_date = end_date - timedelta(days=76)
+
+    top_traders = get_top_traders(use_cache)
+
+    top_trader_trades = await get_top_trader_trades_from_birdeye(top_traders["trader_id"], start_date, end_date)
+
     tokens, launch_times = get_tokens_and_launch_dict(top_trader_trades)
     volume_close_1m = await get_close_volume_1m(tokens, launch_times, use_cache, TOKEN_CLOSE_VOLUME_1M_QUERY)
 

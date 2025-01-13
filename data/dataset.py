@@ -8,7 +8,7 @@ from data.cache_data import read_cache_data_with_config, save_cache_data_with_co
 from data.combine_price_trades import add_trader_info_to_price_data
 from data.data_split import balance_data, split_data
 from data.data_type import convert_columns
-from data.feature_engineering import add_features
+from data.feature_engineering import add_features, add_launch_date
 from data.label_data import label_dataset
 from data.sliding_window import create_sliding_windows
 from data.solana_trader import get_trader_from_trades
@@ -22,17 +22,21 @@ def prepare_steps(top_trader_trades: pd.DataFrame, volume_close_1m: pd.DataFrame
     # Get traders
     logger.info("Get trader")
     traders = get_trader_from_trades(top_trader_trades)
-    # logger.info("Fill missing data")
-    # # Finish volume data if tokens had no tx in some minutes
-    # volume_close_1m = add_missing_minutes(volume_close_1m)
+
     logger.info("Add trader labels")
     # Add trader info to volume data
     full_data = add_trader_info_to_price_data(volume_close_1m, traders, top_trader_trades)
+
+    logger.info("Add launch date to data")
+    full_data = add_launch_date(top_trader_trades, full_data)
+
     logger.info("Adjust type of columns")
     full_data = convert_columns(full_data)
+
     # Add features
     logger.info("Add features")
     full_data = add_features(full_data)
+
     if label_data:
         logger.info("Add labels")
         # Add labels for trading info (good buy or not)

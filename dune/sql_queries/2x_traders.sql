@@ -1,49 +1,30 @@
 WITH
-    profitable AS (
-        SELECT
-            *,
-            CASE
-                WHEN profit_loss > 0 THEN 1
-                ELSE 0
-            END AS profitable,
-            CASE
-                WHEN profit_loss => (total_sol_spent * 2.1) THEN 1
-                ELSE 0
-            END as win_hit
-        FROM
-            query_4499255
-        WHERE
-            total_sol_spent > 0
-    ),
-    aggregated AS (
-        SELECT
-            trader_id,
-            SUM(total_sol_spent) AS total_sol_spent,
-            SUM(profit_loss) AS profit_loss,
-            SUM(profitable) AS profitable_tokens,
-            COUNT(*) AS totoal_tokens,
-            SUM(total_trades) AS total_trades,
-            CAST(SUM(profitable) AS DOUBLE) / COUNT(*) AS win_rate,
-            (SUM(profit_loss) - SUM(total_sol_spent)) / SUM(total_sol_spent) * 100 as win_percentage,
-            SUM(win_hit) as total_wins,
-            COUNT(*) / NULLIF(SUM(win_hit), 0) as win_hit_percentage
-        FROM
-            profitable
-        GROUP BY
-            trader_id
-    )
+max_values AS (
+    SELECT
+        MAX(total_tokens) as max_tokens,
+        MAX(profit_loss) as max_profit_loss
+    FROM dune.testnet3232.result_bot_filtered_pnl_1_week
+)
 SELECT
-    a.*
+    a.*,
+    -- Composite Score Calculation
+    (0.3 * a.win_rate) as composit_win_rate,
+    (0.3 * (a.total_tokens / mv.max_tokens)) as composit_total_tokens,
+    (0.3 * (a.profit_loss / mv.max_profit_loss)) as composit_profit_loss,
+    (0.3 * a.win_hit_percentage) as composit_hit_percentage,
+    (0.3 * a.win_rate) +
+    (0.3 * (a.total_tokens / mv.max_tokens)) +
+    (0.3 * (a.profit_loss / mv.max_profit_loss)) +
+    (0.3 * a.win_hit_percentage) AS composite_score
 FROM
-    aggregated as a
-    JOIN solana_utils.latest_balances as lb ON lb.address = a.trader_id
-WHERE
-    a.win_rate < 0.9
-    AND a.profit_loss > 0
+    dune.testnet3232.result_bot_filtered_pnl_1_week as a
+    CROSS JOIN max_values mv
+    JOIN solana_utils.latest_balances lb ON lb.address = a.trader_id
+WHERE a.profit_loss > 0
     AND lb.sol_balance > 1
     AND a.win_percentage >= 100
+    AND a.win_hit_percentage >= 0.5
 ORDER BY
-    a.win_hit_percentage DESC,
-    a.profit_loss DESC
+    total_wins DESC
 LIMIT
-    50;
+    100;

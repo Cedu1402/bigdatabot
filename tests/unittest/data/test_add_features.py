@@ -17,3 +17,4 @@ class TestRunner(unittest.TestCase):
         # Assert
         self.assertEqual(columns + 7, len(actual.columns))
         save_to_pickle(actual, os.path.join(TEST_DATA_FOLDER, "combined_with_features.pkl"))
+
