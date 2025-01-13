@@ -57,6 +57,8 @@ TOTAL_VOLUME_COLUMN = 'total_volume'
 AGE_IN_MINUTES_COLUMN = 'age_in_minutes'
 LAUNCH_DATE_COLUMN = 'LAUNCH_DATE_COLUMN'
 CUMULATIVE_VOLUME = 'cumulative_volume'
+CHANGE_FROM_ATL = 'change_from_atl'
+CHANGE_FROM_ATH = 'change_from_ath'
 
 SOL_PRICE = 170
 MARKET_CAP_USD = 'market_cap_usd'
