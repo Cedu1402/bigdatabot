@@ -56,7 +56,6 @@ def get_structured_trade_list(trades: List[dict]) -> List[dict]:
 async def get_top_trader_trades_from_birdeye(traders: List[str], start_date: datetime, end_date: datetime,
                                              use_cache: bool = True,
                                              api_limit: bool = False) -> pd.DataFrame:
-
     logger.info("Starting to fetch top trader trades from Birdeye API")
     if use_cache:
         result_data = get_cache_file_data(TOP_TRADER_TRADES_BIRDEYE)
@@ -65,17 +64,27 @@ async def get_top_trader_trades_from_birdeye(traders: List[str], start_date: dat
 
     # Step 1: Get trades for all traders
     logger.info("Fetching trades for all traders...")
-    trader_trades = await get_all_trader_trades(traders, start_date, end_date, api_limit)
+    trader_trades = None
+    cache_key = TOP_TRADER_TRADES_BIRDEYE + "trader_trades"
+    if use_cache:
+        trader_trades = get_cache_file_data(cache_key)
+
+    if not use_cache or trader_trades is None:
+        trader_trades = await get_all_trader_trades(traders, start_date, end_date, api_limit)
+        write_data_to_cache(cache_key, trader_trades)
+
     logger.info(f"Fetched {len(trader_trades)} trades from all traders.")
 
     # Step 2: Structure the trade data
     logger.info("Structuring trade data...")
     structured_trader_trades = get_structured_trade_list(trader_trades)
+    structured_trader_trades = [trade for trade in structured_trader_trades if trade is not None]
     logger.info(f"Structured {len(structured_trader_trades)} trades.")
 
     # Step 3: Extract relevant tokens
     logger.info("Extracting relevant tokens...")
     tokens = get_tokens(structured_trader_trades)
+    logger.info(f"Amount of unique tokens {len(tokens)}")
     relevant_tokens = await get_relevant_tokens(tokens, start_date=start_date, end_date=end_date)
     logger.info(f"Identified {len(relevant_tokens)} relevant tokens.")
 
@@ -119,12 +128,18 @@ def filter_out_irrelevant_tokens(trades: List[dict], tokens: List[dict]) -> List
 
 
 def get_tokens(trades: List[dict]) -> List[str]:
-    return [token["token"] for token in trades]
+    tokens = set()
+    for trade in trades:
+        tokens.add(trade["token"])
+
+    return list(tokens)
 
 
 async def get_relevant_tokens(tokens: List[str], start_date: datetime, end_date: datetime) -> List[dict]:
     relevant_tokens = []
-    for token in tokens:
+
+    for index, token in enumerate(tokens):
+        logger.info(f"Check if token is relevant {index + 1} of {len(tokens)}")
         result, launch_date = await check_token_create_info_date_range(token, start_date, end_date)
         if result:
             relevant_tokens.append({'token': token, 'launch_date': launch_date})
@@ -182,6 +197,7 @@ async def get_trader_trades(trader: str, start_date: datetime, end_date: datetim
     all_trades = []
     offset = 0
     limit = 100
+    total_offset = 0
 
     while True:
         params = {
@@ -196,11 +212,15 @@ async def get_trader_trades(trader: str, start_date: datetime, end_date: datetim
 
         async with aiohttp.ClientSession() as session:
             async with session.get(url, headers=headers, params=params) as response:
+                # if offset >= 10000:
+                #     offset = 0
+                #     params["offset"] = offset
 
                 data = await response.json()
                 success, trades = validate_response(data, trader)
                 if not success:
-                    break
+                    # todo add trader to blacklist as bot or split loading into more steps until 20k trades.
+                    return []
 
                 finished = False
                 for trade in trades:

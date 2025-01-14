@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 from typing import Optional, Tuple
 
+from birdeye_api.token_creation_endpoint import get_token_create_info_bird_eye
 from constants import PUMP_DOT_FUN_AUTHORITY
 from database.token_creation_info_table import select_token_creation_info, insert_token_creation_info
 
@@ -10,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 async def load_token_create_info(token: str) -> Optional[Tuple[datetime, str]]:
     try:
-        token_create_time, owner = await get_token_create_info(token)
+        token_create_time, owner = await get_token_create_info_bird_eye(token)
         return token_create_time, owner
     except Exception as e:
         logger.exception(f"Failed to get token create time")

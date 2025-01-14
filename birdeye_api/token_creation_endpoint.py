@@ -10,7 +10,7 @@ from env_data.get_env_value import get_env_value
 from solana_api.solana_data import block_time_stamp_to_datetime
 
 
-async def get_token_create_info(token: str, api_limit: bool = False) -> Tuple[datetime, str]:
+async def get_token_create_info_bird_eye(token: str, api_limit: bool = False) -> Tuple[datetime, str]:
     url = "https://public-api.birdeye.so/defi/token_creation_info"
     r = get_async_redis()
 

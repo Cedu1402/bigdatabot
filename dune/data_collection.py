@@ -4,7 +4,7 @@ from typing import Tuple, List, Dict
 import pandas as pd
 
 from birdeye_api.ohlcv_endpoint import get_ohlcv, ohlcv_to_dataframe
-from birdeye_api.token_creation_endpoint import get_token_create_info
+from birdeye_api.token_creation_endpoint import get_token_create_info_bird_eye
 from birdeye_api.trades_endpoint import get_top_trader_trades_from_birdeye
 from cache_helper import write_data_to_cache, get_cache_file_data
 from constants import PRODUCTION_TEST_TRADES, PRODUCTION_TEST_PRICE, TOKEN_CLOSE_VOLUME_1M_QUERY, \
@@ -18,7 +18,7 @@ async def collect_test_data(token: str, use_cache: bool) -> Tuple[pd.DataFrame, 
                                                      {"min_token_age_h": 2,
                                                       "token": token},
                                                      use_cache)
-    launch_time, _ = await get_token_create_info(token, api_limit=True)
+    launch_time, _ = await get_token_create_info_bird_eye(token, api_limit=True)
     volume_close_1m = await get_close_volume_1m([token],
                                                 {token: launch_time},
                                                 use_cache,
