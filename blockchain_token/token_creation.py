@@ -18,8 +18,9 @@ async def load_token_create_info(token: str) -> Optional[Tuple[datetime, str]]:
         return None
 
 
-async def get_token_create_info(token) -> Optional[Tuple[Optional[datetime], Optional[str]]]:
+async def get_token_create_info(token) -> Tuple[Optional[datetime], Optional[str]]:
     token_create_info = select_token_creation_info(token)
+
     if token_create_info is None:
         token_create_info = await load_token_create_info(token)
         if token_create_info is None:
@@ -55,9 +56,11 @@ def check_pump_fun_token(owner: str, token: str) -> bool:
     return True
 
 
-async def check_token_create_info_date_range(token: str, start_date: datetime, end_date: datetime) -> Tuple[
+async def check_token_create_info_date_range(token: str, start_date: datetime, end_date: datetime,
+                                             create_info: Tuple[Optional[datetime], Optional[str]]) -> Tuple[
     bool, Optional[datetime]]:
-    token_create_time, owner = await get_token_create_info(token)
+    token_create_time, owner = create_info
+
     if token_create_time is None:
         return False, None
 

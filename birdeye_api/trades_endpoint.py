@@ -6,9 +6,10 @@ import aiohttp
 import pandas as pd
 
 from birdeye_api.api_limit import check_api_limit
-from blockchain_token.token_creation import check_token_create_info_date_range
+from blockchain_token.token_creation import check_token_create_info_date_range, get_token_create_info
 from cache_helper import get_cache_file_data, write_data_to_cache
-from constants import BIRDEYE_KEY, TOP_TRADER_TRADES_BIRDEYE
+from constants import BIRDEYE_KEY, TOP_TRADER_TRADES_BIRDEYE, LAUNCH_DATE_COLUMN, TOKEN_COlUMN
+from database.token_creation_info_table import select_token_creation_info_for_list
 from env_data.get_env_value import get_env_value
 from solana_api.jupiter_api import SOL_MINT
 
@@ -85,6 +86,7 @@ async def get_top_trader_trades_from_birdeye(traders: List[str], start_date: dat
     logger.info("Extracting relevant tokens...")
     tokens = get_tokens(structured_trader_trades)
     logger.info(f"Amount of unique tokens {len(tokens)}")
+
     relevant_tokens = await get_relevant_tokens(tokens, start_date=start_date, end_date=end_date)
     logger.info(f"Identified {len(relevant_tokens)} relevant tokens.")
 
@@ -95,7 +97,7 @@ async def get_top_trader_trades_from_birdeye(traders: List[str], start_date: dat
 
     # Step 5: Add token launch date to trades
     logger.info("Adding launch date to trades...")
-    enriched_trades = add_launch_date_to_trade(relevant_trades, relevant_tokens)
+    enriched_trades = add_launch_time_to_trade(relevant_trades, relevant_tokens)
     logger.info(f"Added launch dates to {len(enriched_trades)} trades.")
 
     # Step 6: Create a DataFrame
@@ -109,11 +111,10 @@ async def get_top_trader_trades_from_birdeye(traders: List[str], start_date: dat
     return dataset
 
 
-def add_launch_date_to_trade(trades: List[dict], token_data: List[dict]) -> List[dict]:
-    token_launch_data = {token["token"]: token["launch_date"] for token in token_data}
+def add_launch_time_to_trade(trades: List[dict], token_data: List[dict]) -> List[dict]:
+    token_launch_data = {token["token"]: token[LAUNCH_DATE_COLUMN] for token in token_data}
     for trade in trades:
-        trade_data = extract_trade_data(trade)
-        trade_data["launch_date"] = token_launch_data[trade_data["token"]]
+        trade[LAUNCH_DATE_COLUMN] = token_launch_data[trade["token"]]
 
     return trades
 
@@ -137,12 +138,20 @@ def get_tokens(trades: List[dict]) -> List[str]:
 
 async def get_relevant_tokens(tokens: List[str], start_date: datetime, end_date: datetime) -> List[dict]:
     relevant_tokens = []
+    saved_token_info = select_token_creation_info_for_list(tokens)
 
     for index, token in enumerate(tokens):
         logger.info(f"Check if token is relevant {index + 1} of {len(tokens)}")
-        result, launch_date = await check_token_create_info_date_range(token, start_date, end_date)
+
+        if saved_token_info is not None and token in saved_token_info:
+            create_info = saved_token_info[token]
+        else:
+            create_info = await get_token_create_info(token)
+
+        result, launch_date = await check_token_create_info_date_range(token, start_date, end_date, create_info)
+
         if result:
-            relevant_tokens.append({'token': token, 'launch_date': launch_date})
+            relevant_tokens.append({TOKEN_COlUMN: token, LAUNCH_DATE_COLUMN: launch_date})
 
     return relevant_tokens
 
