@@ -1,10 +1,10 @@
 import random
-from typing import Tuple, List
+from datetime import datetime
+from typing import Tuple, List, Dict
 
 import pandas as pd
-from sklearn.model_selection import train_test_split
 
-from constants import LABEL_COLUMN, TOKEN_COlUMN
+from constants import LABEL_COLUMN, TOKEN_COlUMN, TRADING_MINUTE_COLUMN
 
 
 def flatten_dataframe_list(data: List[pd.DataFrame]) -> pd.DataFrame:
@@ -51,39 +51,45 @@ def balance_data(data: List[pd.DataFrame]) -> List[pd.DataFrame]:
     return result
 
 
-def split_data(data: List[pd.DataFrame], train_ratio: float = 0.7, val_ratio: float = 0.15, test_ratio: float = 0.15) -> \
-        Tuple[List[pd.DataFrame], List[pd.DataFrame], List[pd.DataFrame]]:
-    """
-    Splits the data into training, validation, and test sets.
+def get_split_dates(split_1: float, split_2: float, start_time: datetime, end_time: datetime) -> Tuple[
+    datetime, datetime]:
+    total_duration = end_time - start_time
+    first_split_time = start_time + total_duration * split_1
+    second_split_time = start_time + total_duration * split_2
 
-    Args:
-        data: List[DataFrame] containing the data to be split.
-        train_ratio: The ratio of data to be used for training.
-        val_ratio: The ratio of data to be used for validation.
-        test_ratio: The ratio of data to be used for testing.
+    return first_split_time, second_split_time
 
-    Returns:
-        A tuple containing (train_data, val_data, test_data).
-    """
-    if abs(train_ratio + val_ratio + test_ratio - 1) > 1e-6:
-        raise ValueError("The sum of train_ratio, val_ratio, and test_ratio must be 1.")
 
-    tokens = {df[TOKEN_COlUMN].iloc[0] for df in data}
+def get_start_end_time(data: pd.DataFrame) -> Tuple[datetime, datetime]:
+    start_time = data[TRADING_MINUTE_COLUMN].min()
+    end_time = data[TRADING_MINUTE_COLUMN].max()
+    return start_time, end_time
 
-    # Split into train + remaining (val + test)
-    train_tokens, remaining_tokens = train_test_split(list(tokens), train_size=train_ratio, shuffle=True)
 
-    # Split remaining into validation and test
-    if test_ratio > 0:
-        val_tokens, test_tokens = train_test_split(remaining_tokens,
-                                                   test_size=test_ratio / (val_ratio + test_ratio),
-                                                   shuffle=True)
-    else:
-        val_tokens = remaining_tokens
-        test_tokens = []
+def get_token_splits(token_data: Dict[str, datetime], first_split_time: datetime, second_split_time: datetime) -> Tuple[
+    List[str], List[str], List[str]]:
+    test_set_tokens = [key for key, value in token_data.items() if value <= first_split_time]
 
-    train_data = [df for df in data if df[TOKEN_COlUMN].iloc[0] in train_tokens]
-    val_data = [df for df in data if df[TOKEN_COlUMN].iloc[0] in val_tokens]
-    test_data = [df for df in data if df[TOKEN_COlUMN].iloc[0] in test_tokens]
+    validation_set_tokens = [key for key, value in token_data.items() if
+                             second_split_time >= value > first_split_time]
 
-    return train_data, val_data, test_data
+    train_set_tokens = [key for key, value in token_data.items() if value >= second_split_time]
+
+    return test_set_tokens, validation_set_tokens, train_set_tokens
+
+
+def get_token_filtered_set(data: pd.DataFrame, tokens: List[str]) -> pd.DataFrame:
+    return data[data[TOKEN_COlUMN].isin(tokens)]
+
+
+def split_data(data: pd.DataFrame, token_data: Dict[str, datetime]) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    start_time, end_time = get_start_end_time(data)
+    first_split_time, second_split_time = get_split_dates(0.1, 0.2, start_time, end_time)
+    test_set_tokens, validation_set_tokens, train_set_tokens = get_token_splits(token_data, first_split_time,
+                                                                                second_split_time)
+
+    test_set = get_token_filtered_set(data, test_set_tokens)
+    validation_set = get_token_filtered_set(data, validation_set_tokens)
+    train_set = get_token_filtered_set(data, train_set_tokens)
+
+    return train_set, validation_set, test_set

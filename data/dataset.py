@@ -3,16 +3,17 @@ from typing import List
 
 import pandas as pd
 
-from constants import TRAIN_VAL_TEST_FILE, VALIDATION_FILE, LABEL_COLUMN, PRE_SPLIT_DATA
+from constants import TRAIN_VAL_TEST_FILE, VALIDATION_FILE, LABEL_COLUMN
 from data.cache_data import read_cache_data_with_config, save_cache_data_with_config
 from data.combine_price_trades import add_trader_info_to_price_data
-from data.data_split import balance_data, split_data
+from data.data_split import split_data
 from data.data_type import convert_columns
 from data.feature_engineering import add_features, add_launch_date
 from data.label_data import label_dataset
 from data.sliding_window import create_sliding_windows
 from data.solana_trader import get_trader_from_trades
-from dune.data_collection import collect_all_data, collect_validation_data, collect_test_data
+from dune.data_collection import collect_all_data, collect_validation_data, collect_test_data, \
+    get_tokens_and_launch_dict
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +97,7 @@ async def prepare_test_data(token: str, use_cache: bool, columns: List[str], con
     return full_data_windows
 
 
-def log_class_distribution(train, val, test, class_column='label'):
+def log_class_distribution(train: pd.DataFrame, val: pd.DataFrame, test: pd.DataFrame, class_column='label'):
     """
     Logs the distribution of binary classes in each dataset (train, validation, test).
 
@@ -109,9 +110,13 @@ def log_class_distribution(train, val, test, class_column='label'):
 
     # Helper function to log class distribution
     def class_distribution(dataset, name):
-        distribution = len([0 for item in dataset if item[LABEL_COLUMN].iloc[0]]) / (len(dataset) / 100)
+        true_values = len(dataset[dataset[class_column] == True])
+        false_values = len(dataset[dataset[class_column] == False])
+        true_percentage = (true_values / len(dataset)) * 100
+        false_percentage = (false_values / len(dataset)) * 100
         logger.info(f"{name} set class distribution:")
-        logger.info(f"\n{distribution}\n")  # Log the distribution with a blank line for readability
+        logger.info(
+            f"\nTrue: {true_values} : {true_percentage}% False: {false_values} : {false_percentage}%\n")
 
     # Log class distribution for each set
     class_distribution(train, 'Train')
@@ -126,22 +131,16 @@ async def prepare_dataset(use_cache: bool, config: dict):
 
     logger.info("Load volume/price data from dune")
     volume_close_1m, top_trader_trades = await collect_all_data(use_cache)
+
     logger.info("Prepare data")
+    tokens, launch_times = get_tokens_and_launch_dict(top_trader_trades)
     labeled_data = prepare_steps(top_trader_trades, volume_close_1m, config)
-    logger.info("Split into windows")
-
-    save_cache_data_with_config(PRE_SPLIT_DATA, config, labeled_data)
-
-    # Split volume data into sliding window chunks of 10min
-    labeled_data = create_sliding_windows(labeled_data, config["window_size"], config["step_size"])
 
     logger.info("Split data into train, val, test")
     # Split into train/validation/test set
-    train, val, test = split_data(labeled_data)
+    train, val, test = split_data(labeled_data, launch_times)
+
     log_class_distribution(train, val, test, LABEL_COLUMN)
-    # Balance data into 50% true / 50% false samples
-    logger.info("Balance train set")
-    train = balance_data(train)
 
     logger.info("Save data to cache")
     save_cache_data_with_config(TRAIN_VAL_TEST_FILE, config, (train, val, test))

@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta, datetime
 from typing import Tuple, List, Dict
 
@@ -11,6 +12,8 @@ from constants import PRODUCTION_TEST_TRADES, PRODUCTION_TEST_PRICE, TOKEN_CLOSE
     CURRENT_CLOSE_VOLUME_1M_QUERY
 from dune.dune_queries import get_current_trade_list_query, get_top_traders
 from dune.query_request import get_query_result_with_params
+
+logger = logging.getLogger(__name__)
 
 
 async def collect_test_data(token: str, use_cache: bool) -> Tuple[pd.DataFrame, pd.DataFrame]:
@@ -29,8 +32,9 @@ async def collect_test_data(token: str, use_cache: bool) -> Tuple[pd.DataFrame, 
 
 async def load_volume_1m_data_form_brideye(tokens: List[str], launch_times: Dict[str, datetime]) -> pd.DataFrame:
     all_volume_data = []
-    for token in tokens:
-        end_time = launch_times[token] + timedelta(hours=4)
+    for index, token in enumerate(tokens):
+        logger.info(f"Collecting data for token {index + 1} of {len(tokens)}")
+        end_time = launch_times[token] + timedelta(hours=10)
         ohlcv_data = await get_ohlcv(token, launch_times[token], end_time, "1m", api_limit=False)
         volume_data = ohlcv_to_dataframe(ohlcv_data)
         all_volume_data.append(volume_data)

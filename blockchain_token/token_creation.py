@@ -74,4 +74,4 @@ async def check_token_create_info_date_range(token: str, start_date: datetime, e
         )
         return False, None
 
-    return True, start_date
+    return True, token_create_time

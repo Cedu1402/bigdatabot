@@ -2,6 +2,7 @@ import math
 from dataclasses import dataclass, fields
 from typing import Tuple, List
 
+import numpy as np
 import pandas as pd
 
 from constants import TOKEN_COlUMN, TRADING_MINUTE_COLUMN
@@ -102,7 +103,7 @@ def validate_position(position: float, name: str):
     Raises:
         InvalidPositionError: If position is NaN or Infinite
     """
-    if not isinstance(position, (int, float)):
+    if not isinstance(position, (int, np.int64, float)):
         raise InvalidPositionError(name, position)
     if math.isnan(position):
         raise InvalidPositionError(name, "NaN")
@@ -166,6 +167,13 @@ def update_trader_states(
     return result
 
 
+def prepare_data_types(trades: pd.DataFrame):
+    trades['token_sold_amount'] = pd.to_numeric(trades['token_sold_amount'], errors='coerce')
+    trades['token_bought_amount'] = pd.to_numeric(trades['token_bought_amount'], errors='coerce')
+
+    trades.dropna(inplace=True)
+
+
 def add_trader_info_to_price_data(
         price_data: pd.DataFrame,
         trader: pd.DataFrame,
@@ -184,6 +192,7 @@ def add_trader_info_to_price_data(
     """
     # Prepare data
     result, trades = prepare_timestamps(price_data, trades)
+    prepare_data_types(trades)
 
     # Process each trader
     for trader_id in trader['trader'].unique():
