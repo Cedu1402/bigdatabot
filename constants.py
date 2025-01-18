@@ -60,6 +60,8 @@ CUMULATIVE_VOLUME = 'cumulative_volume'
 CHANGE_FROM_ATL = 'change_from_atl'
 CHANGE_FROM_ATH = 'change_from_ath'
 
+HYPERPARAMETER_TEMP_FILE = "hyperparameter_data"
+
 SOL_PRICE = 170
 MARKET_CAP_USD = 'market_cap_usd'
 PERCENTAGE_OF_1_MILLION_MARKET_CAP = 'percentage_of_1_million_market_cap'
@@ -69,8 +71,21 @@ CACHE_FOLDER = os.path.join(ROOT_DIR, "cache")
 MODEL_FOLDER = os.path.join(ROOT_DIR, "save_models")
 CONFIG_2_FILE = os.path.join(ROOT_DIR, "pipeline", "config", "2_prepare_data_sets.yaml")
 
-BIN_AMOUNT_KEY = "bin_amount"
 PUMP_DOT_FUN_ID = "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P"
 RAYDIUM_ID = "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK"
 PUMP_DOT_FUN_AUTHORITY = "TSLvdd1pWpHVjahSpsvCXUbgwsL3JAcvokwaKt1eokM"
 TOKEN_WATCHER_KEY = "TOKEN_WATCHER_KEY"
+
+# hyper parameter
+MAX_DEPTH = "max_depth"
+MIN_SAMPLES_SPLIT = "min_samples_split"
+MIN_SAMPLES_LEAF = "min_samples_leaf"
+MAX_FEATURES = "max_features"
+CRITERION = "criterion"
+SPLITTER = "splitter"
+MAX_LEAF_NODES = "max_leaf_nodes"
+MIN_IMPURITY_DECREASE = "min_impurity_decrease"
+BIN_AMOUNT_KEY = "bin_amount"
+STEP_SIZE_KEY = "step_size"
+N_FEATURES_TO_SELECT = "n_features_to_select"
+RFE_STEP_SIZE = "rfe_step_size"

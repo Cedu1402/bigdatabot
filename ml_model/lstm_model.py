@@ -13,7 +13,7 @@ from data.data_split import flatten_dataframe_list, get_x_y_of_list
 from data.feature_engineering import normalize_columns, one_hot_encode_trader_columns
 from data.model_data import remove_columns, order_columns
 from data.sliding_window import unroll_data, get_sizes_from_data, roll_back_data
-from ml_model.base_model import BaseModel
+from ml_model.base_model import BaseModelBuilder
 from ml_model.load_model import load_model
 from ml_model.model_evaluation import print_evaluation
 
@@ -63,7 +63,7 @@ def convert_to_tensor(data: List[pd.DataFrame]) -> torch.Tensor:
     return tensor_data
 
 
-class LSTMModel(BaseModel):
+class LSTMModelBuilder(BaseModelBuilder):
 
     def __init__(self, config: Dict):
         super().__init__(config)

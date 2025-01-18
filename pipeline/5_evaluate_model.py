@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from config.config_reader import load_yaml_to_dict
 from constants import BIN_AMOUNT_KEY, CONFIG_2_FILE, INVESTMENT_AMOUNT
 from data.dataset import prepare_validation_data
-from ml_model.decision_tree_model import DecisionTreeModel
+from ml_model.decision_tree_model import DecisionTreeModelBuilderBuilder
 from ml_model.model_evaluation import print_evaluation
 import logging
 logger = logging.getLogger(__name__)
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 async def evaluate_model(use_cache: bool):
     config = dict()
     config[BIN_AMOUNT_KEY] = 10
-    model = DecisionTreeModel(config)
+    model = DecisionTreeModelBuilderBuilder(config)
     model.load_model("simple_tree")
     data_config = load_yaml_to_dict(CONFIG_2_FILE)
     # load current data

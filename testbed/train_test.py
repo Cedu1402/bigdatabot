@@ -6,7 +6,7 @@ from config.config_reader import load_yaml_to_dict
 from constants import RANDOM_SEED, CONFIG_2_FILE
 from data.dataset import prepare_dataset
 from data.random_seed import set_random_seed
-from ml_model.lstm_model import LSTMModel
+from ml_model.lstm_model import LSTMModelBuilder
 
 
 async def train_model(use_cache: bool):
@@ -14,7 +14,7 @@ async def train_model(use_cache: bool):
     train, val, test = await prepare_dataset(use_cache, data_config)
     config = dict()
 
-    model = LSTMModel(config)
+    model = LSTMModelBuilder(config)
     train_x, train_y, val_x, val_y, test_x, test_y = model.prepare_train_data(train, val, test)
     config["columns"] = train_x[0].shape[1]
     config["hidden_size"] = 350

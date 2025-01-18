@@ -23,7 +23,7 @@ from database.token_watch_table import get_token_watch, set_end_time, insert_tok
 from database.trade_table import get_trades_by_token
 from dto.token_dataset_model import TokenDataset
 from dto.trade_model import Trade
-from ml_model.decision_tree_model import DecisionTreeModel
+from ml_model.decision_tree_model import DecisionTreeModelBuilderBuilder
 from structure_log.logger_setup import setup_logger, ensure_logging_flushed
 
 setup_logger("token_watcher")
@@ -124,7 +124,7 @@ async def watch_token(token) -> bool:
         logger.info("Load model")
         config = dict()
         config[BIN_AMOUNT_KEY] = 10
-        model = DecisionTreeModel(config)
+        model = DecisionTreeModelBuilderBuilder(config)
         model.load_model("simple_tree")
         last_trading_minute = None
         while True:

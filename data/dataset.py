@@ -1,9 +1,10 @@
 import logging
+import random
 from typing import List
 
 import pandas as pd
 
-from constants import TRAIN_VAL_TEST_FILE, VALIDATION_FILE, LABEL_COLUMN
+from constants import TRAIN_VAL_TEST_FILE, VALIDATION_FILE, LABEL_COLUMN, TOKEN_COlUMN
 from data.cache_data import read_cache_data_with_config, save_cache_data_with_config
 from data.combine_price_trades import add_trader_info_to_price_data
 from data.data_split import split_data
@@ -124,6 +125,13 @@ def log_class_distribution(train: pd.DataFrame, val: pd.DataFrame, test: pd.Data
     class_distribution(test, 'Test')
 
 
+def create_subset(tokens, volume_close_1m, top_trader_trades, amount):
+    tokens = random.sample(tokens, amount)
+    volume_close_1m = volume_close_1m[volume_close_1m[TOKEN_COlUMN].isin(tokens)]
+    top_trader_trades = top_trader_trades[top_trader_trades[TOKEN_COlUMN].isin(tokens)]
+    return volume_close_1m, top_trader_trades
+
+
 async def prepare_dataset(use_cache: bool, config: dict):
     cache_data = read_cache_data_with_config(TRAIN_VAL_TEST_FILE, config) if use_cache else None
     if use_cache and cache_data is not None:
@@ -134,6 +142,11 @@ async def prepare_dataset(use_cache: bool, config: dict):
 
     logger.info("Prepare data")
     tokens, launch_times = get_tokens_and_launch_dict(top_trader_trades)
+
+    if config.get("max_tokens", len(tokens)) < len(tokens):
+        volume_close_1m, top_trader_trades = create_subset(tokens, volume_close_1m, top_trader_trades,
+                                                           config["max_tokens"])
+
     labeled_data = prepare_steps(top_trader_trades, volume_close_1m, config)
 
     logger.info("Split data into train, val, test")

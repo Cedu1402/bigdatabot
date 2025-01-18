@@ -3,3 +3,4 @@ window_size: 10
 win_percentage: 130
 draw_down_percentage: 50
 step_size: 5
+max_tokens: 100000

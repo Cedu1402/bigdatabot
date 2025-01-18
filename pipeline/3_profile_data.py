@@ -4,14 +4,14 @@ from dotenv import load_dotenv
 from ydata_profiling import ProfileReport
 
 from config.config_reader import load_yaml_to_dict
-from constants import RANDOM_SEED, CONFIG_2_FILE, PRE_SPLIT_DATA
+from constants import RANDOM_SEED, CONFIG_2_FILE, TRAIN_VAL_TEST_FILE
 from data.cache_data import read_cache_data_with_config
 from data.random_seed import set_random_seed
 
 
 async def profile_data(use_cache: bool):
     data_config = load_yaml_to_dict(CONFIG_2_FILE)
-    data = read_cache_data_with_config(PRE_SPLIT_DATA, data_config)
+    data, _, _ = read_cache_data_with_config(TRAIN_VAL_TEST_FILE, data_config)
     profile = ProfileReport(data, title="Pandas Profiling Report", explorative=True)
 
     # Save the report to a file

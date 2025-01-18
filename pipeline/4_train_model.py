@@ -3,21 +3,22 @@ import asyncio
 from dotenv import load_dotenv
 
 from config.config_reader import load_yaml_to_dict
-from constants import BIN_AMOUNT_KEY, RANDOM_SEED, CONFIG_2_FILE
+from constants import RANDOM_SEED, CONFIG_2_FILE
 from data.dataset import prepare_dataset
 from data.random_seed import set_random_seed
-from ml_model.decision_tree_model import DecisionTreeModel
+from ml_model.decision_tree_model import DecisionTreeModelBuilderBuilder
 
 
 async def train_model(use_cache: bool):
     data_config = load_yaml_to_dict(CONFIG_2_FILE)
     train, val, test = await prepare_dataset(use_cache, data_config)
     config = dict()
-    config[BIN_AMOUNT_KEY]  = 100
-    model = DecisionTreeModel(config)
-    train_x, train_y, val_x, val_y, test_x, test_y = model.prepare_train_data(train, val, test)
+    model = DecisionTreeModelBuilderBuilder(config)
+    train = model.prepare_dataset(train)
+    val = model.prepare_dataset(val)
+
     model.build_model()
-    model.train(train_x, train_y, val_x, val_y)
+    model.train(train, val)
     model.save()
 
 

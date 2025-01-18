@@ -74,6 +74,13 @@ def contains_non_zero_trade_state(df: pd.DataFrame) -> bool:
     return (trade_columns != 0).any().any()
 
 
+def create_sliding_window_flat(data: pd.DataFrame, step_size: int = 1):
+    if step_size <= 0:
+        raise ValueError('step_size must be greater than 0')
+
+    return data.groupby(TOKEN_COlUMN).apply(lambda df: df.iloc[::step_size]).reset_index(drop=True)
+
+
 def create_sliding_windows(data: pd.DataFrame, window_size: int = 10, step_size: int = 1) -> List[pd.DataFrame]:
     """
     Splits data into sliding windows for each token.

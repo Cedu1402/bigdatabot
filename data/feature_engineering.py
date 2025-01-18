@@ -45,22 +45,14 @@ def one_hot_encode_trader_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df_encoded
 
 
-def bin_data(data: List[pd.DataFrame], columns: List[str], bin_edges: Dict[str, List[float]]) -> List[pd.DataFrame]:
-    # Step 1: Add an identifier to each DataFrame and concatenate them
-    concatenated = pd.concat([df.assign(_df_index=i) for i, df in enumerate(data)], ignore_index=True)
-
-    # Step 2: Apply binning for each specified column in the concatenated DataFrame
+def bin_data(data: pd.DataFrame, columns: List[str], bin_edges: Dict[str, List[float]]) -> pd.DataFrame:
     for column in columns:
-        if column in concatenated.columns and column in bin_edges:
-            concatenated[column] = np.digitize(concatenated[column],
-                                               bins=bin_edges[column],
-                                               right=False).clip(1, len(bin_edges[column]))
+        if column in data.columns and column in bin_edges:
+            data[column] = np.digitize(data[column],
+                                       bins=bin_edges[column],
+                                       right=False).clip(1, len(bin_edges[column]))
 
-    # Step 3: Split concatenated DataFrame back into the original list of DataFrames
-    result = [concatenated[concatenated["_df_index"] == i].drop(columns="_df_index").reset_index(drop=True) for i in
-              range(len(data))]
-
-    return result
+    return data
 
 
 def compute_bin_edges(combined_data: pd.DataFrame, columns: List[str], n_bins: int) -> Dict:
