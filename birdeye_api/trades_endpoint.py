@@ -1,3 +1,4 @@
+import json
 import logging
 from datetime import datetime
 from typing import List, Dict, Tuple, Optional
@@ -159,19 +160,19 @@ async def get_relevant_tokens(tokens: List[str], start_date: datetime, end_date:
 def validate_response(data: dict, trader: str) -> Tuple[bool, Optional[Dict]]:
     trade_data = data.get("data", None)
     if trade_data is None:
-        logger.warning("API response has no data", extra={"trader": trader})
+        logger.warning(f"API response has no data {json.dumps(data)}", extra={"trader": trader})
         return False, None
 
     trades = trade_data.get("items", None)
     if trades is None:
-        logger.warning("API response has no trades", extra={"trader": trader})
+        logger.warning(f"API response has no trades {json.dumps(data)}", extra={"trader": trader})
         return False, None
 
     return True, trades
 
 
-async def get_trader_trades(trader: str, start_date: datetime, end_date: datetime, api_limit: bool = False) -> List[
-    Dict]:
+async def get_trader_trades(trader: str, start_date: datetime, end_date: datetime, api_limit: bool = False,
+                            max_trades: int = 25000) -> List[Dict]:
     """
     Fetches all trades for a specific trader within a given time range from the BirdEye API.
 
@@ -180,7 +181,7 @@ async def get_trader_trades(trader: str, start_date: datetime, end_date: datetim
         start_date (datetime): The start date and time of the requested trade range (UTC).
         end_date (datetime): The end date and time of the requested trade range (UTC).
         api_limit (bool): Checks if BirdEye API limit is reached or not.
-
+        max_trades (int): Maximum number of trades to return.
     Returns:
         List[Dict]: A list of all trades for the specified trader within the given time frame.
 
@@ -207,6 +208,7 @@ async def get_trader_trades(trader: str, start_date: datetime, end_date: datetim
     offset = 0
     limit = 100
     total_offset = 0
+    request_counter = 0
 
     while True:
         params = {
@@ -217,13 +219,19 @@ async def get_trader_trades(trader: str, start_date: datetime, end_date: datetim
             "tx_type": "swap"
         }
 
+        if len(all_trades) > max_trades or request_counter > 750:
+            logger.error(f"Trader reached max trades and will be skipped {request_counter}")
+            return []
+
+        if offset >= 10000:
+            offset = 0
+            params["offset"] = offset
+            params["after_time"] = all_trades[-1]["block_unix_time"]
+
         await check_api_limit(api_limit)
 
         async with aiohttp.ClientSession() as session:
             async with session.get(url, headers=headers, params=params) as response:
-                # if offset >= 10000:
-                #     offset = 0
-                #     params["offset"] = offset
 
                 data = await response.json()
                 success, trades = validate_response(data, trader)
@@ -244,5 +252,7 @@ async def get_trader_trades(trader: str, start_date: datetime, end_date: datetim
                     break
 
                 offset += limit  # Move to the next page
+                total_offset += offset
+                request_counter += 1
 
     return all_trades

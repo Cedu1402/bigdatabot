@@ -1,0 +1,4 @@
+bin_amount: [ 500, 1000, 2000, 2500 ]
+step_size: [ 1, 2, 5, 7, 10, 15 ]
+n_features_to_select: [ 25, 50, 75, 100 ]
+max_depth: [ null, 5, 10, 25, 100 ]

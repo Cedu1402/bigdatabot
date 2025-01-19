@@ -14,8 +14,8 @@ async def train_model(use_cache: bool):
     train, val, test = await prepare_dataset(use_cache, data_config)
     config = dict()
     model = DecisionTreeModelBuilderBuilder(config)
-    train = model.prepare_dataset(train)
-    val = model.prepare_dataset(val)
+    train = model.prepare_dataset(train, False)
+    val = model.prepare_dataset(val, True)
 
     model.build_model()
     model.train(train, val)

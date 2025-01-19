@@ -1,0 +1,10 @@
+services:
+
+  bot_trainer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python pipeline/4_train_model.py
+    volumes:
+      - ./cache:/app/cache           # Map host ./cache to /app/cache in the container
+      - ./save_models:/app/save_models  # Map host ./save_models to /app/save_models in the container
