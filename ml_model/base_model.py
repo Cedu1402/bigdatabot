@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import Dict
 
 import pandas as pd
 
@@ -8,6 +8,7 @@ from constants import TRADING_MINUTE_COLUMN, BUY_VOLUME_COLUMN, SELL_VOLUME_COLU
 class BaseModelBuilder:
 
     def __init__(self, config: Dict):
+        self.config = config
         self.non_training_columns = [
             TRADING_MINUTE_COLUMN,
             BUY_VOLUME_COLUMN,
@@ -18,7 +19,10 @@ class BaseModelBuilder:
     def build_model(self):
         return
 
-    def prepare_data(self, train: List[pd.DataFrame], val: List[pd.DataFrame], test: List[pd.DataFrame]):
+    def prepare_dataset(self, data: pd.DataFrame, sorted_data: bool):
+        return
+
+    def prepare_prediction_data(self, data: pd.DataFrame, validation: bool):
         return
 
     def train(self, train_data: pd.DataFrame, val_data: pd.DataFrame):

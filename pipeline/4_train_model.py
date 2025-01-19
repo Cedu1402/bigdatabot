@@ -6,7 +6,7 @@ from config.config_reader import load_yaml_to_dict
 from constants import RANDOM_SEED, CONFIG_2_FILE
 from data.dataset import prepare_dataset
 from data.random_seed import set_random_seed
-from ml_model.decision_tree_model import DecisionTreeModelBuilderBuilder
+from ml_model.decision_tree_model_builder import DecisionTreeModelBuilderBuilder
 
 
 async def train_model(use_cache: bool):
