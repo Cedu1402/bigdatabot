@@ -15,8 +15,12 @@ class BaseModelBuilder:
             SELL_VOLUME_COLUMN,
             LAUNCH_DATE_COLUMN
         ]
+        self.columns = list()
 
-    def build_model(self):
+    def get_columns(self):
+        return self.columns
+
+    def build_model(self, config: Dict = None):
         return
 
     def prepare_dataset(self, data: pd.DataFrame, sorted_data: bool):
