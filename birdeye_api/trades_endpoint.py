@@ -1,5 +1,6 @@
 import json
 import logging
+from asyncio import sleep
 from datetime import datetime
 from typing import List, Dict, Tuple, Optional
 
@@ -209,7 +210,7 @@ async def get_trader_trades(trader: str, start_date: datetime, end_date: datetim
     limit = 100
     total_offset = 0
     request_counter = 0
-
+    consecutive_failures = 0
     while True:
         params = {
             "address": trader,
@@ -236,8 +237,13 @@ async def get_trader_trades(trader: str, start_date: datetime, end_date: datetim
                 data = await response.json()
                 success, trades = validate_response(data, trader)
                 if not success:
-                    # todo add trader to blacklist as bot or split loading into more steps until 20k trades.
-                    return []
+                    consecutive_failures += 1
+                    if consecutive_failures > 10:
+                        return []
+                    await sleep(5)
+                    continue
+                else:
+                    consecutive_failures = 0
 
                 finished = False
                 for trade in trades:
