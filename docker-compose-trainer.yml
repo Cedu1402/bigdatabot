@@ -8,3 +8,9 @@ services:
     volumes:
       - ./cache:/app/cache           # Map host ./cache to /app/cache in the container
       - ./save_models:/app/save_models  # Map host ./save_models to /app/save_models in the container
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
