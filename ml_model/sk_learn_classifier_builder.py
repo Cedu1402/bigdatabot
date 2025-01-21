@@ -8,7 +8,6 @@ from constants import BIN_AMOUNT_KEY, RANDOM_SEED, MODEL_FOLDER, TOKEN_COlUMN, S
     SELL_VOLUME_PCT_CHANGE, PRICE_PCT_CHANGE, BUY_VOLUME_PCT_CHANGE, TOTAL_VOLUME_PCT_CHANGE, \
     PERCENTAGE_OF_1_MILLION_MARKET_CAP, PRICE_COLUMN, CHANGE_FROM_ATL, CHANGE_FROM_ATH, CUMULATIVE_VOLUME, \
     AGE_IN_MINUTES_COLUMN, TOTAL_VOLUME_COLUMN
-from data.data_split import balance_data
 from data.feature_engineering import bin_data, compute_bin_edges
 from data.model_data import remove_columns_dataframe
 from data.pickle_files import save_to_pickle
@@ -57,17 +56,19 @@ class SKLearnClassifierBuilder(BaseModelBuilder):
 
     def prepare_prediction_data(self, data: pd.DataFrame, validation: bool) -> Tuple[pd.DataFrame, List[bool]]:
         logger.info("Remove unused columns")
-        remove_columns_dataframe(data, self.non_training_columns)
-        data.drop(columns=[TOKEN_COlUMN], inplace=True)
 
         if self.binned_data:
             logger.info("Bin data")
             data = bin_data(data, self.binned_columns, self.bin_edges)
 
+        data = data.sort_values(by=['token', 'trading_minute'])
+        remove_columns_dataframe(data, self.non_training_columns)
         if validation:
             data_x = data[self.columns]
             data_y = data[LABEL_COLUMN]
             return data_x, data_y
+        else:
+            data.drop(columns=[TOKEN_COlUMN], inplace=True)
 
         return data, []
 
