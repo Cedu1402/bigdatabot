@@ -14,11 +14,11 @@ def get_tree_hyperparameters(config: dict) -> dict:
         # Dataset and RFE parameters
         'data_preprocess__' + BIN_AMOUNT_KEY: config.get(BIN_AMOUNT_KEY, [1000, 2000, 5000]),
         # 'data_preprocess__' + STEP_SIZE_KEY: config.get(STEP_SIZE_KEY, [1]),
-        'rfe__' + N_FEATURES_TO_SELECT: config.get(N_FEATURES_TO_SELECT, [79]),
+        'rfe__' + N_FEATURES_TO_SELECT: config.get(N_FEATURES_TO_SELECT, [123]),
         'rfe__step': config.get(RFE_STEP_SIZE, [1]),
 
         # Tree hyperparameters
-        'classifier__' + MAX_DEPTH: config.get(MAX_DEPTH, [5, 10, 15, None]),
+        # 'classifier__' + MAX_DEPTH: config.get(MAX_DEPTH, [5, 10, 15, None]),
         # 'classifier__' + MIN_SAMPLES_SPLIT: config.get(MIN_SAMPLES_SPLIT, [2, 5, 10]),
         # 'classifier__' + MIN_SAMPLES_LEAF: config.get(MIN_SAMPLES_LEAF, [1, 2, 5]),
         # 'classifier__' + MAX_FEATURES: config.get(MAX_FEATURES, ['auto', 'sqrt', 'log2', None]),

@@ -12,8 +12,8 @@ logger = logging.getLogger(__name__)
 def get_tree_hyperparameters(config: dict) -> dict:
     return {
         # Dataset and RFE parameters
-        'rfe__' + N_FEATURES_TO_SELECT: config.get(N_FEATURES_TO_SELECT, [80]),
-        'rfe__step': config.get(RFE_STEP_SIZE, [1]),
+        # 'rfe__' + N_FEATURES_TO_SELECT: config.get(N_FEATURES_TO_SELECT, [122]),
+        # 'rfe__step': config.get(RFE_STEP_SIZE, [15]),
 
         # Tree hyperparameters
         # 'classifier__' + MAX_DEPTH: config.get(MAX_DEPTH, [5, 10, 15, None]),

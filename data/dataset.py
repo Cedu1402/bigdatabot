@@ -6,7 +6,7 @@ import pandas as pd
 
 from constants import TRAIN_VAL_TEST_FILE, VALIDATION_FILE, LABEL_COLUMN, TOKEN_COlUMN
 from data.cache_data import read_cache_data_with_config, save_cache_data_with_config
-from data.combine_price_trades import add_trader_info_to_price_data
+from data.combine_price_trades import add_trader_trades_data
 from data.data_split import split_data
 from data.data_type import convert_columns
 from data.feature_engineering import add_features, add_launch_date
@@ -21,13 +21,10 @@ logger = logging.getLogger(__name__)
 
 def prepare_steps(top_trader_trades: pd.DataFrame, volume_close_1m: pd.DataFrame, config: dict,
                   label_data: bool = True) -> pd.DataFrame:
-    # Get traders
-    logger.info("Get trader")
-    traders = get_trader_from_trades(top_trader_trades)
 
     logger.info("Add trader labels")
     # Add trader info to volume data
-    full_data = add_trader_info_to_price_data(volume_close_1m, traders, top_trader_trades)
+    full_data = add_trader_trades_data(volume_close_1m, top_trader_trades)
 
     logger.info("Add launch date to data")
     full_data = add_launch_date(top_trader_trades, full_data)

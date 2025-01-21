@@ -5,7 +5,7 @@ from typing import Tuple, List
 import numpy as np
 import pandas as pd
 
-from constants import TOKEN_COlUMN, TRADING_MINUTE_COLUMN
+from constants import TOKEN_COlUMN, TRADING_MINUTE_COLUMN, TRADER_COLUMN
 
 
 def get_categories_from_dataclass(cls) -> List[int]:
@@ -172,6 +172,92 @@ def prepare_data_types(trades: pd.DataFrame):
     trades['token_bought_amount'] = pd.to_numeric(trades['token_bought_amount'], errors='coerce')
 
     trades.dropna(inplace=True)
+
+
+def convert_block_chain_int_column(data: pd.DataFrame, col: str, decimals: int) -> pd.DataFrame:
+    data[col] = data[col].astype(int) / (10 ** decimals)
+    return data
+
+
+def create_amount_column(data: pd.DataFrame, new_col_name: str, buy_true: str, buy_false: str) -> pd.DataFrame:
+    data[new_col_name] = np.where(data['buy'], data[buy_true], data[buy_false])
+    return data
+
+
+def convert_trading_amount(data: pd.DataFrame) -> pd.DataFrame:
+    data = create_amount_column(data, 'token_amount', 'token_bought_amount', 'token_sold_amount')
+    data = create_amount_column(data, 'sol_amount', 'token_sold_amount', 'token_bought_amount')
+
+    data = convert_block_chain_int_column(data, 'token_amount', decimals=6)
+    data = convert_block_chain_int_column(data, 'sol_amount', decimals=9)
+
+    return data
+
+
+def add_spent_received_columns(data: pd.DataFrame, amount_col: str) -> pd.DataFrame:
+    data[f"{amount_col}_spent"] = np.where(data["buy"], data[amount_col], 0)
+    data[f"{amount_col}_received"] = np.where(data["buy"], 0, data[amount_col])
+
+    return data
+
+
+def group_trades_by_trader(trades: pd.DataFrame) -> pd.DataFrame:
+    grouped_trades = trades.groupby(
+        [TRADING_MINUTE_COLUMN, TOKEN_COlUMN, TRADER_COLUMN], as_index=False
+    ).agg({
+        'sol_amount_spent': 'sum',
+        'sol_amount_received': 'sum'
+    })
+    return grouped_trades
+
+
+def add_trader_trades_data(
+        price_data: pd.DataFrame,
+        trades: pd.DataFrame
+) -> pd.DataFrame:
+    price_data, trades = prepare_timestamps(price_data, trades)
+    trades = convert_trading_amount(trades)
+    trades = add_spent_received_columns(trades, 'sol_amount')
+    grouped_trades = group_trades_by_trader(trades)
+    merged = price_data.merge(
+        grouped_trades,
+        on=[TRADING_MINUTE_COLUMN, TOKEN_COlUMN],
+        how='left',
+        suffixes=('', '_trade')
+    )
+
+    pivot_spent = merged.pivot_table(
+        index=[TRADING_MINUTE_COLUMN, TOKEN_COlUMN],
+        columns=TRADER_COLUMN,
+        values='sol_amount_spent',
+        aggfunc='sum',
+        fill_value=0
+    )
+
+    pivot_received = merged.pivot_table(
+        index=[TRADING_MINUTE_COLUMN, TOKEN_COlUMN],
+        columns=TRADER_COLUMN,
+        values='sol_amount_received',
+        aggfunc='sum',
+        fill_value=0
+    )
+
+    pivot_spent.columns = [f"{trader}_sol_amount_spent" for trader in pivot_spent.columns]
+    pivot_received.columns = [f"{trader}_sol_amount_received" for trader in pivot_received.columns]
+
+    result = price_data.set_index(['trading_minute', 'token'])
+    result = result.join(pivot_spent).join(pivot_received).reset_index()
+    result[pivot_spent.columns] = result[pivot_spent.columns].fillna(0)
+    result[pivot_received.columns] = result[pivot_received.columns].fillna(0)
+
+    result = result.sort_values(by=['token', 'trading_minute'])
+
+    result[pivot_spent.columns] = result.groupby('token')[pivot_spent.columns].cumsum()
+    result[pivot_received.columns] = result.groupby('token')[pivot_received.columns].cumsum()
+
+    result = result.sort_values(by=['token', 'trading_minute'])
+
+    return result
 
 
 def add_trader_info_to_price_data(

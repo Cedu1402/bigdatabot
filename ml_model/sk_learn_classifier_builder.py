@@ -8,6 +8,7 @@ from constants import BIN_AMOUNT_KEY, RANDOM_SEED, MODEL_FOLDER, TOKEN_COlUMN, S
     SELL_VOLUME_PCT_CHANGE, PRICE_PCT_CHANGE, BUY_VOLUME_PCT_CHANGE, TOTAL_VOLUME_PCT_CHANGE, \
     PERCENTAGE_OF_1_MILLION_MARKET_CAP, PRICE_COLUMN, CHANGE_FROM_ATL, CHANGE_FROM_ATH, CUMULATIVE_VOLUME, \
     AGE_IN_MINUTES_COLUMN, TOTAL_VOLUME_COLUMN
+from data.data_split import balance_data
 from data.feature_engineering import bin_data, compute_bin_edges
 from data.model_data import remove_columns_dataframe
 from data.pickle_files import save_to_pickle
@@ -79,6 +80,8 @@ class SKLearnClassifierBuilder(BaseModelBuilder):
         self.columns = best_model["selected_columns"]
         train_data = create_sliding_window_flat(train_data, step_size=best_model[STEP_SIZE_KEY])
         train_data.drop(columns=[TOKEN_COlUMN], inplace=True)
+        # if self.config.get("balanced", True):
+        #     train_data = balance_data(train_data)
 
         if self.binned_data:
             self.bin_edges = compute_bin_edges(train_data, self.binned_columns,

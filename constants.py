@@ -59,7 +59,7 @@ LAUNCH_DATE_COLUMN = 'launch_time'
 CUMULATIVE_VOLUME = 'cumulative_volume'
 CHANGE_FROM_ATL = 'change_from_atl'
 CHANGE_FROM_ATH = 'change_from_ath'
-
+TRADER_COLUMN = 'trader_id'
 HYPERPARAMETER_TEMP_FILE = "hyperparameter_data"
 
 SOL_PRICE = 170

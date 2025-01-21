@@ -1,4 +1,3 @@
-import random
 from datetime import datetime
 from typing import Tuple, List, Dict
 
@@ -39,16 +38,14 @@ def get_x_y_data(train: List[pd.DataFrame], val: List[pd.DataFrame], test: List[
     return x_train, y_train, x_val, y_val, x_test, y_test
 
 
-def balance_data(data: List[pd.DataFrame]) -> List[pd.DataFrame]:
-    true_data = [item for item in data if item[LABEL_COLUMN].iloc[0]]
-    false_data = [item for item in data if not item[LABEL_COLUMN].iloc[0]]
+def balance_data(data: pd.DataFrame) -> pd.DataFrame:
+    # Get the number of samples in the minority class
+    minority_count = data[LABEL_COLUMN].value_counts().min()
 
-    fair_amount = len(true_data) if len(true_data) < len(false_data) else len(false_data)
+    # Drop excess rows from the majority class
+    data = data.groupby(LABEL_COLUMN).apply(lambda x: x.sample(minority_count)).reset_index(drop=True)
 
-    result = random.sample(false_data, fair_amount)
-    result.extend(random.sample(true_data, fair_amount))
-
-    return result
+    return data
 
 
 def get_split_dates(split_1: float, split_2: float, start_time: datetime, end_time: datetime) -> Tuple[
