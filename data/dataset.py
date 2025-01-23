@@ -21,7 +21,6 @@ logger = logging.getLogger(__name__)
 
 def prepare_steps(top_trader_trades: pd.DataFrame, volume_close_1m: pd.DataFrame, config: dict,
                   label_data: bool = True) -> pd.DataFrame:
-
     logger.info("Add trader labels")
     # Add trader info to volume data
     full_data = add_trader_trades_data(volume_close_1m, top_trader_trades)
@@ -56,6 +55,18 @@ def add_inactive_traders(existing_traders: List[str], columns: List[str],
             trader = col.replace("_state", "").replace("trader_", "")
             if trader not in existing_traders:
                 labeled_data["trader_" + trader + "_state"] = 0
+
+    return labeled_data
+
+
+def add_inactive_traders_values(existing_traders: List[str], columns: List[str],
+                                labeled_data: pd.DataFrame) -> pd.DataFrame:
+    for col in columns:
+        if "_sol_" in col:
+            trader = col.split("_")[0]
+            if trader not in existing_traders:
+                labeled_data[f"{trader}_sol_amount_spent"] = 0.0
+                labeled_data[f"{trader}_sol_amount_received"] = 0.0
 
     return labeled_data
 

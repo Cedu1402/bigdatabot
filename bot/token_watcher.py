@@ -13,17 +13,17 @@ from bot.trade_watcher import watch_trade
 from constants import BIN_AMOUNT_KEY, TRADE_QUEUE
 from data.close_volume_data import get_trading_minute
 from data.data_type import convert_columns
-from data.dataset import add_inactive_traders
+from data.dataset import add_inactive_traders_values
 from data.feature_engineering import add_features
 from data.redis_helper import get_sync_redis
-from data.trade_data import get_valid_trades, add_trader_actions_to_dataframe, get_traders
+from data.trade_data import get_valid_trades, get_traders, create_dataframe_with_trades
 from database.token_creation_info_table import select_token_creation_info
 from database.token_dataset_table import insert_token_dataset
 from database.token_watch_table import get_token_watch, set_end_time, insert_token_watch
 from database.trade_table import get_trades_by_token
 from dto.token_dataset_model import TokenDataset
 from dto.trade_model import Trade
-from ml_model.decision_tree_model import DecisionTreeModelBuilderBuilder
+from ml_model.decision_tree_model_builder import DecisionTreeModelBuilderBuilder
 from structure_log.logger_setup import setup_logger, ensure_logging_flushed
 
 setup_logger("token_watcher")
@@ -38,9 +38,10 @@ def get_valid_trades_of_token(token: str, trading_minute: datetime) -> List[Trad
 
 
 async def get_base_data(valid_trades: List[Trade], trading_minute: datetime, token: str) -> Optional[pd.DataFrame]:
-    df = add_trader_actions_to_dataframe(valid_trades, trading_minute)
+    df = create_dataframe_with_trades(valid_trades, trading_minute, 1)
+
     # get close and volume data
-    price_df = await get_time_frame_ohlcv(token, trading_minute, 11, "1m")
+    price_df = await get_time_frame_ohlcv(token, trading_minute, 1, "1m")
     if price_df is None:
         return None
 
@@ -51,6 +52,7 @@ async def get_base_data(valid_trades: List[Trade], trading_minute: datetime, tok
         right_index=True,  # Join on the index of price_df
         how="inner"  # Keeps only the rows with matching indices in both DataFrames
     )
+
     return df
 
 
@@ -101,7 +103,7 @@ async def prepare_current_dataset(valid_trades: List[Trade], trading_minute: dat
     df = add_features(df)
 
     logger.info("Add inactive traders", extra={"token": str(token), "trading_minute": trading_minute})
-    df = add_inactive_traders(get_traders(valid_trades), columns, df)
+    df = add_inactive_traders_values(get_traders(valid_trades), columns, df)
 
     return df
 
@@ -154,6 +156,7 @@ async def watch_token(token) -> bool:
 
                 logger.info("Prepare dataset for prediction", extra={"token": str(token)})
                 df = await prepare_current_dataset(valid_trades, trading_minute, token, model.get_columns())
+
                 if df is None:
                     logger.error("Issue in creating dataset",
                                  extra={'token': token, 'trading_minute': trading_minute})
@@ -164,8 +167,9 @@ async def watch_token(token) -> bool:
 
                 # predict
                 logger.info("Prepare data for model prediction", extra={"token": str(token)})
-                prediction_data, _ = model.prepare_prediction_data(copy.deepcopy([df]), False)
-                logger.info("Make prediction for tradeing minute")
+                prediction_data, _ = model.prepare_prediction_data(df.copy(), False)
+
+                logger.info("Make prediction for trading minute")
                 prediction = model.predict(prediction_data)
                 logger.info("Prediction for trading minute done")
 

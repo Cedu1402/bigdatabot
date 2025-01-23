@@ -13,9 +13,7 @@ class TestRunner(unittest.IsolatedAsyncioTestCase):
 
     @patch("bot.token_watcher.get_valid_trades_of_token")
     @patch("bot.token_watcher.get_base_data")
-    @patch("bot.token_watcher.get_sol_price")
     @patch("bot.token_watcher.check_if_token_done")
-    @patch("bot.token_watcher.redis.asyncio.Redis")
     @patch("bot.token_watcher.Queue")
     @patch("bot.token_watcher.insert_token_watch")
     @patch("bot.token_watcher.set_end_time")
@@ -27,17 +25,11 @@ class TestRunner(unittest.IsolatedAsyncioTestCase):
                                mock_set_end_time,
                                mock_insert_token_watch,
                                mock_queue,
-                               mock_async_redis,
                                token_done,
-                               mock_get_sol_price,
                                mock_get_base_data,
                                mock_get_valid_trades):
         # Mock Redis
-        mock_redis_instance = AsyncMock()
-        mock_async_redis.return_value = mock_redis_instance
         mock_select_token_creation_info.return_value = ((datetime.utcnow() - timedelta(hours=1)), "test")
-        mock_redis_instance.incr.return_value = None  # Simulate successful increment
-        mock_redis_instance.set.return_value = None
 
         # token done check
         token_done.return_value = False
@@ -62,9 +54,6 @@ class TestRunner(unittest.IsolatedAsyncioTestCase):
             }
         )
 
-        # Mock get_sol_price
-        mock_get_sol_price.return_value = 20.0
-
         # Run the function
         result = await watch_token("SOL")
 
@@ -72,7 +61,6 @@ class TestRunner(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result)
         mock_get_valid_trades.assert_called_once()
         mock_get_base_data.assert_called_once()
-        mock_get_sol_price.assert_called_once()
         mock_insert_token_watch.assert_called_once()
         mock_set_end_time.assert_called_once()
 

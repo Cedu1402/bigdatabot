@@ -4,6 +4,7 @@ from typing import List, Dict
 
 import pandas as pd
 
+from constants import TRADING_MINUTE_COLUMN
 from data.combine_price_trades import TraderState
 from dto.trade_model import Trade
 
@@ -50,6 +51,41 @@ def get_trade_state_no_trade_in_minute(last_trade_state: TraderState, last_trade
         return TraderState.SOLD_ALL
     else:
         return TraderState.NO_ACTION
+
+
+def get_previous_trades_by_trader(trades: List[Trade], trading_minute: datetime) -> Dict[str, List[Trade]]:
+    trader_trades = dict()
+    for trade in trades:
+
+        if trade.get_time().replace(second=0, microsecond=0) > trading_minute:
+            continue
+
+        if trade.trader not in trader_trades:
+            trader_trades[trade.trader] = list()
+
+        trader_trades[trade.trader].append(trade)
+
+    return trader_trades
+
+
+def create_dataframe_with_trades(trades: List[Trade], trading_minute: datetime, time_frame: int) -> pd.DataFrame:
+    data = list(dict())
+    all_traders = [trade.trader for trade in trades]
+
+    for i in range(time_frame):
+        current_trading_minute = trading_minute - timedelta(minutes=i)
+        current_data = {TRADING_MINUTE_COLUMN: current_trading_minute}
+        trader_dict = get_previous_trades_by_trader(trades, current_trading_minute)
+
+        for trader in all_traders:
+            trader_trades = trader_dict.get(trader, [])
+            current_data[f"{trader}_sol_amount_spent"] = sum([item.sol_amount for item in trader_trades if item.buy])
+            current_data[f"{trader}_sol_amount_received"] = sum(
+                [item.sol_amount for item in trader_trades if not item.buy])
+
+        data.append(current_data)
+
+    return pd.DataFrame(data)
 
 
 def add_trader_actions_to_dataframe(trades: List[Trade], trading_minute: datetime) -> pd.DataFrame:

@@ -9,10 +9,9 @@ from config.config_reader import load_yaml_to_dict
 from constants import BIN_AMOUNT_KEY, CONFIG_2_FILE
 from data.dataset import prepare_test_data
 from database.token_dataset_table import get_token_datasets_by_token
-from ml_model.decision_tree_model import DecisionTreeModelBuilderBuilder
 
 
-def check_token(token: str):
+async def check_token(token: str):
     config = dict()
     config[BIN_AMOUNT_KEY] = 10
     model = DecisionTreeModelBuilderBuilder(config)
@@ -54,7 +53,7 @@ def check_time_frame(date_from, date_to):
 async def main(token: Optional[str], date_form: Optional[datetime], date_to: Optional[datetime]):
     load_dotenv()
     if token is not None:
-        check_token(token)
+        await check_token(token)
     else:
         check_time_frame(date_form, date_to)
 
