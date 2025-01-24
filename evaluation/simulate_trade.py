@@ -120,7 +120,7 @@ def run_simulation(val_x: pd.DataFrame, val_y: List[bool], prediction: List[bool
 
     max_hodel_time = get_max_hold_time(token_buy_sell_times)
     print(f"Max Hodel is two min {len([0 for item in max_hodel_time if item <= 2])}")
-    save_histogram(max_hodel_time, 'Max Hodel Time', 'Time', 'Tokens', 'hodel_time.png', 50)
+    save_histogram(max_hodel_time, 'Max Hodel Time', 'Time', 'Tokens', 'max_hodel_time.png', 50)
     print_statistics(max_hodel_time, "Max Hodel Time")
 
     print(f"Max simultaneous Trades {get_max_concurrent_tokens(token_buy_sell_times)}")

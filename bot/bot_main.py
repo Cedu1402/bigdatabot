@@ -10,11 +10,11 @@ from dotenv import load_dotenv
 from rq import Queue
 
 from bot.event_worker import handle_user_event
-from constants import SOLANA_WS, EVENT_QUEUE, BIN_AMOUNT_KEY, SUBSCRIPTION_MAP, ROOT_DIR
+from constants import SOLANA_WS, EVENT_QUEUE, SUBSCRIPTION_MAP, ROOT_DIR
 from data.redis_helper import get_sync_redis, get_async_redis
 from database.raw_sql import run_sql_file
 from env_data.get_env_value import get_env_value
-from ml_model.decision_tree_model import DecisionTreeModelBuilderBuilder
+from ml_model.hist_gradient_model_builder import HistGradientBoostModelBuilder
 from structure_log.logger_setup import setup_logger
 
 subscription_map = {}
@@ -67,13 +67,12 @@ async def subscribe_to_accounts(websocket, traders: List[str]):
 # Main function to handle WebSocket and Solana queries
 async def main():
     ws_url = get_env_value(SOLANA_WS)
-    config = dict()
-    config[BIN_AMOUNT_KEY] = 10
-    model = DecisionTreeModelBuilderBuilder(config)
-    model.load_model("simple_tree")
+    model = HistGradientBoostModelBuilder(dict())
+    model.load_model("hist_gradient")
+
     r = get_async_redis()
-    traders = [column.replace("trader_", "").replace("_state", "") for column in model.get_columns() if
-               "trader_" in column]
+    traders = [column.split("_")[0] for column in model.get_columns() if
+               "_sol_amount_spent" in column]  # todo move to function
 
     retries = 0
     while True:
