@@ -63,14 +63,12 @@ class SKLearnClassifierBuilder(BaseModelBuilder):
 
         data = data.sort_values(by=['token', 'trading_minute'])
         remove_columns_dataframe(data, self.non_training_columns)
+        data_x = data[self.columns]
+        data_y = []
         if validation:
-            data_x = data[self.columns]
             data_y = data[LABEL_COLUMN]
-            return data_x, data_y
-        else:
-            data.drop(columns=[TOKEN_COlUMN], inplace=True)
 
-        return data, []
+        return data_x, data_y
 
     def train(self, train_data: pd.DataFrame, val_data: pd.DataFrame):
         logger.info("Tune hyperparameters")

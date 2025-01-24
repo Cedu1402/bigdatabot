@@ -10,7 +10,7 @@ from rq import Queue
 
 from birdeye_api.ohlcv_endpoint import get_time_frame_ohlcv
 from bot.trade_watcher import watch_trade
-from constants import BIN_AMOUNT_KEY, TRADE_QUEUE
+from constants import TRADE_QUEUE
 from data.close_volume_data import get_trading_minute
 from data.data_type import convert_columns
 from data.dataset import add_inactive_traders_values
@@ -23,7 +23,7 @@ from database.token_watch_table import get_token_watch, set_end_time, insert_tok
 from database.trade_table import get_trades_by_token
 from dto.token_dataset_model import TokenDataset
 from dto.trade_model import Trade
-from ml_model.decision_tree_model_builder import DecisionTreeModelBuilderBuilder
+from ml_model.hist_gradient_model_builder import HistGradientBoostModelBuilder
 from structure_log.logger_setup import setup_logger, ensure_logging_flushed
 
 setup_logger("token_watcher")
@@ -124,10 +124,9 @@ async def watch_token(token) -> bool:
 
     try:
         logger.info("Load model")
-        config = dict()
-        config[BIN_AMOUNT_KEY] = 10
-        model = DecisionTreeModelBuilderBuilder(config)
-        model.load_model("simple_tree")
+        model = HistGradientBoostModelBuilder(dict())
+        model.load_model("hist_gradient")  # todo refactor as the name is set in builder anyway!
+
         last_trading_minute = None
         while True:
             try:

@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch, AsyncMock
 import pandas as pd
 
 from bot.token_watcher import watch_token
-from constants import PRICE_COLUMN, TOTAL_VOLUME_COLUMN, TRADING_MINUTE_COLUMN, TOKEN_COlUMN
+from constants import PRICE_COLUMN, TOTAL_VOLUME_COLUMN, TRADING_MINUTE_COLUMN, TOKEN_COlUMN, LAUNCH_DATE_COLUMN
 from dto.trade_model import Trade
 
 
@@ -45,10 +45,9 @@ class TestRunner(unittest.IsolatedAsyncioTestCase):
         # Mock get_base_data
         mock_get_base_data.return_value = pd.DataFrame(
             {
-                "trader_DTkBYcYfQsZhDM9ZWk76GqdnwMpaGrc3uC9n6bq6rYp2_state": [1, 2, 3],
-                "trader_2ekUyRWdrZ9eAoYeCAYYDVCzUwWaWcPyf2LdpVbUkNXd_state": [0, 1, 0],
                 TOKEN_COlUMN: ["SOL", "SOL", "SOL"],
                 TRADING_MINUTE_COLUMN: pd.date_range("2024-12-01 00:00:00", periods=3, freq="min"),
+                LAUNCH_DATE_COLUMN: pd.to_datetime("2024-11-30 00:00:00"),
                 TOTAL_VOLUME_COLUMN: [100, 200, 300],
                 PRICE_COLUMN: [10.0, 10.5, 11.0],
             }
