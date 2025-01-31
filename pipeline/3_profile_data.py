@@ -1,21 +1,28 @@
 import asyncio
 
 from dotenv import load_dotenv
-from ydata_profiling import ProfileReport
 
 from config.config_reader import load_yaml_to_dict
 from constants import RANDOM_SEED, CONFIG_2_FILE, TRAIN_VAL_TEST_FILE
 from data.cache_data import read_cache_data_with_config
+from data.dataset import log_class_distribution
 from data.random_seed import set_random_seed
+from data_profile.token_stats import print_token_stats
 
 
 async def profile_data(use_cache: bool):
     data_config = load_yaml_to_dict(CONFIG_2_FILE)
-    data, _, _ = read_cache_data_with_config(TRAIN_VAL_TEST_FILE, data_config)
-    profile = ProfileReport(data, title="Pandas Profiling Report", explorative=True)
+    data, val, test = read_cache_data_with_config(TRAIN_VAL_TEST_FILE, data_config)
 
-    # Save the report to a file
-    profile.to_file("train_data_report.html")
+    print_token_stats(data)
+    print_token_stats(val, "Validation")
+    print_token_stats(test, "Test")
+    log_class_distribution(data, val, test)
+    
+    # profile = ProfileReport(data, title="Pandas Profiling Report", explorative=True)
+    #
+    # # Save the report to a file
+    # profile.to_file("train_data_report.html")
 
 
 if __name__ == '__main__':

@@ -7,7 +7,7 @@ import pandas as pd
 from constants import BIN_AMOUNT_KEY, RANDOM_SEED, MODEL_FOLDER, TOKEN_COlUMN, STEP_SIZE_KEY, LABEL_COLUMN, \
     SELL_VOLUME_PCT_CHANGE, PRICE_PCT_CHANGE, BUY_VOLUME_PCT_CHANGE, TOTAL_VOLUME_PCT_CHANGE, \
     PERCENTAGE_OF_1_MILLION_MARKET_CAP, PRICE_COLUMN, CHANGE_FROM_ATL, CHANGE_FROM_ATH, CUMULATIVE_VOLUME, \
-    AGE_IN_MINUTES_COLUMN, TOTAL_VOLUME_COLUMN
+    AGE_IN_MINUTES_COLUMN, TOTAL_VOLUME_COLUMN, TRADING_MINUTE_COLUMN
 from data.feature_engineering import bin_data, compute_bin_edges
 from data.model_data import remove_columns_dataframe
 from data.pickle_files import save_to_pickle
@@ -46,7 +46,7 @@ class SKLearnClassifierBuilder(BaseModelBuilder):
     def prepare_dataset(self, data: pd.DataFrame, sorted_data: bool) -> pd.DataFrame:
         logger.info("Remove unused columns from data")
         if sorted_data:
-            data = data.sort_values(by=["token", "trading_minute"]).reset_index(drop=True)
+            data = data.sort_values(by=[TOKEN_COlUMN, TRADING_MINUTE_COLUMN]).reset_index(drop=True)
         else:
             data = data.sample(frac=1, random_state=RANDOM_SEED).reset_index(drop=True)
 
@@ -61,7 +61,7 @@ class SKLearnClassifierBuilder(BaseModelBuilder):
             logger.info("Bin data")
             data = bin_data(data, self.binned_columns, self.bin_edges)
 
-        data = data.sort_values(by=['token', 'trading_minute'])
+        data = data.sort_values(by=[TOKEN_COlUMN, TRADING_MINUTE_COLUMN])
         remove_columns_dataframe(data, self.non_training_columns)
         data_x = data[self.columns]
         data_y = []
@@ -93,6 +93,7 @@ class SKLearnClassifierBuilder(BaseModelBuilder):
                              k.startswith('classifier__')}
 
         self.build_model(classifier_params)
+
         self.model.fit(train_x, train_y)
 
         logger.info("Validate final model")
@@ -101,7 +102,7 @@ class SKLearnClassifierBuilder(BaseModelBuilder):
 
         logger.info("Print evaluation results")
         print_evaluation(val_y, val_predictions)
-        run_simulation(val_data, val_y, val_predictions)
+        run_simulation(val_data, val_y, val_predictions, self.config)
 
     def save(self):
         save_to_pickle((self.model, self.bin_edges, self.columns), os.path.join(MODEL_FOLDER, f"{self.model_name}.pkl"))

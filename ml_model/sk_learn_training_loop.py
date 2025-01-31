@@ -5,7 +5,7 @@ import pandas as pd
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 
-from constants import STEP_SIZE_KEY, LABEL_COLUMN, TOKEN_COlUMN
+from constants import STEP_SIZE_KEY, LABEL_COLUMN, TOKEN_COlUMN, TRADING_MINUTE_COLUMN
 from data.data_split import balance_data
 from data.sliding_window import create_sliding_window_flat
 from data_pre_processor.pre_processed_data_loader import LoadPreprocessedDataTransformer
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 def train_loop(data: pd.DataFrame, config: Dict, binned_columns: List[str], model: Any, param_grid: Dict,
                binned_data: bool) -> Dict:
     sliding_window_params = config.get(STEP_SIZE_KEY, [1])
-
+    logger.info(sliding_window_params)
     best_hyper_parameters = None
     best_result = None
 
@@ -39,7 +39,7 @@ def train_loop(data: pd.DataFrame, config: Dict, binned_columns: List[str], mode
         pipeline = Pipeline(pipeline_items)
 
         logger.info("Optimize hyperparameters")
-        x_train.drop(columns=[TOKEN_COlUMN], inplace=True)
+        x_train.drop(columns=[TOKEN_COlUMN, TRADING_MINUTE_COLUMN], inplace=True)
 
         # Set up GridSearchCV with cross-validation
         grid_search = GridSearchCV(pipeline, param_grid, cv=2, verbose=1, scoring='f1', n_jobs=-1)

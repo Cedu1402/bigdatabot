@@ -6,7 +6,7 @@ import pandas as pd
 
 from constants import TRAIN_VAL_TEST_FILE, VALIDATION_FILE, LABEL_COLUMN, TOKEN_COlUMN
 from data.cache_data import read_cache_data_with_config, save_cache_data_with_config
-from data.combine_price_trades import add_trader_trades_data
+from data.combine_price_trades import add_trader_trades_data, remove_no_trade_rows, combine_trader_data
 from data.data_split import split_data
 from data.data_type import convert_columns
 from data.feature_engineering import add_features, add_launch_date
@@ -25,6 +25,12 @@ def prepare_steps(top_trader_trades: pd.DataFrame, volume_close_1m: pd.DataFrame
     # Add trader info to volume data
     full_data = add_trader_trades_data(volume_close_1m, top_trader_trades)
 
+    logger.info("Remove rows with no previous trades")
+    full_data = remove_no_trade_rows(full_data)
+
+    logger.info("Combine trader data")
+    full_data = combine_trader_data(full_data)
+
     logger.info("Add launch date to data")
     full_data = add_launch_date(top_trader_trades, full_data)
 
@@ -33,7 +39,7 @@ def prepare_steps(top_trader_trades: pd.DataFrame, volume_close_1m: pd.DataFrame
 
     # Add features
     logger.info("Add features")
-    full_data = add_features(full_data)
+    # full_data = add_features(full_data)
 
     if label_data:
         logger.info("Add labels")
@@ -150,6 +156,8 @@ async def prepare_dataset(use_cache: bool, config: dict):
 
     logger.info("Prepare data")
     tokens, launch_times = get_tokens_and_launch_dict(top_trader_trades)
+
+    logger.info(f"Amount of tokens in dataset: {len(tokens)}")
 
     if config.get("max_tokens", len(tokens)) < len(tokens):
         volume_close_1m, top_trader_trades = create_subset(tokens, volume_close_1m, top_trader_trades,

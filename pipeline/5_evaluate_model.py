@@ -15,7 +15,7 @@ from ml_model.model_evaluation import print_evaluation
 logger = logging.getLogger(__name__)
 
 
-def analyse_model(model_name: str, val: pd.DataFrame):
+def analyse_model(model_name: str, val: pd.DataFrame, config: dict):
     # Todo implement a way to save the Builder class info as well so we can load it properly and test multible different model types.
     # # Split the class path into module and class name
     # module_path, class_name = model_name.rsplit('.', 1)
@@ -30,14 +30,14 @@ def analyse_model(model_name: str, val: pd.DataFrame):
     print("*" * 50)
     print_evaluation(list(val_y), val_predictions)
     print("*" * 50)
-    run_simulation(val, list(val_y), val_predictions)
+    run_simulation(val, list(val_y), val_predictions, config)
     print("*" * 50)
     print("\n" * 3)
 
 
-def analyse_models(models: List[str], val: pd.DataFrame):
+def analyse_models(models: List[str], val: pd.DataFrame, config: dict):
     for model in models:
-        analyse_model(model, val)
+        analyse_model(model, val, config)
 
 
 async def evaluate_models(use_cache: bool):
@@ -46,7 +46,7 @@ async def evaluate_models(use_cache: bool):
     _, val, _ = await prepare_dataset(use_cache, data_config)
 
     models = config.get("models", ["hist_gradient"])
-    analyse_models(models, val)
+    analyse_models(models, val, data_config)
 
 
 if __name__ == '__main__':

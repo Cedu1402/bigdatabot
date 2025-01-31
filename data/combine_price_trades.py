@@ -211,6 +211,29 @@ def group_trades_by_trader(trades: pd.DataFrame) -> pd.DataFrame:
     return grouped_trades
 
 
+def remove_no_trade_rows(data: pd.DataFrame) -> pd.DataFrame:
+    trade_columns = [col for col in data.columns if
+                     col.endswith('_sol_amount_spent') or col.endswith('_sol_amount_received')]
+
+    # Check if there are any trades (non-zero in trade columns)
+    data['has_trade'] = data[trade_columns].sum(axis=1) > 0
+
+    # Find the first trade for each token
+    first_trade_time = (
+        data[data['has_trade']]
+        .groupby(TOKEN_COlUMN)[TRADING_MINUTE_COLUMN]
+        .min()
+    )
+
+    # Filter data: keep rows from the first trade onward for each token
+    data = data[data[TRADING_MINUTE_COLUMN] >= data[TOKEN_COlUMN].map(first_trade_time)]
+
+    # Drop the helper column
+    data = data.drop(columns=['has_trade'])
+
+    return data
+
+
 def add_trader_trades_data(
         price_data: pd.DataFrame,
         trades: pd.DataFrame
@@ -259,6 +282,24 @@ def add_trader_trades_data(
 
     return result
 
+
+def combine_trader_data(data: pd.DataFrame) -> pd.DataFrame:
+    # Filter columns that represent spent and received values
+    spent_columns = [col for col in data.columns if col.endswith('_sol_amount_spent')]
+    received_columns = [col for col in data.columns if col.endswith('_sol_amount_received')]
+
+    # Calculate total spent and received
+    data['total_sol_spent'] = data[spent_columns].sum(axis=1)
+    data['total_sol_received'] = data[received_columns].sum(axis=1)
+
+    # Calculate the number of traders who spent and received (non-zero entries)
+    data['trader_count_spent'] = data[spent_columns].gt(0).sum(axis=1)
+    data['trader_count_received'] = data[received_columns].gt(0).sum(axis=1)
+
+    # Drop individual trader columns if not needed
+    data = data.drop(columns=spent_columns + received_columns)
+
+    return data
 
 def add_trader_info_to_price_data(
         price_data: pd.DataFrame,

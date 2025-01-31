@@ -3,7 +3,7 @@ from typing import Dict
 
 from sklearn.ensemble import HistGradientBoostingClassifier
 
-from constants import RANDOM_SEED, N_FEATURES_TO_SELECT, RFE_STEP_SIZE
+from constants import RANDOM_SEED
 from ml_model.sk_learn_classifier_builder import SKLearnClassifierBuilder
 
 logger = logging.getLogger(__name__)

@@ -1,6 +1,6 @@
 max_trading_time: 300
 window_size: 10
-win_percentage: 130
+win_percentage: 110
 draw_down_percentage: 50
 step_size: 5
 max_tokens: 100000

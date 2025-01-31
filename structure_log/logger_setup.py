@@ -5,9 +5,14 @@ import sys
 from logstash_async.formatter import LogstashFormatter
 from logstash_async.handler import AsynchronousLogstashHandler
 
+from config.docker_helper import is_docker_container
+
 
 def setup_logger(label_name: str):
     # Logstash configuration
+    if not is_docker_container():
+        return
+
     logstash_host = os.getenv("LOGSTASH_HOST", "localhost")
     logstash_port = int(os.getenv("LOGSTASH_PORT", 9600))
 

@@ -2,7 +2,7 @@ from typing import Dict
 
 import pandas as pd
 
-from constants import TRADING_MINUTE_COLUMN, BUY_VOLUME_COLUMN, SELL_VOLUME_COLUMN, LAUNCH_DATE_COLUMN
+from constants import BUY_VOLUME_COLUMN, SELL_VOLUME_COLUMN, LAUNCH_DATE_COLUMN
 
 
 class BaseModelBuilder:
@@ -10,7 +10,6 @@ class BaseModelBuilder:
     def __init__(self, config: Dict):
         self.config = config
         self.non_training_columns = [
-            TRADING_MINUTE_COLUMN,
             BUY_VOLUME_COLUMN,
             SELL_VOLUME_COLUMN,
             LAUNCH_DATE_COLUMN
@@ -24,10 +23,10 @@ class BaseModelBuilder:
         return
 
     def prepare_dataset(self, data: pd.DataFrame, sorted_data: bool):
-        return
+        return data
 
     def prepare_prediction_data(self, data: pd.DataFrame, validation: bool):
-        return
+        return data
 
     def train(self, train_data: pd.DataFrame, val_data: pd.DataFrame):
         return
@@ -39,4 +38,7 @@ class BaseModelBuilder:
         return
 
     def get_model(self):
+        return
+
+    def predict(self, data):
         return

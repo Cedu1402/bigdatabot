@@ -1,21 +1,66 @@
 import asyncio
 import copy
+import random
 from datetime import datetime
 from typing import Optional
 
 from dotenv import load_dotenv
 
+from bot.token_watcher import prepare_current_dataset
 from config.config_reader import load_yaml_to_dict
-from constants import BIN_AMOUNT_KEY, CONFIG_2_FILE
-from data.dataset import prepare_test_data
+from constants import BIN_AMOUNT_KEY, CONFIG_2_FILE, TOKEN_COlUMN, RANDOM_SEED, TRADING_MINUTE_COLUMN
+from data.combine_price_trades import prepare_timestamps, convert_trading_amount
+from data.dataset import prepare_test_data, prepare_dataset
 from database.token_dataset_table import get_token_datasets_by_token
+from dune.data_collection import collect_all_data
+from ml_model.hist_gradient_model_builder import HistGradientBoostModelBuilder
+
+
+async def data_leak_check(amount_of_tokens: int = 10, use_cache: bool = True):
+    # load validation data
+    data_config = load_yaml_to_dict(CONFIG_2_FILE)
+    _, val, _ = await prepare_dataset(use_cache, data_config)
+    volume_close_1m, top_trader_trades = await collect_all_data(use_cache)
+    volume_close_1m, top_trader_trades = prepare_timestamps(volume_close_1m, top_trader_trades)
+    top_trader_trades = convert_trading_amount(top_trader_trades)
+
+    # # select x random tokens
+    tokens = val[TOKEN_COlUMN].unique().tolist()
+    random.seed = RANDOM_SEED
+    selected_tokens = random.sample(tokens, amount_of_tokens)
+
+    model_builder = HistGradientBoostModelBuilder(dict())
+    model_builder.load_model("hist_gradient")
+
+    # predict token on full data
+    val = val[val[TOKEN_COlUMN].isin(selected_tokens)]
+    val_x, val_y = model_builder.prepare_prediction_data(val.copy(), True)
+    val_predictions = model_builder.predict(val_x)
+
+    # predict token on split data using same logic to create df like production
+    for token in selected_tokens:
+        test = val[val[TOKEN_COlUMN] == token]
+        starting_minute = val[val[TOKEN_COlUMN] == token][TRADING_MINUTE_COLUMN].min()
+        end_minute = val[val[TOKEN_COlUMN] == token][TRADING_MINUTE_COLUMN].max()
+        current_minute = starting_minute
+
+        while current_minute <= end_minute:
+            valid_trades = top_trader_trades[
+                (top_trader_trades[TOKEN_COlUMN] == token) & (top_trader_trades[TRADING_MINUTE_COLUMN] <= starting_minute)]
+
+            df = await prepare_current_dataset(valid_trades, starting_minute, token, model_builder.get_columns())
+            prediction_data, _ = model_builder.prepare_prediction_data(df.copy(), False)
+            prediction = model_builder.predict(prediction_data)
+
+            assert prediction == val_predictions[0]  # todo get the correct val_prediction!
+            # todo compare the data not only the prediction results.
 
 
 async def check_token(token: str):
     config = dict()
     config[BIN_AMOUNT_KEY] = 10
-    model = DecisionTreeModelBuilderBuilder(config)
-    model.load_model("simple_tree")
+    model_builder = HistGradientBoostModelBuilder(dict())
+    model_builder.load_model("hist_gradient")
     data_config = load_yaml_to_dict(CONFIG_2_FILE)
 
     prod_data = get_token_datasets_by_token(token)
@@ -51,7 +96,6 @@ def check_time_frame(date_from, date_to):
 
 
 async def main(token: Optional[str], date_form: Optional[datetime], date_to: Optional[datetime]):
-    load_dotenv()
     if token is not None:
         await check_token(token)
     else:
@@ -59,4 +103,5 @@ async def main(token: Optional[str], date_form: Optional[datetime], date_to: Opt
 
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    load_dotenv()
+    asyncio.run(data_leak_check())

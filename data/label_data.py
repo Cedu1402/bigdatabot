@@ -36,10 +36,10 @@ def get_min_max_with_indices(series, x):
                 ::-1] + 1
 
     return pd.DataFrame({
-        'min_value': min_value,
-        'min_index': min_index,
-        'max_value': max_value,
-        'max_index': max_index
+        MIN_VALUE_COLUMN: min_value,
+        MIN_INDEX_COLUMN: min_index,
+        MAX_VALUE_COLUMN: max_value,
+        MAX_INDEX_COLUMN: max_index
     })
 
 
@@ -48,19 +48,29 @@ def label_dataset(data: pd.DataFrame, win_percentage: int,
     # Sort by token and trading minute
     data = data.sort_values(by=[TOKEN_COlUMN, TRADING_MINUTE_COLUMN])
     data[WIN_PRICE] = data[PRICE_COLUMN] * (1 + win_percentage / 100)
+    draw_down_percentage = draw_down_percentage if draw_down_percentage != "infinite" else 9999
     data[DRAW_DOWN_PRICE] = data[PRICE_COLUMN] * (1 - draw_down_percentage / 100)
 
     data[MIN_VALUE_COLUMN], data[MIN_INDEX_COLUMN], data[MAX_VALUE_COLUMN], data[
         MAX_INDEX_COLUMN] = get_min_max_with_indices_grouped(data, max_trading_time, TOKEN_COlUMN)
 
     data = data.dropna()
-
-    data[LABEL_COLUMN] = ((data[WIN_PRICE] <= data[MAX_VALUE_COLUMN]) & (
-            data[DRAW_DOWN_PRICE] < data[MIN_VALUE_COLUMN])) | \
-                         ((data[WIN_PRICE] <= data[MAX_VALUE_COLUMN]) & (
-                                 data[MAX_INDEX_COLUMN] < data[MIN_INDEX_COLUMN]))
+    if draw_down_percentage == 9999:
+        data[LABEL_COLUMN] = data[WIN_PRICE] <= data[MAX_VALUE_COLUMN]
+    else:
+        data[LABEL_COLUMN] = ((data[WIN_PRICE] <= data[MAX_VALUE_COLUMN]) & (
+                data[DRAW_DOWN_PRICE] < data[MIN_VALUE_COLUMN])) | \
+                             ((data[WIN_PRICE] <= data[MAX_VALUE_COLUMN]) & (
+                                     data[MAX_INDEX_COLUMN] < data[MIN_INDEX_COLUMN]))
 
     data.drop(
         columns=[WIN_PRICE, DRAW_DOWN_PRICE, MIN_VALUE_COLUMN, MIN_INDEX_COLUMN, MAX_VALUE_COLUMN, MAX_INDEX_COLUMN],
         inplace=True)
+    return data
+
+
+def label_without_time_window(data: pd.DataFrame, win_percentage: int) -> pd.DataFrame:
+    data[LABEL_COLUMN] = data[(data[TOKEN_COlUMN] == data[TOKEN_COlUMN]) &
+                              (data[TRADING_MINUTE_COLUMN] > data[TRADING_MINUTE_COLUMN]) & (
+                                          data[PRICE_COLUMN] * (1 + win_percentage / 100) <= data[PRICE_COLUMN])]
     return data
