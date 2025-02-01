@@ -1,7 +1,7 @@
-BUY_ACTION = 'BUY'
-SELL_ACTION = 'SELL'
+import enum
 
-TRADE_ACTIONS = [
-    BUY_ACTION,
-    SELL_ACTION,
-]
+
+class TradeAction(enum.Enum):
+    BUY = 'BUY'
+    SELL = 'SELL'
+    DO_NOTHING = 'DO_NOTHING'

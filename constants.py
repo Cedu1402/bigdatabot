@@ -90,3 +90,6 @@ STEP_SIZE_KEY = "step_size"
 N_FEATURES_TO_SELECT = "n_features_to_select"
 RFE_STEP_SIZE = "rfe_step_size"
 N_ESTIMATORS = 'n_estimators'
+
+
+MAX_MCTS_STEPS = 300
