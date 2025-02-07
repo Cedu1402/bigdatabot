@@ -1,16 +1,18 @@
 import math
-from typing import List
+
+from constants import PRICE_PCT_CHANGE, CURRENT_ASSET_PRICE_COLUMN
+from mcts.info_set import InfoSet
 
 
-def get_next_price(token_price: float, change_pct: float) -> float:
-    return token_price * (1 + change_pct)
+def get_next_pct_change(at_index: int) -> float:
+    return InfoSet().get_info_set()[PRICE_PCT_CHANGE].iloc[at_index]
 
 
-def get_next_percentage_change(base_token_price_changes: List[float]) -> List[float]:
-    return base_token_price_changes[1:]
+def get_next_price(at_index: int) -> float:
+    return InfoSet().get_info_set()[CURRENT_ASSET_PRICE_COLUMN].iloc[at_index]
 
 
-def ucb1(node_value, node_visits, parent_visits, exploration_constant=2.0):
+def ucb1(node_value, node_visits, parent_visits, exploration_constant=200.0):
     """
     Compute the UCB1 score.
 

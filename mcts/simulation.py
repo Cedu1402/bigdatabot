@@ -1,9 +1,10 @@
-import random
 from typing import List
 
+from constants import CURRENT_ASSET_PRICE_COLUMN
 from mcts.action import TradeAction
-from mcts.child_node_sampling import get_next_price, get_next_percentage_change
-from mcts.state import State
+from mcts.info_set import InfoSet
+from mcts.state import State, calculate_reward_by_price
+from mcts.trades import run_buy_action
 
 
 def get_possible_actions(state) -> List[TradeAction]:
@@ -12,23 +13,44 @@ def get_possible_actions(state) -> List[TradeAction]:
     elif state.action == TradeAction.SELL:
         return []
     else:
-        possible_action = TradeAction.BUY if state.token_holding == 0 else TradeAction.SELL
+        possible_action = TradeAction.BUY if state.get_holding() == 0 else TradeAction.SELL
         return [possible_action, TradeAction.DO_NOTHING]
 
 
+def simulate_no_holding(current_index: int, investment: float) -> float:
+    base_token_price_changes = InfoSet().get_info_set()[current_index:]
+
+    min_index = base_token_price_changes[CURRENT_ASSET_PRICE_COLUMN][:int(len(base_token_price_changes) / 2)].idxmin()
+    min_value = base_token_price_changes.loc[min_index, CURRENT_ASSET_PRICE_COLUMN]
+    max_value = base_token_price_changes[min_index + 1:][CURRENT_ASSET_PRICE_COLUMN].max() * 0.9
+    if max_value != max_value:
+        print("here")
+
+    token_amount = run_buy_action(investment, min_value)
+
+    reward, _ = calculate_reward_by_price(max_value, token_amount, investment)
+
+    return reward
+
+
+def simulate_best_exit(current_index: int, investment: float, token_amount: float) -> float:
+    base_token_price_changes = InfoSet().get_info_set()[current_index:]
+    max_value = base_token_price_changes[CURRENT_ASSET_PRICE_COLUMN].max() * 0.9
+
+    reward, _ = calculate_reward_by_price(max_value, token_amount, investment)
+    return reward
+
+
 def unroll_simulation(current_state: State) -> float:
-    current_price = current_state.token_price
-    base_token_price_changes = current_state.base_token_price_changes
+    # 1. if nothing bought get min price in next x min and max after min price
+    if current_state.action == TradeAction.DO_NOTHING and current_state.get_holding() == 0:
+        return simulate_no_holding(current_state.info_set_index, current_state.investment)
 
-    while True:
-        base_token_price_changes = get_next_percentage_change(base_token_price_changes)
-        current_price = get_next_price(current_price, base_token_price_changes[0])
-        selected_action = random.choice(get_possible_actions(current_state))
-        
-        current_state = State(base_token_price_changes, current_price, current_state.initial_value, selected_action,
-                              current_state.token_holding, current_state.current_step)
+    # 2. if bought get max price in future
+    if current_state.action != TradeAction.SELL and current_state.get_holding() > 0:
+        return simulate_best_exit(current_state.info_set_index, current_state.investment,
+                                  current_state.get_holding())
 
-        if current_state.is_end_state():
-            break
-
-    return current_state.return_of_investment
+    # 3. if sold just return the reward
+    current_state.calculate_reward()
+    return current_state.reward

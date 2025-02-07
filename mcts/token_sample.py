@@ -1,33 +1,35 @@
 import asyncio
 import random
 from datetime import datetime
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 import numpy as np
 import pandas as pd
 
-from constants import TOKEN_COlUMN, TRADING_MINUTE_COLUMN, PRICE_COLUMN
+from cache_helper import write_data_to_cache
+from constants import TOKEN_COlUMN, TRADING_MINUTE_COLUMN, PRICE_COLUMN, LAUNCH_DATE_COLUMN, PRICE_PCT_CHANGE, \
+    CURRENT_ASSET_PRICE_COLUMN
+from data.cache_data import read_cache_data
 from data.combine_price_trades import prepare_timestamps
+from data.feature_engineering import add_launch_date
 from dune.data_collection import collect_all_data
 
 
-def filter_out_pre_trade_data(price_data: pd.DataFrame, trades: pd.DataFrame) -> pd.DataFrame:
-    price_data, trades = prepare_timestamps(price_data, trades)
-    first_trade_per_token = trades.groupby(TOKEN_COlUMN)[TRADING_MINUTE_COLUMN].min()
+def load_token_ohlcv_data() -> Tuple[pd.DataFrame, pd.DataFrame]:
+    file_name = 'load_token_ohlcv_data'
 
-    # Map each row to its corresponding first trade time
-    price_data['first_trade_time'] = price_data[TOKEN_COlUMN].map(first_trade_per_token)
+    cached_data = read_cache_data(file_name)
+    if cached_data is not None:
+        return cached_data[0], cached_data[1]
 
-    # Filter where trading minute is after or equal to the first trade
-    filtered = price_data[price_data[TRADING_MINUTE_COLUMN] >= price_data['first_trade_time']]
-
-    return filtered.drop(columns=['first_trade_time']).reset_index(drop=True)
-
-
-def load_token_ohlcv_data() -> pd.DataFrame:
     price_data, trades = asyncio.run(collect_all_data(True))
-    price_data = filter_out_pre_trade_data(price_data, trades)
-    return price_data
+    price_data, trades = prepare_timestamps(price_data, trades)
+    price_data = add_launch_date(trades, price_data)
+    price_data = add_token_age_column(price_data)
+    price_data = add_price_pct_column(price_data)
+    write_data_to_cache(file_name, (price_data, trades))
+
+    return price_data, trades
 
 
 def remove_current_token(token_ohlcv_data: pd.DataFrame, token: str) -> pd.DataFrame:
@@ -48,7 +50,7 @@ def get_token_list(token_ohlcv_data: pd.DataFrame) -> List[str]:
 
 
 def sample_tokens(token_list: List[str], amount: int) -> List[str]:
-    return random.sample(token_list, amount)
+    return random.sample(token_list, amount if len(token_list) > amount else len(token_list))
 
 
 def get_filtered_data(token_ohlcv_data: pd.DataFrame, selected_tokens: List[str]) -> pd.DataFrame:
@@ -59,6 +61,14 @@ def split_by_token(token_ohlcv_data: pd.DataFrame) -> Dict[str, pd.DataFrame]:
     return {str(token): df.reset_index(drop=True) for token, df in token_ohlcv_data.groupby(TOKEN_COlUMN)}
 
 
+def add_token_age_column(df: pd.DataFrame) -> pd.DataFrame:
+    return df.groupby(TOKEN_COlUMN, group_keys=False).apply(
+        lambda group: group.assign(
+            age_in_minutes=np.ceil((group[TRADING_MINUTE_COLUMN] - group[LAUNCH_DATE_COLUMN]).dt.total_seconds() / 60)
+        )
+    )
+
+
 def add_price_pct_column(token_ohlcv_data: pd.DataFrame) -> pd.DataFrame:
     return token_ohlcv_data.groupby(TOKEN_COlUMN, group_keys=False).apply(
         lambda df: df.assign(
@@ -66,10 +76,10 @@ def add_price_pct_column(token_ohlcv_data: pd.DataFrame) -> pd.DataFrame:
     )
 
 
-def get_info_sets(data: pd.DataFrame) -> List[List[float]]:
+def get_info_sets(data: pd.DataFrame) -> List[pd.DataFrame]:
     return [
-        df[PRICE_COLUMN].pct_change().dropna().tolist()
-        for _, df in data.groupby(TOKEN_COlUMN)
+        df[[PRICE_PCT_CHANGE, CURRENT_ASSET_PRICE_COLUMN]].reset_index(drop=True) for _, df in
+        data.groupby(TOKEN_COlUMN)
     ]
 
 
@@ -82,7 +92,7 @@ def sample_random_tokens(token: str, token_ohlcv_data: pd.DataFrame, amount: int
     :param token_start_date: start date of token
     :return: tokens ohlcv data
     """
-    # todo only from current token age on. (add token age param and filter data for each token sampled).
+
     token_ohlcv_data = remove_current_token(token_ohlcv_data, token)
     token_ohlcv_data = remove_older_tokens(token_ohlcv_data, token_start_date)
     selected_tokens = sample_tokens(get_token_list(token_ohlcv_data), amount)

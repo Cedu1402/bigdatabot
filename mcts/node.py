@@ -1,21 +1,19 @@
 from typing import List, Optional
 
-from mcts.child_node_sampling import ucb1, get_next_percentage_change, get_next_price
+from mcts.child_node_sampling import ucb1
 from mcts.simulation import unroll_simulation, get_possible_actions
 from mcts.state import State
 
 
 def node_expansion(parent_node: "Node") -> List["Node"]:
     parent_state = parent_node.state
-    base_token_price_changes = get_next_percentage_change(parent_state.base_token_price_changes)
-    node_token_price = get_next_price(parent_state.token_price, base_token_price_changes[0])
-
     possible_actions = get_possible_actions(parent_state)
     child_nodes = list()
 
     for action in possible_actions:
-        child_state = State(base_token_price_changes, node_token_price, parent_state.initial_value, action,
-                            parent_state.token_holding, parent_state.current_step)
+        child_state = State(parent_node.state.info_set_index + 1,
+                            parent_state.investment, action,
+                            parent_state.info_set_buy_index, parent_state.current_step, parent_state.fixed_holding)
 
         child_nodes.append(Node(parent_node, child_state))
 
@@ -36,14 +34,13 @@ class Node:
         self.children = node_expansion(self)
 
     def selection(self):
-        
         if self.is_terminal_node():
-            return self.backpropagation(self.state.return_of_investment)
+            self.state.calculate_reward()
+            return self.backpropagation(self.state.reward)
 
         if self.is_node_unexplored() and self.parent:
             reward = self.run_simulation()
-            self.backpropagation(reward)
-            return
+            return self.backpropagation(reward)
 
         if len(self.children) == 0:
             self.expansion()
@@ -51,8 +48,9 @@ class Node:
         best_node = self.child_node_selection()
         best_node.selection()
 
-    def child_node_selection(self) -> "Node":
-        return max(self.children, key=lambda c: ucb1(c.reward_value, c.visit_count, self.visit_count))
+    def child_node_selection(self) -> Optional["Node"]:
+        return max(self.children,
+                   key=lambda c: ucb1(c.reward_value, c.visit_count, self.visit_count))
 
     def is_node_unexplored(self) -> bool:
         return self.visit_count == 0
@@ -69,3 +67,8 @@ class Node:
 
     def is_terminal_node(self) -> bool:
         return self.state.is_end_state()
+
+    def get_max_depth(self) -> int:
+        if not self.children:
+            return 1  # leaf node counts as depth 1
+        return 1 + max(child.get_max_depth() for child in self.children)

@@ -1,20 +1,23 @@
+import multiprocessing
 import random
 from datetime import datetime
 from typing import List
 
 import pandas as pd
 
-from constants import TRADING_MINUTE_COLUMN, TOKEN_COlUMN, PRICE_COLUMN, RANDOM_SEED
+from constants import TRADING_MINUTE_COLUMN, TOKEN_COlUMN, PRICE_COLUMN, RANDOM_SEED, AGE_IN_MINUTES_COLUMN, \
+    CURRENT_ASSET_PRICE_COLUMN, PRICE_PCT_CHANGE
 from data.random_seed import set_random_seed
 from mcts.action import TradeAction
-from mcts.token_sample import load_token_ohlcv_data, sample_random_tokens, add_price_pct_column, get_info_sets
+from mcts.info_set import InfoSet
+from mcts.token_sample import load_token_ohlcv_data, sample_random_tokens, get_info_sets
 from mcts.trades import run_buy_action, run_sell_action
 from mcts.tree import MonteCarloSearchTree
 
 
 def get_validation_tokens(data: pd.DataFrame, amount: int) -> List[pd.DataFrame]:
     max_date = datetime(2024, 11, 30)
-    min_date = datetime(2024, 11, 15)
+    min_date = datetime(2024, 11, 25)
 
     possible_tokens = list(data[(data[TRADING_MINUTE_COLUMN] < max_date) & (data[TRADING_MINUTE_COLUMN] >= min_date)][
                                TOKEN_COlUMN].unique())
@@ -24,45 +27,88 @@ def get_validation_tokens(data: pd.DataFrame, amount: int) -> List[pd.DataFrame]
     return [group for _, group in data[data[TOKEN_COlUMN].isin(selected_tokens)].groupby(TOKEN_COlUMN)]
 
 
+def remove_non_traded_rows(token_data: pd.DataFrame, trades: pd.DataFrame, token: str) -> pd.DataFrame:
+    token_min_trading_minute = trades[trades[TOKEN_COlUMN] == token][TRADING_MINUTE_COLUMN].min()
+    return token_data[token_data[TRADING_MINUTE_COLUMN] >= token_min_trading_minute]
+
+
+def filter_info_sets_by_token_age(data: pd.DataFrame, token_age: int):
+    return data[data[AGE_IN_MINUTES_COLUMN] >= token_age]
+
+
+def apply_cumulative_price_change_by_token(df: pd.DataFrame, base_price: float) -> pd.DataFrame:
+    # Group by the token column and calculate the cumulative percentage change
+    df['cumulative_pct_change'] = df.groupby(TOKEN_COlUMN)[PRICE_PCT_CHANGE].transform(
+        lambda x: (1 + x / 100).cumprod())
+
+    # Apply the cumulative percentage change to the base price
+    df[CURRENT_ASSET_PRICE_COLUMN] = base_price * df['cumulative_pct_change']
+
+    # Drop the intermediate column used for the calculation
+    return df.drop(columns=['cumulative_pct_change'])
+
+
+def run_token_evaluation(token_data, trade_data, ohlcv_data):
+    token = token_data[TOKEN_COlUMN].iloc[0]
+    token_data = remove_non_traded_rows(token_data, trade_data, token)
+    token_start_date = token_data[TRADING_MINUTE_COLUMN].min()
+
+    current_holding = 0
+    current_step = 0
+    last_action = TradeAction.DO_NOTHING
+
+    info_sets_data = sample_random_tokens(token, ohlcv_data, 1000, token_start_date)
+
+    investment_amount = 10
+    info_set = InfoSet()
+
+    for index, row in token_data.iterrows():
+        token_price = row[PRICE_COLUMN]
+
+        current_info_sets_data = filter_info_sets_by_token_age(info_sets_data.copy(), row[AGE_IN_MINUTES_COLUMN])
+        current_info_sets_data = apply_cumulative_price_change_by_token(current_info_sets_data, token_price)
+        info_sets = get_info_sets(current_info_sets_data)
+        info_set.set_info_set(info_sets)
+
+        current_step += 1
+        mcts = MonteCarloSearchTree(investment_amount, current_holding, current_step, last_action)
+        mcts.evaluate_tree(5)
+        for child in mcts.root.children:
+            print(child.state.action, child.visit_count, child.reward_value)
+
+        print("Tree depth:", mcts.get_depth())
+        if len(mcts.root.children) == 0:
+            return 0
+
+        best_child = max(mcts.root.children, key=lambda x: x.visit_count)
+        if best_child.state.reward > 0:
+            last_action = best_child.state.action
+
+        if last_action == TradeAction.BUY:
+            current_holding = run_buy_action(investment_amount,
+                                             token_price * 0.85)
+            # buy directly at close as we need time to run the sim.
+        elif last_action == TradeAction.SELL:
+            return_of_investment = run_sell_action(current_holding, token_price) - investment_amount
+            return return_of_investment
+
+    return 0
+
+
 def run_mcts_on_validation():
-    ohlcv_data = load_token_ohlcv_data()
-    validation_tokens = get_validation_tokens(ohlcv_data, 500)
-    ohlcv_data = add_price_pct_column(ohlcv_data)
-    total_return = 0
+    ohlcv_data, trade_data = load_token_ohlcv_data()
+    validation_tokens = get_validation_tokens(ohlcv_data, 5)
+    print("Proceses", multiprocessing.cpu_count() - 1)
+    with multiprocessing.Pool(processes=1) as pool:
+        results = pool.starmap(run_token_evaluation,
+                               [(token_data, trade_data, ohlcv_data) for token_data in validation_tokens])
 
-    for token_data in validation_tokens:
-        token_start_date = token_data[TRADING_MINUTE_COLUMN].min()
-        token = token_data[TOKEN_COlUMN].iloc[0]
+    pool.close()
+    pool.join()
 
-        current_holding = 0
-        current_step = 0
-        last_action = TradeAction.DO_NOTHING
-
-        info_sets = sample_random_tokens(token, ohlcv_data, 500, token_start_date)
-        info_sets = get_info_sets(info_sets)
-        investment_amount = 10
-
-        for index, row in token_data.iterrows():
-            token_price = row[PRICE_COLUMN]
-            current_step += 1
-            mcts = MonteCarloSearchTree(info_sets, token_price, investment_amount, current_holding, current_step,
-                                        last_action)
-            mcts.evaluate_tree(10)
-            for child in mcts.root.children:
-                print(child.state.action, child.visit_count, child.reward_value)
-
-            last_action = max(mcts.root.children, key=lambda x: x.visit_count).state.action
-            if last_action == TradeAction.BUY:
-                current_holding = run_buy_action(investment_amount,
-                                                 token_price)  # todo add a increase as we do not buy directly at close as we need time to run the sim.
-            elif last_action == TradeAction.SELL:
-                return_of_investment = run_sell_action(current_holding, token_price) - investment_amount
-                print(f"Profit for token {return_of_investment} $")
-                total_return += return_of_investment
-                print(f"Current total return {total_return} $")
-                break
-
-    print(f"Total return $ {total_return}")
+    # Sum up all the results from the different processes
+    total_return = sum(results)
+    print(f"Total return: $ {total_return}")
 
 
 if __name__ == '__main__':
