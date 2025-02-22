@@ -9,8 +9,6 @@ services:
       - ./cache:/app/cache           # Map host ./cache to /app/cache in the container
     networks:
       - app_network
-    depends_on:
-      - postgres
 
 networks:
   app_network:
