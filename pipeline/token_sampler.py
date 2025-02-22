@@ -12,7 +12,7 @@ from dune.dune_queries import get_token_sample
 
 async def main(use_cache: bool):
     sampled = get_token_sample(use_cache)
-    sampled = sampled.head(10)
+    # sampled = sampled.head(10)
     sampled[LAUNCH_DATE_COLUMN] = pd.to_datetime(sampled[LAUNCH_DATE_COLUMN])
     launch_times = sampled.set_index(TOKEN_COlUMN)[LAUNCH_DATE_COLUMN].to_dict()
 
