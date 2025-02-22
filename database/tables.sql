@@ -52,3 +52,10 @@ CREATE TABLE IF NOT EXISTS token_creation_info
     creator   VARCHAR(255) NOT NULL,
     timestamp TIMESTAMP    NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS token_sample
+(
+    id    SERIAL PRIMARY KEY,
+    token VARCHAR(255) NOT NULL,
+    raw   BYTEA        NOT NULL
+);

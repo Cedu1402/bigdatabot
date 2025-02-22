@@ -12,7 +12,7 @@ def calculate_reward_by_price(token_price: float, token_holding: float, investme
     return_of_investment = sell_value - investment
     reward = return_of_investment
 
-    if reward >= 4 or reward < -4:
+    if reward >= 4 or reward < -5:
         reward *= 2
 
     return reward, return_of_investment
@@ -37,7 +37,7 @@ class State:
         self.reward = 0.0
 
     def calculate_reward(self):
-        token_price = get_next_price(self.info_set_index) * 0.9
+        token_price = get_next_price(self.info_set_index)
         token_holding = self.get_holding()
         self.reward, self.return_of_investment = calculate_reward_by_price(token_price, token_holding,
                                                                            self.investment)

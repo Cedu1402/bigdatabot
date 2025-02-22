@@ -1,13 +1,12 @@
 services:
 
-  bot_trainer:
+  token_sampler:
     build:
       context: .
       dockerfile: Dockerfile
-    command: python pipeline/4_train_model.py
+    command: python pipeline/token_sampler.py
     volumes:
       - ./cache:/app/cache           # Map host ./cache to /app/cache in the container
-      - ./save_models:/app/save_models  # Map host ./save_models to /app/save_models in the container
     networks:
       - app_network
     depends_on:

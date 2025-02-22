@@ -21,11 +21,11 @@ class MonteCarloSearchTree:
         self.root = Node(None, self.start_state)
 
     def evaluate_tree(self, max_run_time: int):
-        # todo add random noise to price change or black swan event based on some possibility.
-        sample_info_set_max = 750
+        sample_info_set_max = 1
         sample_info_set_count = sample_info_set_max
         info_set_count = 0
         start_time = datetime.now()
+        
         while (datetime.now() - start_time).total_seconds() < max_run_time:
             if sample_info_set_count == sample_info_set_max:
                 sample_info_set_count = 0
