@@ -1,7 +1,7 @@
 import pandas as pd
 
 from constants import TRADE_LIST_QUERY, TOP_TRADERS_QUERY, TRADED_TOKENS_QUERY, CURRENT_CLOSE_VOLUME_1M_QUERY, \
-    CURRENT_TRADE_LIST_QUERY, MONTHLY_TRADERS, WEEKLY_TRADERS, TOKEN_SAMPLE
+    CURRENT_TRADE_LIST_QUERY, TOKEN_SAMPLE, MONTHLY_TRADERS_FIRST_BUY
 from dune.query_request import get_query_result
 
 
@@ -14,10 +14,7 @@ def get_list_of_trades(use_cache: bool) -> pd.DataFrame:
 
 
 def get_top_traders(use_cache: bool) -> pd.DataFrame:
-    monthly_result = get_query_result(MONTHLY_TRADERS, use_cache)
-    weekly_result = get_query_result(WEEKLY_TRADERS, use_cache)
-    top_traders = pd.concat([monthly_result, weekly_result], ignore_index=True)
-    top_traders = top_traders.drop_duplicates(subset='trader_id', keep='first')
+    top_traders = get_query_result(MONTHLY_TRADERS_FIRST_BUY, use_cache)
     return top_traders
 
 

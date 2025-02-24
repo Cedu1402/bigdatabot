@@ -64,7 +64,7 @@ def get_tokens_and_launch_dict(top_trader_trades: pd.DataFrame) -> Tuple[List[st
 
 async def collect_all_data(use_cache: bool) -> Tuple[pd.DataFrame, pd.DataFrame]:
     end_date = datetime.utcnow() - timedelta(hours=10)
-    start_date = end_date - timedelta(days=76)
+    start_date = end_date - timedelta(days=40)
 
     top_traders = get_top_traders(use_cache)
 
