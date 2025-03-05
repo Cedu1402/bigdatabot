@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 from constants import TOKEN_COLUMN, PRICE_COLUMN, TRADING_MINUTE_COLUMN, PRICE_PCT_CHANGE
 from data.cache_data import read_cache_data, save_cache_data
 from data.data_split import get_index_of_similar_price
+from database.token_sample_table import get_all_samples
 
 cum_change = 'cumulative_pct_change'
 log_return = 'log_return'
@@ -43,6 +44,15 @@ def prepare_data(min_price_reached):
         return token_list, data, min_trading_minutes
 
     data = read_cache_data('token_samples_full')
+    if data is None:
+        token_samples = get_all_samples()
+        data = pd.DataFrame()
+        for sample in token_samples:
+            data = pd.concat([data, sample.raw_data], ignore_index=True)
+
+        data.reset_index(drop=True, inplace=True)
+        data.sort_values(by=[TOKEN_COLUMN, TRADING_MINUTE_COLUMN], inplace=True)
+
     data[PRICE_PCT_CHANGE] = data.groupby(TOKEN_COLUMN)[PRICE_COLUMN].pct_change()
     data[log_return] = np.log1p(data[PRICE_PCT_CHANGE])
 
