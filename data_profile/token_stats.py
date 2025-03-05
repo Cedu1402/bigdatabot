@@ -2,16 +2,16 @@ from typing import List
 
 import pandas as pd
 
-from constants import TOKEN_COlUMN, LABEL_COLUMN
+from constants import TOKEN_COLUMN, LABEL_COLUMN
 
 
 def get_tokens(data: pd.DataFrame) -> List[str]:
-    return data[TOKEN_COlUMN].unique().tolist()
+    return data[TOKEN_COLUMN].unique().tolist()
 
 
 def get_good_tokens(data: pd.DataFrame) -> List[str]:
     good_data = data[data[LABEL_COLUMN] == True]
-    good_tokens = good_data[TOKEN_COlUMN].unique().tolist()
+    good_tokens = good_data[TOKEN_COLUMN].unique().tolist()
     return good_tokens
 
 

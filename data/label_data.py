@@ -1,6 +1,6 @@
 import pandas as pd
 
-from constants import PRICE_COLUMN, TRADING_MINUTE_COLUMN, LABEL_COLUMN, TOKEN_COlUMN
+from constants import PRICE_COLUMN, TRADING_MINUTE_COLUMN, LABEL_COLUMN, TOKEN_COLUMN
 
 WIN_PRICE = "win_price"
 DRAW_DOWN_PRICE = "drawdown_price"
@@ -46,13 +46,13 @@ def get_min_max_with_indices(series, x):
 def label_dataset(data: pd.DataFrame, win_percentage: int,
                   draw_down_percentage: int, max_trading_time: int) -> pd.DataFrame:
     # Sort by token and trading minute
-    data = data.sort_values(by=[TOKEN_COlUMN, TRADING_MINUTE_COLUMN])
+    data = data.sort_values(by=[TOKEN_COLUMN, TRADING_MINUTE_COLUMN])
     data[WIN_PRICE] = data[PRICE_COLUMN] * (1 + win_percentage / 100)
     draw_down_percentage = draw_down_percentage if draw_down_percentage != "infinite" else 9999
     data[DRAW_DOWN_PRICE] = data[PRICE_COLUMN] * (1 - draw_down_percentage / 100)
 
     data[MIN_VALUE_COLUMN], data[MIN_INDEX_COLUMN], data[MAX_VALUE_COLUMN], data[
-        MAX_INDEX_COLUMN] = get_min_max_with_indices_grouped(data, max_trading_time, TOKEN_COlUMN)
+        MAX_INDEX_COLUMN] = get_min_max_with_indices_grouped(data, max_trading_time, TOKEN_COLUMN)
 
     data = data.dropna()
     if draw_down_percentage == 9999:
@@ -70,7 +70,7 @@ def label_dataset(data: pd.DataFrame, win_percentage: int,
 
 
 def label_without_time_window(data: pd.DataFrame, win_percentage: int) -> pd.DataFrame:
-    data[LABEL_COLUMN] = data[(data[TOKEN_COlUMN] == data[TOKEN_COlUMN]) &
+    data[LABEL_COLUMN] = data[(data[TOKEN_COLUMN] == data[TOKEN_COLUMN]) &
                               (data[TRADING_MINUTE_COLUMN] > data[TRADING_MINUTE_COLUMN]) & (
                                           data[PRICE_COLUMN] * (1 + win_percentage / 100) <= data[PRICE_COLUMN])]
     return data

@@ -10,7 +10,7 @@ import pandas as pd
 from birdeye_api.api_limit import check_api_limit
 from blockchain_token.token_creation import check_token_create_info_date_range, get_token_create_info
 from cache_helper import get_cache_file_data, write_data_to_cache
-from constants import BIRDEYE_KEY, TOP_TRADER_TRADES_BIRDEYE, LAUNCH_DATE_COLUMN, TOKEN_COlUMN
+from constants import BIRDEYE_KEY, TOP_TRADER_TRADES_BIRDEYE, LAUNCH_DATE_COLUMN, TOKEN_COLUMN
 from database.token_creation_info_table import select_token_creation_info_for_list
 from env_data.get_env_value import get_env_value
 from solana_api.jupiter_api import SOL_MINT
@@ -153,7 +153,7 @@ async def get_relevant_tokens(tokens: List[str], start_date: datetime, end_date:
         result, launch_date = await check_token_create_info_date_range(token, start_date, end_date, create_info)
 
         if result:
-            relevant_tokens.append({TOKEN_COlUMN: token, LAUNCH_DATE_COLUMN: launch_date})
+            relevant_tokens.append({TOKEN_COLUMN: token, LAUNCH_DATE_COLUMN: launch_date})
 
     return relevant_tokens
 

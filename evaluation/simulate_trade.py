@@ -3,7 +3,7 @@ from typing import List
 import pandas as pd
 
 from cache_helper import get_cache_file_data
-from constants import INVESTMENT_AMOUNT, TOKEN_COlUMN, TOKEN_CLOSE_VOLUME_1M_QUERY, PRICE_COLUMN, TRADING_MINUTE_COLUMN
+from constants import INVESTMENT_AMOUNT, TOKEN_COLUMN, TOKEN_CLOSE_VOLUME_1M_QUERY, PRICE_COLUMN, TRADING_MINUTE_COLUMN
 
 
 def do_ranges_overlap(start1, end1, start2, end2):
@@ -50,12 +50,12 @@ def get_sell_time(token_price_data, token, data, label, win_percentage, draw_dow
     try:
         if label:
             filtered_data = token_price_data[
-                (token_price_data[TOKEN_COlUMN] == token) &
+                (token_price_data[TOKEN_COLUMN] == token) &
                 (token_price_data[TRADING_MINUTE_COLUMN] > data[TRADING_MINUTE_COLUMN]) &
                 (token_price_data[PRICE_COLUMN] >= data[PRICE_COLUMN] * (1 + win_percentage / 100))]
         else:
             filtered_data = token_price_data[
-                (token_price_data[TOKEN_COlUMN] == token) &
+                (token_price_data[TOKEN_COLUMN] == token) &
                 (token_price_data[TRADING_MINUTE_COLUMN] > data[TRADING_MINUTE_COLUMN]) &
                 (token_price_data[PRICE_COLUMN] >= data[PRICE_COLUMN] * (1 - (
                         draw_down_percentage / 100)))]
@@ -82,18 +82,18 @@ def run_simulation(val_x: pd.DataFrame, val_y: List[bool], prediction: List[bool
     token_ages = list()
     token_market_caps = list()
     token_buy_sell_times = list()
-    tokens = val_x[TOKEN_COlUMN].unique().tolist()
+    tokens = val_x[TOKEN_COLUMN].unique().tolist()
     good_tokens = set()
 
     for index, data in val_x.iterrows():
 
         if val_y[index]:
-            good_tokens.add(data[TOKEN_COlUMN])
+            good_tokens.add(data[TOKEN_COLUMN])
 
         if not prediction[index]:
             continue
 
-        token = data[TOKEN_COlUMN]
+        token = data[TOKEN_COLUMN]
 
         if token not in token_bought:
             # token_ages.append(data[AGE_IN_MINUTES_COLUMN])

@@ -2,7 +2,7 @@ import unittest
 
 import pandas as pd
 
-from constants import TOKEN_COlUMN
+from constants import TOKEN_COLUMN
 from mcts.token_sample import split_by_token
 
 
@@ -11,7 +11,7 @@ class TestRunner(unittest.TestCase):
     def setUp(self):
         # Sample test DataFrame
         self.data = pd.DataFrame({
-            TOKEN_COlUMN: ['BTC', 'ETH', 'BTC', 'SOL', 'ETH'],
+            TOKEN_COLUMN: ['BTC', 'ETH', 'BTC', 'SOL', 'ETH'],
             'price': [30000, 2000, 31000, 50, 2100],
         })
 
@@ -26,7 +26,7 @@ class TestRunner(unittest.TestCase):
         pd.testing.assert_frame_equal(
             result['BTC'],
             pd.DataFrame({
-                TOKEN_COlUMN: ['BTC', 'BTC'],
+                TOKEN_COLUMN: ['BTC', 'BTC'],
                 'price': [30000, 31000],
             }).reset_index(drop=True)
         )

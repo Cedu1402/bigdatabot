@@ -1,6 +1,6 @@
 import logging
 import pickle
-from typing import Optional
+from typing import Optional, List
 
 from database.db_connection import get_db_connection
 from dto.token_sample_model import TokenSample
@@ -25,6 +25,28 @@ def insert_token_sample(token_sample: TokenSample):
         logger.exception("Failed to insert token sample", extra={"token": token_sample.token})
 
 
+def get_all_samples() -> List[TokenSample]:
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                select_query = """
+                SELECT id, token, raw
+                FROM token_sample
+                """
+                cursor.execute(select_query)
+                rows = cursor.fetchall()
+                samples = list()
+                for row in rows:
+                    samples.append(TokenSample(
+                        token=row[1],
+                        raw_data=pickle.loads(row[2])
+                    ))
+                return samples
+    except Exception as e:
+        logger.exception("Failed to fetch token samples")
+    return None
+
+
 def get_token_samples_by_token(token: str) -> Optional[TokenSample]:
     """
     Fetches all token samples for a given token.
@@ -35,7 +57,7 @@ def get_token_samples_by_token(token: str) -> Optional[TokenSample]:
     Returns:
         Optional[TokenSample]: TokenSample object.
     """
-    
+
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cursor:

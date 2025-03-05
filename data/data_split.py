@@ -3,7 +3,13 @@ from typing import Tuple, List, Dict
 
 import pandas as pd
 
-from constants import LABEL_COLUMN, TOKEN_COlUMN, TRADING_MINUTE_COLUMN
+from constants import LABEL_COLUMN, TOKEN_COLUMN, TRADING_MINUTE_COLUMN, PRICE_COLUMN
+
+
+def get_index_of_similar_price(token_price_data, current_price):
+    return token_price_data[token_price_data['age'] < 300].groupby(TOKEN_COLUMN, group_keys=False).apply(
+        lambda group: (group[PRICE_COLUMN] - current_price).abs().idxmin()
+    )
 
 
 def flatten_dataframe_list(data: List[pd.DataFrame]) -> pd.DataFrame:
@@ -76,7 +82,7 @@ def get_token_splits(token_data: Dict[str, datetime], first_split_time: datetime
 
 
 def get_token_filtered_set(data: pd.DataFrame, tokens: List[str]) -> pd.DataFrame:
-    return data[data[TOKEN_COlUMN].isin(tokens)]
+    return data[data[TOKEN_COLUMN].isin(tokens)]
 
 
 def split_data(data: pd.DataFrame, token_data: Dict[str, datetime]) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:

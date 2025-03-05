@@ -2,7 +2,7 @@ from typing import List
 
 import pandas as pd
 
-from constants import TOKEN_COlUMN, TRADING_MINUTE_COLUMN
+from constants import TOKEN_COLUMN, TRADING_MINUTE_COLUMN
 
 
 def get_sizes_from_data(data: List[pd.DataFrame]) -> List[int]:
@@ -78,7 +78,7 @@ def create_sliding_window_flat(data: pd.DataFrame, step_size: int = 1):
     if step_size <= 0:
         raise ValueError('step_size must be greater than 0')
 
-    return data.groupby(TOKEN_COlUMN).apply(lambda df: df.iloc[::step_size]).reset_index(drop=True)
+    return data.groupby(TOKEN_COLUMN).apply(lambda df: df.iloc[::step_size]).reset_index(drop=True)
 
 
 def create_sliding_windows(data: pd.DataFrame, window_size: int = 10, step_size: int = 1) -> List[pd.DataFrame]:
@@ -96,9 +96,9 @@ def create_sliding_windows(data: pd.DataFrame, window_size: int = 10, step_size:
     sliding_windows = []
 
     # Process each token individually
-    for token in data[TOKEN_COlUMN].unique():
+    for token in data[TOKEN_COLUMN].unique():
         # Filter data for this token
-        token_data = data[data[TOKEN_COlUMN] == token].sort_values(TRADING_MINUTE_COLUMN).reset_index(drop=True)
+        token_data = data[data[TOKEN_COLUMN] == token].sort_values(TRADING_MINUTE_COLUMN).reset_index(drop=True)
 
         # Add padding rows with 0 values
         padding = pd.DataFrame(

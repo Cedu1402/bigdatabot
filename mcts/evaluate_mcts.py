@@ -6,7 +6,7 @@ from typing import List
 import pandas as pd
 from matplotlib import pyplot as plt
 
-from constants import TRADING_MINUTE_COLUMN, TOKEN_COlUMN, PRICE_COLUMN, RANDOM_SEED, AGE_IN_MINUTES_COLUMN, \
+from constants import TRADING_MINUTE_COLUMN, TOKEN_COLUMN, PRICE_COLUMN, RANDOM_SEED, AGE_IN_MINUTES_COLUMN, \
     CURRENT_ASSET_PRICE_COLUMN, PRICE_PCT_CHANGE
 from data.random_seed import set_random_seed
 from mcts.action import TradeAction
@@ -22,16 +22,16 @@ def get_validation_tokens(data: pd.DataFrame, amount: int) -> List[pd.DataFrame]
     min_date = datetime(2024, 11, 25)
 
     possible_tokens = list(data[(data[TRADING_MINUTE_COLUMN] < max_date) & (data[TRADING_MINUTE_COLUMN] >= min_date)][
-                               TOKEN_COlUMN].unique())
+                               TOKEN_COLUMN].unique())
 
     selected_tokens = random.sample(possible_tokens, amount if len(possible_tokens) > amount else len(possible_tokens))
 
     print("Amount of tokens selected:", len(selected_tokens))
-    return [group for _, group in data[data[TOKEN_COlUMN].isin(selected_tokens)].groupby(TOKEN_COlUMN)]
+    return [group for _, group in data[data[TOKEN_COLUMN].isin(selected_tokens)].groupby(TOKEN_COLUMN)]
 
 
 def remove_non_traded_rows(token_data: pd.DataFrame, trades: pd.DataFrame, token: str) -> pd.DataFrame:
-    token_min_trading_minute = trades[trades[TOKEN_COlUMN] == token][TRADING_MINUTE_COLUMN].min()
+    token_min_trading_minute = trades[trades[TOKEN_COLUMN] == token][TRADING_MINUTE_COLUMN].min()
     return token_data[token_data[TRADING_MINUTE_COLUMN] >= token_min_trading_minute]
 
 
@@ -41,8 +41,8 @@ def filter_info_sets_by_token_age(data: pd.DataFrame, token_age: int):
 
 def apply_cumulative_price_change_by_token(df: pd.DataFrame, base_price: float) -> pd.DataFrame:
     # Group by the token column and calculate the cumulative percentage change
-    df['cumulative_pct_change'] = df.groupby(TOKEN_COlUMN)[PRICE_PCT_CHANGE].transform(
-        lambda x: (1 + x / 100).cumprod())
+    df['cumulative_pct_change'] = df.groupby(TOKEN_COLUMN)[PRICE_PCT_CHANGE].transform(
+        lambda x: (1 + x / 100).cumprod()) # Todo fix this!
 
     # Apply the cumulative percentage change to the base price
     df[CURRENT_ASSET_PRICE_COLUMN] = base_price * df['cumulative_pct_change']
@@ -62,7 +62,7 @@ def plot_info_sets(info_sets):
 
 
 def run_token_evaluation(token_data, trade_data, ohlcv_data):
-    token = token_data[TOKEN_COlUMN].iloc[0]
+    token = token_data[TOKEN_COLUMN].iloc[0]
     token_data = remove_non_traded_rows(token_data, trade_data, token)
     # token_start_date = token_data[TRADING_MINUTE_COLUMN].min()
 

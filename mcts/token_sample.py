@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 from cache_helper import write_data_to_cache
-from constants import TOKEN_COlUMN, TRADING_MINUTE_COLUMN, PRICE_COLUMN, LAUNCH_DATE_COLUMN, PRICE_PCT_CHANGE, \
+from constants import TOKEN_COLUMN, TRADING_MINUTE_COLUMN, PRICE_COLUMN, LAUNCH_DATE_COLUMN, PRICE_PCT_CHANGE, \
     CURRENT_ASSET_PRICE_COLUMN
 from data.cache_data import read_cache_data
 from data.combine_price_trades import prepare_timestamps
@@ -33,20 +33,20 @@ def load_token_ohlcv_data() -> Tuple[pd.DataFrame, pd.DataFrame]:
 
 
 def remove_current_token(token_ohlcv_data: pd.DataFrame, token: str) -> pd.DataFrame:
-    return token_ohlcv_data[token_ohlcv_data[TOKEN_COlUMN] != token].reset_index(drop=True)
+    return token_ohlcv_data[token_ohlcv_data[TOKEN_COLUMN] != token].reset_index(drop=True)
 
 
 def remove_older_tokens(token_ohlcv_data: pd.DataFrame, start_date: datetime) -> pd.DataFrame:
     return (
         token_ohlcv_data
-        .groupby(TOKEN_COlUMN)
+        .groupby(TOKEN_COLUMN)
         .filter(lambda df: df[TRADING_MINUTE_COLUMN].min() >= start_date)
         .reset_index(drop=True)
     )
 
 
 def get_token_list(token_ohlcv_data: pd.DataFrame) -> List[str]:
-    return list(token_ohlcv_data[TOKEN_COlUMN].unique())
+    return list(token_ohlcv_data[TOKEN_COLUMN].unique())
 
 
 def sample_tokens(token_list: List[str], amount: int) -> List[str]:
@@ -54,15 +54,15 @@ def sample_tokens(token_list: List[str], amount: int) -> List[str]:
 
 
 def get_filtered_data(token_ohlcv_data: pd.DataFrame, selected_tokens: List[str]) -> pd.DataFrame:
-    return token_ohlcv_data[token_ohlcv_data[TOKEN_COlUMN].isin(selected_tokens)].reset_index(drop=True)
+    return token_ohlcv_data[token_ohlcv_data[TOKEN_COLUMN].isin(selected_tokens)].reset_index(drop=True)
 
 
 def split_by_token(token_ohlcv_data: pd.DataFrame) -> Dict[str, pd.DataFrame]:
-    return {str(token): df.reset_index(drop=True) for token, df in token_ohlcv_data.groupby(TOKEN_COlUMN)}
+    return {str(token): df.reset_index(drop=True) for token, df in token_ohlcv_data.groupby(TOKEN_COLUMN)}
 
 
 def add_token_age_column(df: pd.DataFrame) -> pd.DataFrame:
-    return df.groupby(TOKEN_COlUMN, group_keys=False).apply(
+    return df.groupby(TOKEN_COLUMN, group_keys=False).apply(
         lambda group: group.assign(
             age_in_minutes=np.ceil((group[TRADING_MINUTE_COLUMN] - group[LAUNCH_DATE_COLUMN]).dt.total_seconds() / 60)
         )
@@ -70,7 +70,7 @@ def add_token_age_column(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def add_price_pct_column(token_ohlcv_data: pd.DataFrame) -> pd.DataFrame:
-    return token_ohlcv_data.groupby(TOKEN_COlUMN, group_keys=False).apply(
+    return token_ohlcv_data.groupby(TOKEN_COLUMN, group_keys=False).apply(
         lambda df: df.assign(
             price_pct_change=df[PRICE_COLUMN].replace(0, np.nan).pct_change().fillna(0.0).astype('float64'))
     )
@@ -79,7 +79,7 @@ def add_price_pct_column(token_ohlcv_data: pd.DataFrame) -> pd.DataFrame:
 def get_info_sets(data: pd.DataFrame) -> List[pd.DataFrame]:
     return [
         df[[PRICE_PCT_CHANGE, CURRENT_ASSET_PRICE_COLUMN]].reset_index(drop=True) for _, df in
-        data.groupby(TOKEN_COlUMN)
+        data.groupby(TOKEN_COLUMN)
     ]
 
 

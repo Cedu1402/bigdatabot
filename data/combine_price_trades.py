@@ -5,7 +5,7 @@ from typing import Tuple, List
 import numpy as np
 import pandas as pd
 
-from constants import TOKEN_COlUMN, TRADING_MINUTE_COLUMN, TRADER_COLUMN
+from constants import TOKEN_COLUMN, TRADING_MINUTE_COLUMN, TRADER_COLUMN
 
 
 def get_categories_from_dataclass(cls) -> List[int]:
@@ -77,15 +77,15 @@ def prepare_timestamps(price_data: pd.DataFrame, trades: pd.DataFrame) -> Tuple[
 def calculate_minute_positions(trader_trades: pd.DataFrame) -> pd.DataFrame:
     """Calculate net positions for each minute and token for a trader."""
     if len(trader_trades) == 0:
-        return pd.DataFrame(columns=[TRADING_MINUTE_COLUMN, TOKEN_COlUMN, 'net_position'])
+        return pd.DataFrame(columns=[TRADING_MINUTE_COLUMN, TOKEN_COLUMN, 'net_position'])
 
     positions = []
-    for (minute, token), group in trader_trades.groupby([TRADING_MINUTE_COLUMN, TOKEN_COlUMN]):
+    for (minute, token), group in trader_trades.groupby([TRADING_MINUTE_COLUMN, TOKEN_COLUMN]):
         buys = group[group['buy'] == 1]['token_sold_amount'].sum()
         sells = group[group['buy'] == 0]['token_bought_amount'].sum()
         positions.append({
             TRADING_MINUTE_COLUMN: minute,
-            TOKEN_COlUMN: token,
+            TOKEN_COLUMN: token,
             'net_position': buys - sells
         })
 
@@ -141,9 +141,9 @@ def update_trader_states(
         cumulative_positions: pd.Series
 ) -> pd.DataFrame:
     """Update trader states for a specific token."""
-    token_mask = (result[TOKEN_COlUMN] == token)
+    token_mask = (result[TOKEN_COLUMN] == token)
 
-    for idx, row in positions_df[positions_df[TOKEN_COlUMN] == token].sort_values(TRADING_MINUTE_COLUMN).iterrows():
+    for idx, row in positions_df[positions_df[TOKEN_COLUMN] == token].sort_values(TRADING_MINUTE_COLUMN).iterrows():
         minute_mask = (result[TRADING_MINUTE_COLUMN] == row[TRADING_MINUTE_COLUMN]) & token_mask
         position_before = cumulative_positions.loc[:idx].shift(1).fillna(0).iloc[-1]
         current_position = cumulative_positions.loc[:idx].sum()
@@ -203,7 +203,7 @@ def add_spent_received_columns(data: pd.DataFrame, amount_col: str) -> pd.DataFr
 
 def group_trades_by_trader(trades: pd.DataFrame) -> pd.DataFrame:
     grouped_trades = trades.groupby(
-        [TRADING_MINUTE_COLUMN, TOKEN_COlUMN, TRADER_COLUMN], as_index=False
+        [TRADING_MINUTE_COLUMN, TOKEN_COLUMN, TRADER_COLUMN], as_index=False
     ).agg({
         'sol_amount_spent': 'sum',
         'sol_amount_received': 'sum'
@@ -221,12 +221,12 @@ def remove_no_trade_rows(data: pd.DataFrame) -> pd.DataFrame:
     # Find the first trade for each token
     first_trade_time = (
         data[data['has_trade']]
-        .groupby(TOKEN_COlUMN)[TRADING_MINUTE_COLUMN]
+        .groupby(TOKEN_COLUMN)[TRADING_MINUTE_COLUMN]
         .min()
     )
 
     # Filter data: keep rows from the first trade onward for each token
-    data = data[data[TRADING_MINUTE_COLUMN] >= data[TOKEN_COlUMN].map(first_trade_time)]
+    data = data[data[TRADING_MINUTE_COLUMN] >= data[TOKEN_COLUMN].map(first_trade_time)]
 
     # Drop the helper column
     data = data.drop(columns=['has_trade'])
@@ -244,13 +244,13 @@ def add_trader_trades_data(
     grouped_trades = group_trades_by_trader(trades)
     merged = price_data.merge(
         grouped_trades,
-        on=[TRADING_MINUTE_COLUMN, TOKEN_COlUMN],
+        on=[TRADING_MINUTE_COLUMN, TOKEN_COLUMN],
         how='left',
         suffixes=('', '_trade')
     )
 
     pivot_spent = merged.pivot_table(
-        index=[TRADING_MINUTE_COLUMN, TOKEN_COlUMN],
+        index=[TRADING_MINUTE_COLUMN, TOKEN_COLUMN],
         columns=TRADER_COLUMN,
         values='sol_amount_spent',
         aggfunc='sum',
@@ -258,7 +258,7 @@ def add_trader_trades_data(
     )
 
     pivot_received = merged.pivot_table(
-        index=[TRADING_MINUTE_COLUMN, TOKEN_COlUMN],
+        index=[TRADING_MINUTE_COLUMN, TOKEN_COLUMN],
         columns=TRADER_COLUMN,
         values='sol_amount_received',
         aggfunc='sum',
@@ -334,8 +334,8 @@ def add_trader_info_to_price_data(
             continue
 
         # Process each token
-        for token in positions_df[TOKEN_COlUMN].unique():
-            token_positions = positions_df[positions_df[TOKEN_COlUMN] == token].sort_values(TRADING_MINUTE_COLUMN)
+        for token in positions_df[TOKEN_COLUMN].unique():
+            token_positions = positions_df[positions_df[TOKEN_COLUMN] == token].sort_values(TRADING_MINUTE_COLUMN)
             cumulative_positions = token_positions['net_position'].cumsum()
 
             result = update_trader_states(
@@ -346,7 +346,7 @@ def add_trader_info_to_price_data(
                 cumulative_positions
             )
 
-    result.sort_values([TOKEN_COlUMN, TRADING_MINUTE_COLUMN])
+    result.sort_values([TOKEN_COLUMN, TRADING_MINUTE_COLUMN])
     result = filter_rows_before_first_action(result)
 
     return result

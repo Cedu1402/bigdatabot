@@ -2,7 +2,7 @@ import unittest
 
 import pandas as pd
 
-from constants import TOKEN_COlUMN, PRICE_COLUMN
+from constants import TOKEN_COLUMN, PRICE_COLUMN
 from data.label_data import get_min_max_with_indices_grouped
 
 
@@ -11,7 +11,7 @@ class TestRunner(unittest.TestCase):
     def test_get_min_max_with_indices_grouped(self):
         # Example DataFrame with token grouping
         df = pd.DataFrame({
-            TOKEN_COlUMN: ['A', 'A', 'A', 'B', 'B', 'B'],
+            TOKEN_COLUMN: ['A', 'A', 'A', 'B', 'B', 'B'],
             PRICE_COLUMN: [10, 20, 15, 30, 25, 40]
         })
 

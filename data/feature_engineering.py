@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 
-from constants import TOKEN_COlUMN, TRADING_MINUTE_COLUMN, PRICE_COLUMN, PRICE_PCT_CHANGE, \
+from constants import TOKEN_COLUMN, TRADING_MINUTE_COLUMN, PRICE_COLUMN, PRICE_PCT_CHANGE, \
     MARKET_CAP_USD, PERCENTAGE_OF_1_MILLION_MARKET_CAP, TOTAL_VOLUME_COLUMN, TOTAL_VOLUME_PCT_CHANGE, \
     AGE_IN_MINUTES_COLUMN, LAUNCH_DATE_COLUMN, CUMULATIVE_VOLUME, CHANGE_FROM_ATL, CHANGE_FROM_ATH
 from data.combine_price_trades import get_categories_from_dataclass, TraderState
@@ -129,22 +129,22 @@ def calculate_pct_change(data, column, token_mask):
 
 
 def add_launch_date(trades: pd.DataFrame, price_data: pd.DataFrame) -> pd.DataFrame:
-    trades_unique = trades[[TOKEN_COlUMN, LAUNCH_DATE_COLUMN]].drop_duplicates()
-    price_data = pd.merge(price_data, trades_unique, on=TOKEN_COlUMN, how='left')
+    trades_unique = trades[[TOKEN_COLUMN, LAUNCH_DATE_COLUMN]].drop_duplicates()
+    price_data = pd.merge(price_data, trades_unique, on=TOKEN_COLUMN, how='left')
     return price_data
 
 
 def add_cumulative_volume(data: pd.DataFrame) -> pd.DataFrame:
     # Now calculate the cumulative sum of the volume for each token based on the timestep
-    data[CUMULATIVE_VOLUME] = data.groupby(TOKEN_COlUMN)[TOTAL_VOLUME_COLUMN].cumsum()
+    data[CUMULATIVE_VOLUME] = data.groupby(TOKEN_COLUMN)[TOTAL_VOLUME_COLUMN].cumsum()
 
     return data
 
 
 def add_ath_atl_changes(data: pd.DataFrame) -> pd.DataFrame:
     # Group by token and calculate the running ATL and ATH
-    data['running_atl'] = data.groupby(TOKEN_COlUMN)[PRICE_COLUMN].cummin()
-    data['running_ath'] = data.groupby(TOKEN_COlUMN)[PRICE_COLUMN].cummax()
+    data['running_atl'] = data.groupby(TOKEN_COLUMN)[PRICE_COLUMN].cummin()
+    data['running_ath'] = data.groupby(TOKEN_COLUMN)[PRICE_COLUMN].cummax()
 
     # Calculate the percentage change from ATL and ATH
     data[CHANGE_FROM_ATL] = ((data[PRICE_COLUMN] - data['running_atl']) / data['running_atl']) * 100
@@ -156,7 +156,7 @@ def add_ath_atl_changes(data: pd.DataFrame) -> pd.DataFrame:
 
 
 def add_features(data: pd.DataFrame) -> pd.DataFrame:
-    data = data.sort_values(by=[TOKEN_COlUMN, TRADING_MINUTE_COLUMN])  # Sort by token and then by time
+    data = data.sort_values(by=[TOKEN_COLUMN, TRADING_MINUTE_COLUMN])  # Sort by token and then by time
 
     data[MARKET_CAP_USD] = data.apply(
         lambda row: calculate_market_cap_in_usd(float(row[PRICE_COLUMN])),
@@ -165,8 +165,8 @@ def add_features(data: pd.DataFrame) -> pd.DataFrame:
 
     data = add_cumulative_volume(data)
 
-    for token in data[TOKEN_COlUMN].unique():
-        token_mask = (data[TOKEN_COlUMN] == token)
+    for token in data[TOKEN_COLUMN].unique():
+        token_mask = (data[TOKEN_COLUMN] == token)
         data.loc[token_mask, PRICE_PCT_CHANGE] = calculate_pct_change(data, PRICE_COLUMN, token_mask)
         data.loc[token_mask, TOTAL_VOLUME_PCT_CHANGE] = calculate_pct_change(data, TOTAL_VOLUME_COLUMN, token_mask)
         data.loc[token_mask, PERCENTAGE_OF_1_MILLION_MARKET_CAP] = data.loc[token_mask, MARKET_CAP_USD] / 1_000_000

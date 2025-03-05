@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 from bot.token_watcher import prepare_current_dataset
 from config.config_reader import load_yaml_to_dict
-from constants import BIN_AMOUNT_KEY, CONFIG_2_FILE, TOKEN_COlUMN, RANDOM_SEED, TRADING_MINUTE_COLUMN
+from constants import BIN_AMOUNT_KEY, CONFIG_2_FILE, TOKEN_COLUMN, RANDOM_SEED, TRADING_MINUTE_COLUMN
 from data.combine_price_trades import prepare_timestamps, convert_trading_amount
 from data.dataset import prepare_test_data, prepare_dataset
 from database.token_dataset_table import get_token_datasets_by_token
@@ -25,7 +25,7 @@ async def data_leak_check(amount_of_tokens: int = 10, use_cache: bool = True):
     top_trader_trades = convert_trading_amount(top_trader_trades)
 
     # # select x random tokens
-    tokens = val[TOKEN_COlUMN].unique().tolist()
+    tokens = val[TOKEN_COLUMN].unique().tolist()
     random.seed = RANDOM_SEED
     selected_tokens = random.sample(tokens, amount_of_tokens)
 
@@ -33,20 +33,20 @@ async def data_leak_check(amount_of_tokens: int = 10, use_cache: bool = True):
     model_builder.load_model("hist_gradient")
 
     # predict token on full data
-    val = val[val[TOKEN_COlUMN].isin(selected_tokens)]
+    val = val[val[TOKEN_COLUMN].isin(selected_tokens)]
     val_x, val_y = model_builder.prepare_prediction_data(val.copy(), True)
     val_predictions = model_builder.predict(val_x)
 
     # predict token on split data using same logic to create df like production
     for token in selected_tokens:
-        test = val[val[TOKEN_COlUMN] == token]
-        starting_minute = val[val[TOKEN_COlUMN] == token][TRADING_MINUTE_COLUMN].min()
-        end_minute = val[val[TOKEN_COlUMN] == token][TRADING_MINUTE_COLUMN].max()
+        test = val[val[TOKEN_COLUMN] == token]
+        starting_minute = val[val[TOKEN_COLUMN] == token][TRADING_MINUTE_COLUMN].min()
+        end_minute = val[val[TOKEN_COLUMN] == token][TRADING_MINUTE_COLUMN].max()
         current_minute = starting_minute
 
         while current_minute <= end_minute:
             valid_trades = top_trader_trades[
-                (top_trader_trades[TOKEN_COlUMN] == token) & (top_trader_trades[TRADING_MINUTE_COLUMN] <= starting_minute)]
+                (top_trader_trades[TOKEN_COLUMN] == token) & (top_trader_trades[TRADING_MINUTE_COLUMN] <= starting_minute)]
 
             df = await prepare_current_dataset(valid_trades, starting_minute, token, model_builder.get_columns())
             prediction_data, _ = model_builder.prepare_prediction_data(df.copy(), False)

@@ -4,7 +4,7 @@ from typing import Dict, Tuple, List
 
 import pandas as pd
 
-from constants import BIN_AMOUNT_KEY, RANDOM_SEED, MODEL_FOLDER, TOKEN_COlUMN, STEP_SIZE_KEY, LABEL_COLUMN, \
+from constants import BIN_AMOUNT_KEY, RANDOM_SEED, MODEL_FOLDER, TOKEN_COLUMN, STEP_SIZE_KEY, LABEL_COLUMN, \
     SELL_VOLUME_PCT_CHANGE, PRICE_PCT_CHANGE, BUY_VOLUME_PCT_CHANGE, TOTAL_VOLUME_PCT_CHANGE, \
     PERCENTAGE_OF_1_MILLION_MARKET_CAP, PRICE_COLUMN, CHANGE_FROM_ATL, CHANGE_FROM_ATH, CUMULATIVE_VOLUME, \
     AGE_IN_MINUTES_COLUMN, TOTAL_VOLUME_COLUMN, TRADING_MINUTE_COLUMN
@@ -46,7 +46,7 @@ class SKLearnClassifierBuilder(BaseModelBuilder):
     def prepare_dataset(self, data: pd.DataFrame, sorted_data: bool) -> pd.DataFrame:
         logger.info("Remove unused columns from data")
         if sorted_data:
-            data = data.sort_values(by=[TOKEN_COlUMN, TRADING_MINUTE_COLUMN]).reset_index(drop=True)
+            data = data.sort_values(by=[TOKEN_COLUMN, TRADING_MINUTE_COLUMN]).reset_index(drop=True)
         else:
             data = data.sample(frac=1, random_state=RANDOM_SEED).reset_index(drop=True)
 
@@ -61,7 +61,7 @@ class SKLearnClassifierBuilder(BaseModelBuilder):
             logger.info("Bin data")
             data = bin_data(data, self.binned_columns, self.bin_edges)
 
-        data = data.sort_values(by=[TOKEN_COlUMN, TRADING_MINUTE_COLUMN])
+        data = data.sort_values(by=[TOKEN_COLUMN, TRADING_MINUTE_COLUMN])
         remove_columns_dataframe(data, self.non_training_columns)
         data_x = data[self.columns]
         data_y = []
@@ -78,7 +78,7 @@ class SKLearnClassifierBuilder(BaseModelBuilder):
         logger.info("Train model on full test set")
         self.columns = best_model["selected_columns"]
         train_data = create_sliding_window_flat(train_data, step_size=best_model[STEP_SIZE_KEY])
-        train_data.drop(columns=[TOKEN_COlUMN], inplace=True)
+        train_data.drop(columns=[TOKEN_COLUMN], inplace=True)
         # if self.config.get("balanced", True):
         #     train_data = balance_data(train_data)
 

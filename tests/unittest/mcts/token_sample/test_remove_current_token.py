@@ -2,7 +2,7 @@ import unittest
 
 import pandas as pd
 
-from constants import TOKEN_COlUMN
+from constants import TOKEN_COLUMN
 from mcts.token_sample import remove_current_token
 
 
@@ -11,7 +11,7 @@ class TestRunner(unittest.TestCase):
     def setUp(self):
         # Sample test DataFrame
         self.data = pd.DataFrame({
-            TOKEN_COlUMN: ['BTC', 'ETH', 'BTC', 'SOL', 'ETH'],
+            TOKEN_COLUMN: ['BTC', 'ETH', 'BTC', 'SOL', 'ETH'],
             'price': [30000, 2000, 31000, 50, 2100],
         })
 
@@ -22,7 +22,7 @@ class TestRunner(unittest.TestCase):
         pd.testing.assert_frame_equal(
             result,
             pd.DataFrame({
-                TOKEN_COlUMN: ['ETH', 'SOL', 'ETH'],
+                TOKEN_COLUMN: ['ETH', 'SOL', 'ETH'],
                 'price': [2000, 50, 2100],
             })
         )

@@ -3,7 +3,7 @@ from typing import List
 
 import pandas as pd
 
-from constants import TOKEN_COlUMN
+from constants import TOKEN_COLUMN
 from data.data_split import split_data
 
 
@@ -12,7 +12,7 @@ class TestSplitData(unittest.TestCase):
     def setUp(self):
         # Create sample data
         self.data: List[pd.DataFrame] = [
-            pd.DataFrame({TOKEN_COlUMN: [i], 'col2': [i + 1]}) for i in range(100)
+            pd.DataFrame({TOKEN_COLUMN: [i], 'col2': [i + 1]}) for i in range(100)
         ]
         self.train_ratio = 0.7
         self.val_ratio = 0.15

@@ -3,7 +3,7 @@ from datetime import datetime
 
 import pandas as pd
 
-from constants import TOKEN_COlUMN, PRICE_COLUMN, TRADING_MINUTE_COLUMN
+from constants import TOKEN_COLUMN, PRICE_COLUMN, TRADING_MINUTE_COLUMN
 from data.model_data import order_columns
 
 
@@ -17,8 +17,8 @@ class TestRunner(unittest.TestCase):
             [test_token, 1, datetime(2024, 1, 1, 10, 2)],
             [test_token, 1, datetime(2024, 1, 1, 10, 3)],
             [test_token, 3, datetime(2024, 1, 1, 10, 4)],
-        ], columns=[TOKEN_COlUMN, PRICE_COLUMN, TRADING_MINUTE_COLUMN])
-        expected_order = [PRICE_COLUMN, TOKEN_COlUMN, TRADING_MINUTE_COLUMN]
+        ], columns=[TOKEN_COLUMN, PRICE_COLUMN, TRADING_MINUTE_COLUMN])
+        expected_order = [PRICE_COLUMN, TOKEN_COLUMN, TRADING_MINUTE_COLUMN]
 
         # Act
         actual = order_columns([trading_data], expected_order)

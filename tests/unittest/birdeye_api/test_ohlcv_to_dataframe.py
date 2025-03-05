@@ -4,7 +4,7 @@ from datetime import datetime
 import pandas as pd
 
 from birdeye_api.ohlcv_endpoint import ohlcv_to_dataframe
-from constants import PRICE_COLUMN, TOTAL_VOLUME_COLUMN, TRADING_MINUTE_COLUMN, TOKEN_COlUMN
+from constants import PRICE_COLUMN, TOTAL_VOLUME_COLUMN, TRADING_MINUTE_COLUMN, TOKEN_COLUMN
 
 
 class TestRunner(unittest.TestCase):
@@ -40,7 +40,7 @@ class TestRunner(unittest.TestCase):
 
         # Expected result
         expected_data = {
-            TOKEN_COlUMN: ["So11111111111111111111111111111111111111112",
+            TOKEN_COLUMN: ["So11111111111111111111111111111111111111112",
                            "So11111111111111111111111111111111111111112"],
             TRADING_MINUTE_COLUMN: [datetime.utcfromtimestamp(1726670700),
                                     datetime.utcfromtimestamp(1726671600)],

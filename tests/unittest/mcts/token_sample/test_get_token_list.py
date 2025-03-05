@@ -2,7 +2,7 @@ import unittest
 
 import pandas as pd
 
-from constants import TOKEN_COlUMN
+from constants import TOKEN_COLUMN
 from mcts.token_sample import get_token_list
 
 
@@ -11,7 +11,7 @@ class TestRunner(unittest.TestCase):
     def setUp(self):
         # Sample test DataFrame
         self.data = pd.DataFrame({
-            TOKEN_COlUMN: ['BTC', 'ETH', 'BTC', 'SOL', 'ETH'],
+            TOKEN_COLUMN: ['BTC', 'ETH', 'BTC', 'SOL', 'ETH'],
             'price': [30000, 2000, 31000, 50, 2100],
         })
 

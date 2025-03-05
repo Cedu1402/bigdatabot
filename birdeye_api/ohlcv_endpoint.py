@@ -6,7 +6,7 @@ import aiohttp
 import pandas as pd
 
 from birdeye_api.api_limit import check_api_limit
-from constants import BIRDEYE_KEY, TRADING_MINUTE_COLUMN, TOKEN_COlUMN, TOTAL_VOLUME_COLUMN, \
+from constants import BIRDEYE_KEY, TRADING_MINUTE_COLUMN, TOKEN_COLUMN, TOTAL_VOLUME_COLUMN, \
     PRICE_COLUMN
 from env_data.get_env_value import get_env_value
 
@@ -24,7 +24,7 @@ def ohlcv_to_dataframe(result: dict) -> pd.DataFrame:
             "unixTime": TRADING_MINUTE_COLUMN,
             "v": TOTAL_VOLUME_COLUMN,
             "c": PRICE_COLUMN,
-            "address": TOKEN_COlUMN,
+            "address": TOKEN_COLUMN,
         },
         inplace=True,
     )
@@ -32,7 +32,7 @@ def ohlcv_to_dataframe(result: dict) -> pd.DataFrame:
     # Convert the Unix timestamp to a datetime object for trading minute
     df[TRADING_MINUTE_COLUMN] = pd.to_datetime(df[TRADING_MINUTE_COLUMN], unit='s')
 
-    return df[[TOKEN_COlUMN, TRADING_MINUTE_COLUMN, TOTAL_VOLUME_COLUMN, PRICE_COLUMN]]
+    return df[[TOKEN_COLUMN, TRADING_MINUTE_COLUMN, TOTAL_VOLUME_COLUMN, PRICE_COLUMN]]
 
 
 async def get_time_frame_ohlcv(token: str, trading_minute: datetime, window: int, interval: str) -> Optional[

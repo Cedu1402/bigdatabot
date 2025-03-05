@@ -2,7 +2,7 @@ import unittest
 
 import pandas as pd
 
-from constants import TOKEN_COlUMN, TRADING_MINUTE_COLUMN, PRICE_COLUMN, CHANGE_FROM_ATH, CHANGE_FROM_ATL
+from constants import TOKEN_COLUMN, TRADING_MINUTE_COLUMN, PRICE_COLUMN, CHANGE_FROM_ATH, CHANGE_FROM_ATL
 from data.feature_engineering import add_ath_atl_changes
 
 
@@ -11,7 +11,7 @@ class TestRunner(unittest.TestCase):
     def test_add_ath_atl_changes(self):
         # Arrange
         data = pd.DataFrame({
-            TOKEN_COlUMN: ['token1', 'token1', 'token1', 'token2', 'token2', 'token2'],
+            TOKEN_COLUMN: ['token1', 'token1', 'token1', 'token2', 'token2', 'token2'],
             PRICE_COLUMN: [10, 15, 8, 20, 25, 18],  # Current price for each row
             TRADING_MINUTE_COLUMN: [1, 2, 3, 1, 2, 3]
         })
