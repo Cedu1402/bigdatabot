@@ -3,6 +3,7 @@ from datetime import timedelta
 
 import numpy as np
 import pandas as pd
+from flask.cli import load_dotenv
 from matplotlib import pyplot as plt
 
 from constants import TOKEN_COLUMN, PRICE_COLUMN, TRADING_MINUTE_COLUMN, PRICE_PCT_CHANGE
@@ -149,4 +150,5 @@ def main():
 
 
 if __name__ == '__main__':
+    load_dotenv()
     main()
