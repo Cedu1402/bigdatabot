@@ -108,6 +108,8 @@ def main():
 
         for trading_min in sampled_minutes:
             current_row = data[(data[TOKEN_COLUMN] == token) & (data[TRADING_MINUTE_COLUMN] == trading_min)]
+            if len(current_row) == 0:
+                continue
             current_price = current_row[PRICE_COLUMN].iloc[0]
             current_age = current_row[age_column].iloc[0]
 
