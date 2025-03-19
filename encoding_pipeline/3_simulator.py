@@ -1,10 +1,14 @@
+import multiprocessing
+import pickle
 import random
 from datetime import timedelta
+from multiprocessing import shared_memory
 
 import numpy as np
 import pandas as pd
 from flask.cli import load_dotenv
 from matplotlib import pyplot as plt
+from tqdm import tqdm
 
 from constants import TOKEN_COLUMN, PRICE_COLUMN, TRADING_MINUTE_COLUMN, PRICE_PCT_CHANGE
 from data.cache_data import read_cache_data, save_cache_data
@@ -83,72 +87,85 @@ def prepare_data(min_price_reached):
     return token_list, data, min_trading_minutes
 
 
+def run_token(token, min_trading_minutes, random_points_of_token_life, token_list, sample_amount, shm_name):
+    # get min the token reached required mc.
+    existing_shm = shared_memory.SharedMemory(name=shm_name)
+    data = pickle.loads(bytes(existing_shm.buf))
+
+    mc_reached_min = min_trading_minutes[token]
+    current_row = data[(data[TOKEN_COLUMN] == token) & (data[TRADING_MINUTE_COLUMN] == mc_reached_min)]
+    current_age = current_row[age_column].iloc[0]
+
+    time_series = [mc_reached_min + timedelta(minutes=i) for i in range(300 - current_age)]
+    sampled_minutes = random.sample(time_series, random_points_of_token_life)
+    result_data = list()
+
+    for trading_min in sampled_minutes:
+        current_row = data[(data[TOKEN_COLUMN] == token) & (data[TRADING_MINUTE_COLUMN] == trading_min)]
+        if len(current_row) == 0:
+            continue
+        current_price = current_row[PRICE_COLUMN].iloc[0]
+        current_age = current_row[age_column].iloc[0]
+
+        sample_tokens = np.array(random.sample(list(token_list[token_list != token]), sample_amount))
+        same_price_tokens = random.sample(list(sample_tokens), sample_amount // 2)
+        same_age_tokens = list(token_list[~np.isin(token_list, same_price_tokens)])
+
+        token_price_data = data[data[TOKEN_COLUMN].isin(sample_tokens)]
+
+        # sample tokens with same mc as current
+        same_price_token_data = token_price_data[token_price_data[TOKEN_COLUMN].isin(same_price_tokens)]
+        index_of_similar_price = get_index_of_similar_price(same_price_token_data, current_price)
+        same_price_cut = same_price_token_data.groupby(TOKEN_COLUMN, group_keys=False).apply(
+            lambda group: group.loc[index_of_similar_price[group.name]: index_of_similar_price[group.name] + 299]
+        )
+
+        # sample tokens at same age as current
+        same_age_token_data = token_price_data[token_price_data[TOKEN_COLUMN].isin(same_age_tokens)]
+        same_age_cut = same_age_token_data.groupby(TOKEN_COLUMN, group_keys=False).apply(
+            lambda group: group[group[age_column] > current_age].head(300)
+        )
+
+        sample_data = pd.concat([same_price_cut, same_age_cut], ignore_index=True)
+        # for sample tokens take the same cut of data
+        sample_data[cum_change] = sample_data.groupby(TOKEN_COLUMN)[log_return].cumsum()
+        row = {
+            TOKEN_COLUMN: token,
+            TRADING_MINUTE_COLUMN: mc_reached_min,
+            'volatility': sample_data[cum_change].std(),
+            'skew': sample_data[cum_change].skew(),
+            'kurt': sample_data[cum_change].kurtosis(),
+            'crash_prob': (sample_data[cum_change] < -0.5).mean(),
+            'moon_prob': (sample_data[cum_change] > 0.5).mean(),
+            'mean_max_return': sample_data.groupby(TOKEN_COLUMN)[cum_change].max().mean(),
+            'median_max_return': sample_data.groupby(TOKEN_COLUMN)[cum_change].max().median()
+        }
+        result_data.append(row)
+    print("Finished token")
+    return result_data
+
+
 def main():
     print("Start dataset creation")
     min_price_reached = 0.0001
     token_list, data, min_trading_minutes = prepare_data(min_price_reached)
     data.reset_index(drop=True, inplace=True)
 
-    token_amount = len(token_list)
+    data_bytes = pickle.dumps(data)
+    shm = shared_memory.SharedMemory(create=True, size=len(data_bytes))
+    shm.buf[:len(data_bytes)] = data_bytes  # Copy data
+
     sample_amount = 5000
     random_points_of_token_life = 5
-    dataset = list()
 
-    for i, token in enumerate(token_list):
-        # sample 10 points in token_life_time after min is reached.
-        print(f"Token {i + 1} of {len(token_list)}")
+    tasks = [(token, min_trading_minutes,
+              random_points_of_token_life, token_list, sample_amount, shm.name) for token in token_list]
 
-        # get min the token reached required mc.
-        mc_reached_min = min_trading_minutes[token]
-        current_row = data[(data[TOKEN_COLUMN] == token) & (data[TRADING_MINUTE_COLUMN] == mc_reached_min)]
-        current_age = current_row[age_column].iloc[0]
+    with multiprocessing.Pool(processes=2) as pool:
+        results = list(tqdm(pool.starmap(run_token, tasks), total=len(tasks)))
+        results = [item for result in results for item in result if item is not None]
 
-        time_series = [mc_reached_min + timedelta(minutes=i) for i in range(300 - current_age)]
-        sampled_minutes = random.sample(time_series, random_points_of_token_life)
-
-        for trading_min in sampled_minutes:
-            current_row = data[(data[TOKEN_COLUMN] == token) & (data[TRADING_MINUTE_COLUMN] == trading_min)]
-            if len(current_row) == 0:
-                continue
-            current_price = current_row[PRICE_COLUMN].iloc[0]
-            current_age = current_row[age_column].iloc[0]
-
-            sample_tokens = np.array(random.sample(list(token_list[token_list != token]), sample_amount))
-            same_price_tokens = random.sample(list(sample_tokens), sample_amount // 2)
-            same_age_tokens = list(token_list[~np.isin(token_list, same_price_tokens)])
-
-            token_price_data = data[data[TOKEN_COLUMN].isin(sample_tokens)]
-
-            # sample tokens with same mc as current
-            same_price_token_data = token_price_data[token_price_data[TOKEN_COLUMN].isin(same_price_tokens)]
-            index_of_similar_price = get_index_of_similar_price(same_price_token_data, current_price)
-            same_price_cut = same_price_token_data.groupby(TOKEN_COLUMN, group_keys=False).apply(
-                lambda group: group.loc[index_of_similar_price[group.name]: index_of_similar_price[group.name] + 299]
-            )
-
-            # sample tokens at same age as current
-            same_age_token_data = token_price_data[token_price_data[TOKEN_COLUMN].isin(same_age_tokens)]
-            same_age_cut = same_age_token_data.groupby(TOKEN_COLUMN, group_keys=False).apply(
-                lambda group: group[group[age_column] > current_age].head(300)
-            )
-
-            sample_data = pd.concat([same_price_cut, same_age_cut], ignore_index=True)
-            # for sample tokens take the same cut of data
-            sample_data[cum_change] = sample_data.groupby(TOKEN_COLUMN)[log_return].cumsum()
-            row = {
-                TOKEN_COLUMN: token,
-                TRADING_MINUTE_COLUMN: mc_reached_min,
-                'volatility': sample_data[cum_change].std(),
-                'skew': sample_data[cum_change].skew(),
-                'kurt': sample_data[cum_change].kurtosis(),
-                'crash_prob': (sample_data[cum_change] < -0.5).mean(),
-                'moon_prob': (sample_data[cum_change] > 0.5).mean(),
-                'mean_max_return': sample_data.groupby(TOKEN_COLUMN)[cum_change].max().mean(),
-                'median_max_return': sample_data.groupby(TOKEN_COLUMN)[cum_change].max().median()
-            }
-            dataset.append(row)
-
-    save_cache_data('simulations', dataset)
+        save_cache_data('simulations', pd.DataFrame(results))
 
 
 if __name__ == '__main__':
