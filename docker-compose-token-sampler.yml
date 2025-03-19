@@ -4,7 +4,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: python encoding_pipeline/3_simulator.py
+    command: python encoding_pipeline/1_token_sampler.py
     volumes:
       - ./cache:/app/cache           # Map host ./cache to /app/cache in the container
     networks:
