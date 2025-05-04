@@ -1,5 +1,5 @@
 # BigDataBot
-AI-driven analysis of meme tokens on pump.fun using blockchain data.
+ML-driven analysis of meme tokens on pump.fun using blockchain data.
 
 ## Overview
 
