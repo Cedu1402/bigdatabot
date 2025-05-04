@@ -1,4 +1,4 @@
-# BigDataBot 🧠📈  
+# BigDataBot
 AI-driven analysis of meme tokens on pump.fun using blockchain data.
 
 ## Overview
@@ -10,24 +10,24 @@ The project pulls aggregated data via **Dune Analytics**, and trains a classifie
 
 ## Features
 
-- 📊 **Data Pipeline**  
+- **Data Pipeline**  
   1. Use Dune SQL to aggregate trade data and find promising wallets
   2. Clean data using python 
   3. Feature engineering using python
   4. Train ML models on historical data
   5. Evaluate performance on unseen data in a backtesting-style workflow  
 
-- 🧠 **ML Models**  
+- **ML Models**  
   - Binary classifier trained to predict meme token success.
   - Monte Carlo Tree Search to explore and optimize trading strategies
 
-- 🚀 **Production**  
+- **Production**  
   - Listens to wallet events in real-time via Solana WebSockets (alpha wallet tracking)  
   - Retrieves live chart data using BirdEye’s data service  
   - Executes trades through Solana RPC via the Jupiter Aggregator API  
 
-- ⚙️ **Tech Stack**
-  - Python, scikit-learn, pandas, matplotlib
+- **Tech Stack**
+  - Python, PyTorch, scikit-learn, pandas, matplotlib
   - Dune Analytics for data sourcing
   - Doker for deployment
 
